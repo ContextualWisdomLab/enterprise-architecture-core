@@ -13,8 +13,8 @@ def test_repository_report_counts_foundation_artifacts(repository_root: Path) ->
     """The complete repository validates and reports stable minimum counts."""
 
     report = validate_repository(repository_root)
-    assert report.table_count == 19
-    assert report.column_count == 124
+    assert report.table_count == 20
+    assert report.column_count == 126
     assert report.index_count == 7
     assert report.constraint_count == 127
     assert report.openapi_operation_count == 1
@@ -43,7 +43,7 @@ def test_repository_validation_requires_at_least_one_migration(
     shutil.copytree(repository_root, target)
     for migration_path in (target / "database/migrations").glob("*.sql"):
         migration_path.unlink()
-    with pytest.raises(ContractValidationError, match="missing required migrations"):
+    with pytest.raises(ContractValidationError, match="at least one migration"):
         validate_repository(target)
 
 
