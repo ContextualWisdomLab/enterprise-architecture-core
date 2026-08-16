@@ -8,7 +8,10 @@ import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from importlib.metadata import PackageNotFoundError, version as distribution_version
+from importlib.metadata import (
+    PackageNotFoundError,
+    version as distribution_version,
+)
 from typing import Literal
 from urllib.parse import parse_qsl, unquote, urlparse
 
