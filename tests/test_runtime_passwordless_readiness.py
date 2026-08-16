@@ -29,7 +29,7 @@ def test_database_probe_allows_passfile_auth_without_inline_password() -> None:
 
 
 def test_database_probe_allows_default_socket_without_host_or_password() -> None:
-    """libpq may use its default Unix socket and a passfile when URI fields are omitted."""
+    """Allow a default Unix socket and passfile when URI fields are omitted."""
 
     captured: dict[str, Any] = {}
 
