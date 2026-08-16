@@ -7,6 +7,57 @@ GRANT SELECT, INSERT, UPDATE, DELETE
 GRANT EXECUTE
     ON ALL FUNCTIONS IN SCHEMA architecture_core TO ea_runtime;
 
+DO $$
+DECLARE
+  object_type_count integer;
+  relation_type_count integer;
+  lifecycle_phase_count integer;
+BEGIN
+  SELECT count(*)
+    INTO object_type_count
+    FROM architecture_core.object_type
+   WHERE object_type_code IN (
+      'business_capability',
+      'organization_unit',
+      'application_record',
+      'application_interface',
+      'technology_provider',
+      'technology_component',
+      'technology_version'
+   );
+  SELECT count(*)
+    INTO relation_type_count
+    FROM architecture_core.relation_type
+   WHERE relation_type_code IN (
+      'supports_capability',
+      'uses_technology',
+      'exposes_interface',
+      'consumes_interface',
+      'provided_by',
+      'has_version'
+   );
+  SELECT count(*)
+    INTO lifecycle_phase_count
+    FROM architecture_core.lifecycle_phase
+   WHERE lifecycle_phase_code IN (
+      'planned',
+      'active',
+      'phase_out',
+      'end_of_life',
+      'retired'
+   );
+  IF object_type_count <> 7 THEN
+    RAISE EXCEPTION 'foundation object types missing: %', object_type_count;
+  END IF;
+  IF relation_type_count <> 6 THEN
+    RAISE EXCEPTION 'foundation relation types missing: %', relation_type_count;
+  END IF;
+  IF lifecycle_phase_count <> 5 THEN
+    RAISE EXCEPTION 'foundation lifecycle phases missing: %', lifecycle_phase_count;
+  END IF;
+END;
+$$;
+
 INSERT INTO architecture_core.tenant_record (
     tenant_record_id,
     tenant_code,
@@ -21,55 +72,6 @@ INSERT INTO architecture_core.tenant_record (
         '0195d145-64e8-7f4f-8a23-a0cc784cb712',
         'tenant_002',
         'Tenant Two'
-    );
-
-INSERT INTO architecture_core.object_type (
-    object_type_id,
-    object_type_code,
-    object_type_title
-) VALUES
-    (
-        '0195d145-64e8-7f4f-8a23-a0cc784cb801',
-        'business_capability',
-        'Business Capability'
-    ),
-    (
-        '0195d145-64e8-7f4f-8a23-a0cc784cb802',
-        'application_record',
-        'Application'
-    ),
-    (
-        '0195d145-64e8-7f4f-8a23-a0cc784cb803',
-        'technology_component',
-        'Technology Component'
-    );
-
-INSERT INTO architecture_core.relation_type (
-    relation_type_id,
-    relation_type_code,
-    source_type_id,
-    target_type_id
-) VALUES (
-    '0195d145-64e8-7f4f-8a23-a0cc784cb811',
-    'supports_capability',
-    '0195d145-64e8-7f4f-8a23-a0cc784cb802',
-    '0195d145-64e8-7f4f-8a23-a0cc784cb801'
-);
-
-INSERT INTO architecture_core.lifecycle_phase (
-    lifecycle_phase_id,
-    lifecycle_phase_code,
-    display_order
-) VALUES
-    (
-        '0195d145-64e8-7f4f-8a23-a0cc784cb821',
-        'active',
-        1
-    ),
-    (
-        '0195d145-64e8-7f4f-8a23-a0cc784cb822',
-        'phase_out',
-        2
     );
 
 INSERT INTO architecture_core.architecture_object (
