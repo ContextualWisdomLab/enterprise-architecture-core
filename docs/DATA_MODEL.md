@@ -10,7 +10,15 @@
 
 Canonical asset URIs are checked against the referenced tenant code, object
 type code, and architecture object UUID. A syntactically valid but inconsistent
-URI is rejected by the database.
+URI is rejected by the database. Tenant codes, object-type codes, and the
+identity-bearing tenant/object/type/URI fields of an architecture object are
+immutable after creation because they participate in stable external
+identifiers. Renames belong in temporal display metadata rather than in
+canonical identity.
+
+`architecture_object` intentionally carries no duplicate lifecycle-status
+column. Lifecycle at a requested valid/system time is derived from the
+normalized `lifecycle_interval` history.
 
 ## Typed extensions
 
@@ -34,6 +42,11 @@ business capability or another contradictory typed record. This preserves the
 3NF common-identity pattern without weakening domain type integrity. Provider
 and version associations are represented by `architecture_relation`, rather
 than duplicated foreign keys in extension tables.
+
+`application_record` intentionally carries no business-criticality column.
+Business criticality enters through the future versioned assessment model so a
+score cannot disagree with the framework, dimension, scale, cycle, or evidence
+that defines its meaning.
 
 ## Relationships and lifecycle
 
