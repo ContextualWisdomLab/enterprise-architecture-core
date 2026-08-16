@@ -2,6 +2,15 @@ BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS architecture_core;
 
+CREATE TABLE architecture_core.schema_migration_record (
+    migration_name text NOT NULL,
+    migration_sha256 text NOT NULL,
+    applied_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT schema_migration_primary_key PRIMARY KEY (migration_name),
+    CONSTRAINT schema_migration_digest_format
+        CHECK (migration_sha256 ~ '^[0-9a-f]{64}$')
+);
+
 CREATE FUNCTION architecture_core.current_tenant_id()
 RETURNS uuid
 LANGUAGE sql
