@@ -32,6 +32,8 @@ PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Datab
 
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Environment variables*. https://www.postgresql.org/docs/18/libpq-envars.html
 
+PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: The password file*. https://www.postgresql.org/docs/18/libpq-pgpass.html
+
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Row security policies*. https://www.postgresql.org/docs/18/ddl-rowsecurity.html
 
 World Wide Web Consortium. (2024, December 12). *Web Content Accessibility Guidelines (WCAG) 2.2*. https://www.w3.org/TR/WCAG22/
