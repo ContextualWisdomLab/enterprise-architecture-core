@@ -9,7 +9,7 @@ if [[ ! -d "$migration_directory" ]]; then
 fi
 
 mapfile -t migration_paths < <(
-  find "$migration_directory" -maxdepth 1 -type f -name '*.sql' -print | sort
+  find "$migration_directory" -maxdepth 1 -type f -name '*.sql' -print | LC_ALL=C sort
 )
 
 if [[ "${#migration_paths[@]}" -eq 0 ]]; then
@@ -41,8 +41,11 @@ for migration_path in "${migration_paths[@]}"; do
   if [[ "$ledger_exists" == "t" ]]; then
     recorded_sha256="$(
       psql --tuples-only --no-align --set ON_ERROR_STOP=1 \
-        --set migration_name="$migration_name" \
-        --command "SELECT migration_sha256 FROM architecture_core.schema_migration_record WHERE migration_name = :'migration_name';"
+        --set migration_name="$migration_name" <<'SQL'
+SELECT migration_sha256
+  FROM architecture_core.schema_migration_record
+ WHERE migration_name = :'migration_name';
+SQL
     )"
     if [[ -n "$recorded_sha256" ]]; then
       if [[ "$recorded_sha256" != "$migration_sha256" ]]; then
@@ -68,8 +71,15 @@ for migration_path in "${migration_paths[@]}"; do
 
   psql --set ON_ERROR_STOP=1 \
     --set migration_name="$migration_name" \
-    --set migration_sha256="$migration_sha256" \
-    --command "INSERT INTO architecture_core.schema_migration_record (migration_name, migration_sha256) VALUES (:'migration_name', :'migration_sha256');"
+    --set migration_sha256="$migration_sha256" <<'SQL'
+INSERT INTO architecture_core.schema_migration_record (
+    migration_name,
+    migration_sha256
+) VALUES (
+    :'migration_name',
+    :'migration_sha256'
+);
+SQL
 
   printf 'applied migration: %s\n' "$migration_name"
   expected_ordinal=$((expected_ordinal + 1))
