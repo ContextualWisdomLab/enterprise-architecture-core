@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 _OBJECT_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9]*_[a-z0-9_]+$")
+_MIGRATION_FILENAME_PATTERN = re.compile(
+    r"^(?P<ordinal>[0-9]{4})_[a-z][a-z0-9]*(?:_[a-z0-9]+)*\.sql$"
+)
 _CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
     r"(?P<schema>[a-z][a-z0-9_]*)\.(?P<table>[a-z][a-z0-9_]*)",
@@ -62,6 +65,34 @@ def _require_two_word_name(value: str, object_kind: str) -> None:
     if not _OBJECT_NAME_PATTERN.fullmatch(value):
         raise ContractValidationError(
             f"{object_kind} name must contain at least two lower-snake words: {value}"
+        )
+
+
+def validate_migration_inventory(migration_paths: Sequence[Path]) -> None:
+    """Require canonical filenames with one contiguous migration ordinal sequence."""
+
+    if not migration_paths:
+        raise ContractValidationError("at least one migration is required")
+    seen_ordinals: set[int] = set()
+    ordinals: list[int] = []
+    for migration_path in migration_paths:
+        match = _MIGRATION_FILENAME_PATTERN.fullmatch(migration_path.name)
+        if match is None:
+            raise ContractValidationError(
+                f"migration filename is not canonical: {migration_path.name}"
+            )
+        ordinal = int(match.group("ordinal"))
+        if ordinal in seen_ordinals:
+            raise ContractValidationError(
+                f"duplicate migration ordinal: {ordinal:04d}"
+            )
+        seen_ordinals.add(ordinal)
+        ordinals.append(ordinal)
+    expected_ordinals = list(range(1, len(ordinals) + 1))
+    if sorted(ordinals) != expected_ordinals:
+        raise ContractValidationError(
+            "migration ordinals must be contiguous from 0001: "
+            f"found {sorted(ordinals)!r}"
         )
 
 
@@ -230,10 +261,7 @@ def validate_repository(repository_root: Path) -> RepositoryReport:
         if not required_path.is_file():
             raise ContractValidationError(f"missing required file: {required_path}")
     migration_paths = tuple(sorted(migration_directory.glob("*.sql")))
-    if not migration_paths:
-        raise ContractValidationError(
-            f"missing required migrations in: {migration_directory}"
-        )
+    validate_migration_inventory(migration_paths)
     migration_text = "\n".join(
         migration_path.read_text(encoding="utf-8")
         for migration_path in migration_paths
