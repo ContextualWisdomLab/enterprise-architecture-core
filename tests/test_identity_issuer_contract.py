@@ -33,4 +33,6 @@ def test_postgresql_acceptance_distinguishes_equal_subjects_by_issuer() -> None:
     assert "https://keyverse.example/issuer-a" in acceptance
     assert "https://keyverse.example/issuer-b" in acceptance
     assert "same_subject" in acceptance
+    assert "set_config" in acceptance
+    assert "app.tenant_record_id" in acceptance
     assert "overlapping issuer-subject link was accepted" in acceptance
