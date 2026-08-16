@@ -44,6 +44,7 @@ CREATE TABLE architecture_core.evidence_record (
 CREATE TABLE architecture_core.identity_link (
     tenant_record_id uuid NOT NULL,
     identity_link_id uuid NOT NULL DEFAULT uuidv7(),
+    issuer_uri text NOT NULL,
     keyverse_subject_id text NOT NULL,
     valid_from timestamptz NOT NULL,
     valid_to timestamptz,
@@ -54,12 +55,18 @@ CREATE TABLE architecture_core.identity_link (
     CONSTRAINT identity_link_tenant_foreign
         FOREIGN KEY (tenant_record_id)
         REFERENCES architecture_core.tenant_record (tenant_record_id),
+    CONSTRAINT identity_link_issuer_nonempty
+        CHECK (length(btrim(issuer_uri)) BETWEEN 1 AND 2048),
+    CONSTRAINT identity_link_issuer_https_uri
+        CHECK (issuer_uri ~ '^https://[^[:space:]?#]+(?:/[^[:space:]?#]*)?$'),
+    CONSTRAINT identity_link_subject_nonempty
+        CHECK (length(btrim(keyverse_subject_id)) > 0),
     CONSTRAINT identity_link_valid_interval
         CHECK (valid_to IS NULL OR valid_to > valid_from),
     CONSTRAINT identity_link_system_interval
         CHECK (superseded_at IS NULL OR superseded_at >= recorded_at),
-    CONSTRAINT identity_link_subject_unique
-        UNIQUE (tenant_record_id, keyverse_subject_id, valid_from)
+    CONSTRAINT identity_link_issuer_subject_unique
+        UNIQUE (tenant_record_id, issuer_uri, keyverse_subject_id, valid_from)
 );
 
 CREATE TABLE architecture_core.object_type (
@@ -69,7 +76,11 @@ CREATE TABLE architecture_core.object_type (
     recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     CONSTRAINT object_type_code_unique UNIQUE (object_type_code),
     CONSTRAINT object_type_code_format
-        CHECK (object_type_code ~ '^[a-z][a-z0-9_]+$'),
+        CHECK (
+            object_type_code ~
+            '^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$'
+            AND length(object_type_code) BETWEEN 2 AND 63
+        ),
     CONSTRAINT object_type_title_nonempty
         CHECK (length(btrim(object_type_title)) > 0)
 );
@@ -94,7 +105,7 @@ CREATE TABLE architecture_core.architecture_object (
     CONSTRAINT architecture_object_uri_format
         CHECK (
             canonical_asset_uri ~
-            '^urn:cwl:[a-z][a-z0-9_]{1,62}:ea_core:[a-z][a-z0-9_]{1,62}:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+            '^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:ea_core:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
         )
 );
 
