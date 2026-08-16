@@ -146,8 +146,8 @@ def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
 def validate_openapi_document(document: Mapping[str, Any]) -> int:
     """Validate the OpenAPI foundation and return its operation count."""
 
-    if document.get("openapi") != "3.1.1":
-        raise ContractValidationError("OpenAPI version must be 3.1.1")
+    if document.get("openapi") != "3.2.0":
+        raise ContractValidationError("OpenAPI version must be 3.2.0")
     paths = _require_mapping(document.get("paths"), "paths")
     operation_ids: set[str] = set()
     for path_name, path_item_value in paths.items():
@@ -193,8 +193,8 @@ def validate_openapi_document(document: Mapping[str, Any]) -> int:
 def validate_asyncapi_document(document: Mapping[str, Any]) -> int:
     """Validate the AsyncAPI foundation and return its operation count."""
 
-    if document.get("asyncapi") != "3.0.0":
-        raise ContractValidationError("AsyncAPI version must be 3.0.0")
+    if document.get("asyncapi") != "3.1.0":
+        raise ContractValidationError("AsyncAPI version must be 3.1.0")
     channels = _require_mapping(document.get("channels"), "channels")
     operations = _require_mapping(document.get("operations"), "operations")
     if not channels or not operations:
