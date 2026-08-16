@@ -14,8 +14,8 @@ def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
 def test_asyncapi_rejects_wrong_version(asyncapi_document) -> None:
     """The event contract uses one explicit AsyncAPI dialect."""
 
-    asyncapi_document["asyncapi"] = "2.6.0"
-    with pytest.raises(ContractValidationError, match="3.0.0"):
+    asyncapi_document["asyncapi"] = "3.0.0"
+    with pytest.raises(ContractValidationError, match="3.1.0"):
         validate_asyncapi_document(asyncapi_document)
 
 
