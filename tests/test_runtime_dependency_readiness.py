@@ -256,6 +256,7 @@ def test_database_probe_fails_closed_for_missing_or_malformed_config() -> None:
         )()
         is False
     )
+    assert build_database_readiness_probe("postgresql://[broken/ea_core")() is False
     assert (
         build_database_readiness_probe(
             "postgresql://ea_runtime:test-pass@127.0.0.1:notaport/ea_core"
