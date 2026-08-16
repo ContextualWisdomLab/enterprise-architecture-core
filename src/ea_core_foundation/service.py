@@ -245,9 +245,11 @@ def _postgres_environment(
     for name, value in query_parameters.items():
         environment[_LIBPQ_QUERY_ENVIRONMENT[name]] = value
 
-    required_environment = ("PGHOST", "PGUSER", "PGPASSWORD", "PGDATABASE")
-    if any(not environment.get(name) for name in required_environment):
-        return None
+    # libpq does not require host or password fields: local Unix sockets,
+    # password files, client certificates, GSSAPI, OAuth, and other supported
+    # authentication paths may intentionally omit them. The probe itself is the
+    # authority check: it only passes after proving the exact database, runtime
+    # role, migrated schema, and denied direct application-table privilege.
     environment.setdefault("PGCONNECT_TIMEOUT", "3")
     return environment
 
