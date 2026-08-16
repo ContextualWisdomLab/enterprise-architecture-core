@@ -72,14 +72,32 @@ jobs:
           persist-credentials: false
       - name: Apply foundation migrations
         env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: ea_app
           PGPASSWORD: ea_test_password
+          PGDATABASE: ea_core
+        run: bash database/scripts/apply_migrations.sh database/migrations
+      - name: Rehearse idempotent upgrade and checksum drift rejection
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: ea_app
+          PGPASSWORD: ea_test_password
+          PGDATABASE: ea_core
         run: |
           set -euo pipefail
-          for migration_path in database/migrations/*.sql; do
-            psql --host 127.0.0.1 --username ea_app --dbname ea_core \
-              --set ON_ERROR_STOP=1 --file "$migration_path"
-          done
-      - name: Verify required tables
+          bash database/scripts/apply_migrations.sh database/migrations
+          drift_directory="$(mktemp -d)"
+          trap 'rm -rf "$drift_directory"' EXIT
+          cp database/migrations/*.sql "$drift_directory/"
+          printf '\n-- checksum drift acceptance probe\n' \
+            >> "$drift_directory/0001_identity_objects.sql"
+          if bash database/scripts/apply_migrations.sh "$drift_directory"; then
+            echo "checksum drift was unexpectedly accepted" >&2
+            exit 1
+          fi
+      - name: Verify required tables and migration ledger
         env:
           PGPASSWORD: ea_test_password
         run: |
@@ -88,7 +106,13 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core';"
           )"
-          test "$table_count" -eq 19
+          test "$table_count" -eq 20
+          ledger_count="$(
+            psql --host 127.0.0.1 --username ea_app --dbname ea_core \
+              --tuples-only --no-align \
+              --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
+          )"
+          test "$ledger_count" -eq 6
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
@@ -110,7 +134,13 @@ jobs:
         env:
           EA_OWNER_PASSWORD: ea_owner_test_password
           EA_RUNTIME_PASSWORD: ea_runtime_test_password
-        run: docker compose up --detach --wait
+        run: |
+          set -euo pipefail
+          if ! docker compose up --detach --wait; then
+            docker compose ps --all
+            docker compose logs --no-color
+            exit 1
+          fi
       - name: Prepare tenant fixtures through owner connection
         env:
           PGPASSWORD: ea_owner_test_password
