@@ -1,9 +1,9 @@
 {
-  "openapi": "3.1.1",
+  "openapi": "3.2.0",
   "info": {
     "title": "Enterprise Architecture Core API",
     "version": "0.1.0",
-    "description": "Authoritative API for capabilities, applications, technologies, interfaces, and temporal relations."
+    "description": "Foundation service contract. Only the implemented liveness endpoint is advertised until typed, idempotent domain commands are available."
   },
   "servers": [{"url": "https://ea-core.example.invalid"}],
   "security": [{"keyverseBearer": []}],
@@ -12,38 +12,38 @@
       "get": {
         "operationId": "getHealth",
         "security": [],
-        "responses": {"200": {"description": "Service process is alive"}}
+        "responses": {
+          "200": {
+            "description": "Service process is alive"
+          }
+        }
       }
-    },
-    "/v1/business-capabilities": {
-      "post": {"operationId": "createBusinessCapability", "responses": {"201": {"description": "Capability created"}}}
-    },
-    "/v1/applications": {
-      "post": {"operationId": "createApplication", "responses": {"201": {"description": "Application created"}}}
-    },
-    "/v1/technology-components": {
-      "post": {"operationId": "createTechnologyComponent", "responses": {"201": {"description": "Technology component created"}}}
-    },
-    "/v1/application-interfaces": {
-      "post": {"operationId": "createApplicationInterface", "responses": {"201": {"description": "Interface created"}}}
-    },
-    "/v1/architecture-relations": {
-      "post": {"operationId": "createArchitectureRelation", "responses": {"201": {"description": "Temporal relation created"}}}
     }
   },
   "components": {
     "securitySchemes": {
-      "keyverseBearer": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
-    },
-    "schemas": {
-      "CanonicalReference": {
-        "type": "string",
-        "pattern": "^urn:cwl:[a-z][a-z0-9_]{1,62}:ea_core:[a-z][a-z0-9_]{1,62}:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      "keyverseBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     }
   },
   "x-keyverse-contract": {
-    "requiredConfiguration": ["EA_OIDC_ISSUER", "EA_OIDC_AUDIENCE", "EA_OIDC_JWKS_URL", "EA_TENANT_CLAIM", "EA_ROLE_CLAIM"],
-    "requiredChecks": ["signature", "issuer", "audience", "expiration", "tenant", "role"]
+    "requiredConfiguration": [
+      "EA_OIDC_ISSUER",
+      "EA_OIDC_AUDIENCE",
+      "EA_OIDC_JWKS_URL",
+      "EA_TENANT_CLAIM",
+      "EA_ROLE_CLAIM"
+    ],
+    "requiredChecks": [
+      "signature",
+      "issuer",
+      "audience",
+      "expiration",
+      "tenant",
+      "role"
+    ]
   }
 }
