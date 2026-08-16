@@ -31,6 +31,11 @@ for migration_path in "${migration_paths[@]}"; do
       "$expected_prefix" "$migration_name" >&2
     exit 1
   fi
+  if [[ "$(head -n 1 "$migration_path")" != "BEGIN;" ]] \
+     || [[ "$(tail -n 1 "$migration_path")" != "COMMIT;" ]]; then
+    printf 'migration must have exact BEGIN/COMMIT wrappers: %s\n' "$migration_name" >&2
+    exit 1
+  fi
 
   migration_sha256="$(sha256sum "$migration_path" | awk '{print $1}')"
   ledger_exists="$(
@@ -58,20 +63,10 @@ SQL
     fi
   fi
 
-  psql --set ON_ERROR_STOP=1 --file "$migration_path"
-
-  ledger_exists="$(
-    psql --tuples-only --no-align --set ON_ERROR_STOP=1 \
-      --command "SELECT to_regclass('architecture_core.schema_migration_record') IS NOT NULL;"
-  )"
-  if [[ "$ledger_exists" != "t" ]]; then
-    printf 'migration did not establish checksum ledger: %s\n' "$migration_name" >&2
-    exit 1
-  fi
-
-  psql --set ON_ERROR_STOP=1 \
-    --set migration_name="$migration_name" \
-    --set migration_sha256="$migration_sha256" <<'SQL'
+  {
+    printf 'BEGIN;\n'
+    sed '1d;$d' "$migration_path"
+    cat <<'SQL'
 INSERT INTO architecture_core.schema_migration_record (
     migration_name,
     migration_sha256
@@ -79,7 +74,24 @@ INSERT INTO architecture_core.schema_migration_record (
     :'migration_name',
     :'migration_sha256'
 );
+COMMIT;
 SQL
+  } | psql --set ON_ERROR_STOP=1 \
+    --set migration_name="$migration_name" \
+    --set migration_sha256="$migration_sha256"
+
+  recorded_sha256="$(
+    psql --tuples-only --no-align --set ON_ERROR_STOP=1 \
+      --set migration_name="$migration_name" <<'SQL'
+SELECT migration_sha256
+  FROM architecture_core.schema_migration_record
+ WHERE migration_name = :'migration_name';
+SQL
+  )"
+  if [[ "$recorded_sha256" != "$migration_sha256" ]]; then
+    printf 'migration ledger verification failed: %s\n' "$migration_name" >&2
+    exit 1
+  fi
 
   printf 'applied migration: %s\n' "$migration_name"
   expected_ordinal=$((expected_ordinal + 1))
