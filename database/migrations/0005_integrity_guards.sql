@@ -110,50 +110,24 @@ ALTER TABLE architecture_core.projection_receipt
         '^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
     );
 
-CREATE FUNCTION architecture_core.validate_architecture_object_identity()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  tenant_code_value text;
-  object_type_code_value text;
-  expected_asset_uri text;
-BEGIN
-  SELECT tenant_code
-    INTO tenant_code_value
-    FROM architecture_core.tenant_record
-   WHERE tenant_record_id = NEW.tenant_record_id;
-  SELECT object_type_code
-    INTO object_type_code_value
-    FROM architecture_core.object_type
-   WHERE object_type_id = NEW.object_type_id;
-  IF tenant_code_value IS NULL OR object_type_code_value IS NULL THEN
-    RETURN NEW;
-  END IF;
-  expected_asset_uri := format(
-      'urn:cwl:%s:ea_core:%s:%s',
-      tenant_code_value,
-      object_type_code_value,
-      NEW.architecture_object_id
-  );
-  IF NEW.canonical_asset_uri <> expected_asset_uri THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'canonical_asset_uri does not match tenant, type, and object id';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER architecture_object_identity_guard
-BEFORE INSERT OR UPDATE OF
-    tenant_record_id,
-    architecture_object_id,
-    object_type_id,
-    canonical_asset_uri
-ON architecture_core.architecture_object
-FOR EACH ROW
-EXECUTE FUNCTION architecture_core.validate_architecture_object_identity();
+CREATE VIEW architecture_core.architecture_object_reference
+WITH (security_invoker = true)
+AS
+SELECT
+    architecture_object.tenant_record_id,
+    architecture_object.architecture_object_id,
+    architecture_object.object_type_id,
+    format(
+        'urn:cwl:%s:ea_core:%s:%s',
+        tenant_record.tenant_code,
+        object_type.object_type_code,
+        architecture_object.architecture_object_id
+    ) AS canonical_asset_uri
+FROM architecture_core.architecture_object AS architecture_object
+JOIN architecture_core.tenant_record AS tenant_record
+  ON tenant_record.tenant_record_id = architecture_object.tenant_record_id
+JOIN architecture_core.object_type AS object_type
+  ON object_type.object_type_id = architecture_object.object_type_id;
 
 CREATE FUNCTION architecture_core.reject_canonical_identity_mutation()
 RETURNS trigger
@@ -187,15 +161,13 @@ CREATE TRIGGER architecture_object_identity_immutable_guard
 BEFORE UPDATE OF
     tenant_record_id,
     architecture_object_id,
-    object_type_id,
-    canonical_asset_uri
+    object_type_id
 ON architecture_core.architecture_object
 FOR EACH ROW
 WHEN (
     OLD.tenant_record_id IS DISTINCT FROM NEW.tenant_record_id
     OR OLD.architecture_object_id IS DISTINCT FROM NEW.architecture_object_id
     OR OLD.object_type_id IS DISTINCT FROM NEW.object_type_id
-    OR OLD.canonical_asset_uri IS DISTINCT FROM NEW.canonical_asset_uri
 )
 EXECUTE FUNCTION architecture_core.reject_canonical_identity_mutation();
 
