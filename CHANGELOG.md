@@ -8,9 +8,10 @@
   `GET /health` and fail-closed dependency-aware `GET /ready` on
   `0.0.0.0:$PORT`.
 - Exact installed Context Graph contract-version readiness and PostgreSQL
-  runtime-role readiness probes; the database probe keeps credentials out of
-  argv and preserves supported libpq TLS, channel-binding, host-selection, and
-  target-session connection semantics while rejecting unknown or ambiguous
+  runtime-role readiness probes; the database probe keeps inline credentials
+  out of argv, preserves supported libpq TLS, channel-binding, host-selection,
+  password-file/passwordless authentication, default Unix-socket, and
+  target-session connection semantics, and rejects unknown or ambiguous query
   parameters.
 - Committed `uv.lock` and CI lock-check so reviewed dependencies cannot drift.
 - Ecosystem connector catalog for Keyverse, context-graph-contracts, Semantic
@@ -27,11 +28,14 @@
 - Provenance integrity requiring `authoritative` and `observed` object revisions
   and architecture relations to reference evidence, plus database rejection of
   evidence URIs whose embedded CWL tenant differs from the owning row tenant.
+- Database-enforced system-time chronology so an outbox event cannot be
+  published before it was recorded and a projection receipt cannot be processed
+  before it was received.
 - Real PostgreSQL acceptance for RLS, tenant isolation, temporal exclusion,
-  typed relations, evidence insert/update tenant integrity, payload shape,
-  projection identity, and outbox rollback.
+  typed relations, evidence insert/update tenant integrity, event chronology,
+  payload shape, projection identity, and outbox rollback.
 - Clean-install, idempotent replay, checksum-drift, failed-migration atomicity,
-  and previous-boundary upgrade rehearsal through migration 0008.
+  and previous-boundary upgrade rehearsal through migration 0009.
 - OpenAPI and AsyncAPI contract baselines.
 - Keyverse OIDC, tenant-isolation, provenance, and append-preserving history
   requirements.
