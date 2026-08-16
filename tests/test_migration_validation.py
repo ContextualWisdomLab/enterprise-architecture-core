@@ -23,10 +23,10 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
         for migration_path in migration_paths
     )
     counts = validate_migration_sql(migration_text)
-    assert counts[0] == 19
-    assert counts[1] == 123
+    assert counts[0] == 20
+    assert counts[1] == 126
     assert counts[2] == 7
-    assert counts[3] == 125
+    assert counts[3] == 127
 
 
 def test_migration_inventory_requires_at_least_one_file() -> None:
@@ -163,6 +163,20 @@ def test_migration_requires_rls_policy_for_every_tenant_table(
         1,
     )
     with pytest.raises(ContractValidationError, match="tenant isolation policy"):
+        validate_migration_sql(weakened)
+
+
+def test_migration_requires_checksum_ledger(repository_root: Path) -> None:
+    """Applied migration identity and content digest must be persisted."""
+
+    migration_text = "\n".join(
+        migration_path.read_text(encoding="utf-8")
+        for migration_path in sorted(
+            (repository_root / "database/migrations").glob("*.sql")
+        )
+    )
+    weakened = migration_text.replace("schema_migration_record", "removed_ledger", 1)
+    with pytest.raises(ContractValidationError, match="checksum ledger"):
         validate_migration_sql(weakened)
 
 
