@@ -105,7 +105,9 @@ def test_asyncapi_requires_at_least_one_message(asyncapi_document) -> None:
         validate_asyncapi_document(asyncapi_document)
 
 
-def test_asyncapi_messages_reuse_shared_context_graph_envelope(asyncapi_document) -> None:
+def test_asyncapi_messages_reuse_shared_context_graph_envelope(
+    asyncapi_document,
+) -> None:
     """EA event payloads extend, rather than redefine, the shared envelope."""
 
     for message_name, message in asyncapi_document["components"]["messages"].items():
