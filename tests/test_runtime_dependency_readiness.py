@@ -31,7 +31,7 @@ def test_context_contract_probe_requires_the_exact_installed_distribution() -> N
 
 
 def test_database_probe_uses_runtime_role_without_exposing_dsn_password() -> None:
-    """The readiness query proves schema presence and keeps application tables denied."""
+    """Prove schema access while the runtime role keeps application tables denied."""
 
     captured: dict[str, Any] = {}
 
