@@ -4,6 +4,12 @@ import pytest
 
 from ea_core_foundation import ContractValidationError, validate_asyncapi_document
 
+_SHARED_ENVELOPE_SCHEMA = (
+    "https://schemas.contextualwisdomlab.org/context/"
+    "cloudevent-envelope.v1.schema.json"
+)
+_SHARED_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
+
 
 def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
     """The checked-in contract defines two publisher operations."""
@@ -96,4 +102,35 @@ def test_asyncapi_requires_at_least_one_message(asyncapi_document) -> None:
 
     asyncapi_document["components"]["messages"] = {}
     with pytest.raises(ContractValidationError, match="requires message schemas"):
+        validate_asyncapi_document(asyncapi_document)
+
+
+def test_asyncapi_messages_reuse_shared_context_graph_envelope(asyncapi_document) -> None:
+    """EA event payloads extend, rather than redefine, the shared envelope."""
+
+    for message_name, message in asyncapi_document["components"]["messages"].items():
+        payload = message["payload"]
+        assert payload["schemaFormat"] == _SHARED_SCHEMA_FORMAT, message_name
+        assert payload["schema"]["allOf"][0] == {"$ref": _SHARED_ENVELOPE_SCHEMA}
+
+    assert asyncapi_document["components"]["messages"]["ArchitectureObjectChanged"][
+        "payload"
+    ]["schema"]["allOf"][1]["properties"]["type"] == {
+        "const": "org.contextualwisdomlab.ea.object.changed.v1"
+    }
+    assert asyncapi_document["components"]["messages"]["LifecycleChanged"]["payload"][
+        "schema"
+    ]["allOf"][1]["properties"]["type"] == {
+        "const": "org.contextualwisdomlab.ea.lifecycle.changed.v1"
+    }
+
+
+def test_asyncapi_rejects_local_duplicate_envelope(asyncapi_document) -> None:
+    """A local envelope copy cannot silently drift from Context Graph Contracts."""
+
+    asyncapi_document["components"]["messages"]["ArchitectureObjectChanged"][
+        "payload"
+    ] = {"type": "object", "properties": {"id": {"type": "string"}}}
+
+    with pytest.raises(ContractValidationError, match="shared Context Graph envelope"):
         validate_asyncapi_document(asyncapi_document)
