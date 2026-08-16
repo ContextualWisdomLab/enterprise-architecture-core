@@ -13,6 +13,7 @@ CREATE TABLE architecture_core.outbox_event (
     published_at timestamptz,
     publish_attempt_count integer NOT NULL DEFAULT 0,
     publish_status_code text NOT NULL DEFAULT 'pending',
+    failure_code text,
     CONSTRAINT outbox_event_primary_key
         PRIMARY KEY (tenant_record_id, outbox_event_id),
     CONSTRAINT outbox_event_tenant_foreign
@@ -36,6 +37,25 @@ CREATE TABLE architecture_core.outbox_event (
                 'publishing',
                 'published',
                 'failed'
+            )
+        ),
+    CONSTRAINT outbox_event_state_consistency
+        CHECK (
+            (
+                publish_status_code IN ('pending', 'publishing')
+                AND published_at IS NULL
+                AND failure_code IS NULL
+            )
+            OR (
+                publish_status_code = 'published'
+                AND published_at IS NOT NULL
+                AND failure_code IS NULL
+            )
+            OR (
+                publish_status_code = 'failed'
+                AND published_at IS NULL
+                AND failure_code IS NOT NULL
+                AND length(btrim(failure_code)) > 0
             )
         )
 );
@@ -68,6 +88,25 @@ CREATE TABLE architecture_core.projection_receipt (
                 'processed',
                 'failed',
                 'rejected'
+            )
+        ),
+    CONSTRAINT projection_receipt_state_consistency
+        CHECK (
+            (
+                processing_status_code IN ('received', 'processing')
+                AND processed_at IS NULL
+                AND failure_code IS NULL
+            )
+            OR (
+                processing_status_code = 'processed'
+                AND processed_at IS NOT NULL
+                AND failure_code IS NULL
+            )
+            OR (
+                processing_status_code IN ('failed', 'rejected')
+                AND processed_at IS NOT NULL
+                AND failure_code IS NOT NULL
+                AND length(btrim(failure_code)) > 0
             )
         )
 );
