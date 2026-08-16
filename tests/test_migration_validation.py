@@ -4,23 +4,59 @@ from pathlib import Path
 
 import pytest
 
-from ea_core_foundation import ContractValidationError, validate_migration_sql
+from ea_core_foundation import (
+    ContractValidationError,
+    validate_migration_inventory,
+    validate_migration_sql,
+)
 
 
 def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> None:
     """The checked-in migration satisfies naming and temporal requirements."""
 
+    migration_paths = tuple(
+        sorted((repository_root / "database/migrations").glob("*.sql"))
+    )
+    validate_migration_inventory(migration_paths)
     migration_text = "\n".join(
         migration_path.read_text(encoding="utf-8")
-        for migration_path in sorted(
-            (repository_root / "database/migrations").glob("*.sql")
-        )
+        for migration_path in migration_paths
     )
     counts = validate_migration_sql(migration_text)
     assert counts[0] == 19
     assert counts[1] == 123
     assert counts[2] == 7
     assert counts[3] == 125
+
+
+def test_migration_inventory_requires_contiguous_unique_ordinals() -> None:
+    """A production migration sequence cannot contain duplicates or gaps."""
+
+    with pytest.raises(ContractValidationError, match="duplicate migration ordinal"):
+        validate_migration_inventory(
+            (
+                Path("0001_identity_objects.sql"),
+                Path("0001_duplicate_identity.sql"),
+            )
+        )
+
+    with pytest.raises(ContractValidationError, match="contiguous"):
+        validate_migration_inventory(
+            (
+                Path("0001_identity_objects.sql"),
+                Path("0003_relations_lifecycle.sql"),
+            )
+        )
+
+
+def test_migration_inventory_rejects_unversioned_or_noncanonical_names() -> None:
+    """Every production SQL file must expose a canonical four-digit ordinal."""
+
+    with pytest.raises(ContractValidationError, match="migration filename"):
+        validate_migration_inventory((Path("identity_objects.sql"),))
+
+    with pytest.raises(ContractValidationError, match="migration filename"):
+        validate_migration_inventory((Path("0001-Bad.sql"),))
 
 
 def test_migration_requires_at_least_one_table() -> None:
