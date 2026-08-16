@@ -16,7 +16,7 @@ def test_repository_report_counts_foundation_artifacts(repository_root: Path) ->
     assert report.table_count == 19
     assert report.column_count == 123
     assert report.index_count == 7
-    assert report.constraint_count == 121
+    assert report.constraint_count == 125
     assert report.openapi_operation_count == 7
     assert report.asyncapi_operation_count == 2
     assert report.adr_count == 10
