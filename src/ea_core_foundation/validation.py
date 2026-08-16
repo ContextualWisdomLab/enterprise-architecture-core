@@ -38,6 +38,11 @@ _GLOBAL_TABLE_NAMES = {
     "relation_type",
     "lifecycle_phase",
 }
+_SHARED_CONTEXT_ENVELOPE_SCHEMA = (
+    "https://schemas.contextualwisdomlab.org/context/"
+    "cloudevent-envelope.v1.schema.json"
+)
+_SHARED_CONTEXT_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
 
 
 class ContractValidationError(ValueError):
@@ -267,6 +272,54 @@ def validate_asyncapi_document(document: Mapping[str, Any]) -> int:
     )
     if not messages:
         raise ContractValidationError("AsyncAPI requires message schemas")
+    expected_messages = {
+        "ArchitectureObjectChanged": {
+            "contentType": "application/cloudevents+json",
+            "payload": {
+                "schemaFormat": _SHARED_CONTEXT_SCHEMA_FORMAT,
+                "schema": {
+                    "allOf": [
+                        {"$ref": _SHARED_CONTEXT_ENVELOPE_SCHEMA},
+                        {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "const": (
+                                        "org.contextualwisdomlab.ea.object.changed.v1"
+                                    )
+                                }
+                            },
+                        },
+                    ]
+                },
+            },
+        },
+        "LifecycleChanged": {
+            "contentType": "application/cloudevents+json",
+            "payload": {
+                "schemaFormat": _SHARED_CONTEXT_SCHEMA_FORMAT,
+                "schema": {
+                    "allOf": [
+                        {"$ref": _SHARED_CONTEXT_ENVELOPE_SCHEMA},
+                        {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "const": (
+                                        "org.contextualwisdomlab.ea.lifecycle.changed.v1"
+                                    )
+                                }
+                            },
+                        },
+                    ]
+                },
+            },
+        },
+    }
+    if messages != expected_messages:
+        raise ContractValidationError(
+            "EA AsyncAPI messages must reuse the shared Context Graph envelope"
+        )
     return len(operations)
 
 
