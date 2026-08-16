@@ -79,7 +79,6 @@ CREATE TABLE architecture_core.architecture_object (
     architecture_object_id uuid NOT NULL DEFAULT uuidv7(),
     object_type_id uuid NOT NULL,
     canonical_asset_uri text NOT NULL,
-    lifecycle_status_code text NOT NULL DEFAULT 'active',
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     CONSTRAINT architecture_object_primary_key
@@ -96,9 +95,7 @@ CREATE TABLE architecture_core.architecture_object (
         CHECK (
             canonical_asset_uri ~
             '^urn:cwl:[a-z][a-z0-9_]{1,62}:ea_core:[a-z][a-z0-9_]{1,62}:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-        ),
-    CONSTRAINT architecture_object_status_format
-        CHECK (lifecycle_status_code ~ '^[a-z][a-z0-9_]+$')
+        )
 );
 
 CREATE TABLE architecture_core.object_revision (
