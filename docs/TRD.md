@@ -4,8 +4,10 @@
 
 The eventual service will use PostgreSQL as its canonical write model, a
 stateless API tier, a transactional outbox publisher, and derived graph/read
-models. This initial foundation intentionally ships contract and schema
-artifacts before a runtime framework is selected.
+models. This release ships the schema, contracts, connector catalog, and a
+stdlib process surface for `GET /health` and `GET /ready`. Domain command
+handlers remain unpublished until Keyverse verification is bound at a
+purpose-bound function boundary.
 
 ## Storage requirements
 

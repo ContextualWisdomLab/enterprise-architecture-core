@@ -6,7 +6,9 @@
 | UUIDv7 identity | RFC 9562 | UUID defaults/checks, canonical reference projection, PostgreSQL acceptance |
 | Canonical JSON contract dialect | JSON Schema Draft 2020-12 | downstream Context Graph dependency boundary; conformance consumption remains gated on its immutable release |
 | Structured service events | CloudEvents 1.0.2 | AsyncAPI, transactional outbox, projection receipt; shared envelope consumption remains gated on Context Graph release |
-| HTTP API description | OpenAPI 3.2.0 | `contracts/openapi.json` health-only implemented surface and repository validator |
+| HTTP API description | OpenAPI 3.2.0 and RFC 9110 | `contracts/openapi.json` health/ready process surface, stdlib server, and repository validator |
+| Information-security management | ISO/IEC 27001:2022 and SOC 2 Trust Services Criteria | purpose-bound access, tenant isolation, evidence, and operability controls |
+| Privacy information management | ISO/IEC 27701:2019 | accountability identifiers remain visible to authorized reviewers; raw personal attributes stay in Keyverse |
 | Message API description | AsyncAPI 3.1.0 | `contracts/asyncapi.json` and repository validator |
 | Provenance references | W3C PROV-O plus Context Graph provenance schema | `evidence_record`, canonical reference/digest constraints, ADR 0007, PostgreSQL hostile-input acceptance |
 | External subject identity | OpenID Connect Core 1.0 (`iss`, `sub`) plus Keyverse boundary | issuer-qualified `identity_link`, validity exclusion, issuer acceptance tests |

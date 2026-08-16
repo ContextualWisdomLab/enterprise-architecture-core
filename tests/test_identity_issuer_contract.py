@@ -20,8 +20,8 @@ def test_identity_link_uses_openid_issuer_subject_pair() -> None:
     assert "identity_link_issuer_subject_validity_exclude" in migrations
     assert (
         "tenant_record_id WITH =,\n"
-        "            issuer_uri WITH =,\n"
-        "            keyverse_subject_id WITH ="
+        "        issuer_uri WITH =,\n"
+        "        keyverse_subject_id WITH ="
     ) in migrations
 
 

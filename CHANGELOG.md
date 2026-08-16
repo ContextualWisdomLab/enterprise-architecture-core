@@ -4,6 +4,11 @@
 
 ### Added
 
+- Installable `enterprise-architecture-core` process with `GET /health` and
+  `GET /ready` on `0.0.0.0:$PORT`.
+- Committed `uv.lock` and CI lock-check so reviewed dependencies cannot drift.
+- Ecosystem connector catalog for Keyverse, context-graph-contracts, Semantic
+  Data Portal, pg-erd-cloud, LineageWeave, naruon, and organization `.github`.
 - Enterprise Architecture Decision Plane product and responsibility baseline.
 - PostgreSQL 3NF schema for capabilities, applications, technologies,
   interfaces, temporal relations, lifecycle, evidence, OIDC identity links, and

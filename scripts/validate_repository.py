@@ -16,7 +16,8 @@ def main() -> int:
         f"{report.index_count} indexes, "
         f"{report.constraint_count} constraints, "
         f"{report.openapi_operation_count} OpenAPI operations, "
-        f"{report.asyncapi_operation_count} AsyncAPI operations, and "
+        f"{report.asyncapi_operation_count} AsyncAPI operations, "
+        f"{report.connector_count} connectors, and "
         f"{report.adr_count} ADRs"
     )
     return 0

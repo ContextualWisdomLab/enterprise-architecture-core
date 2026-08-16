@@ -36,5 +36,9 @@
 - bounded relation traversal;
 - schema and payload size limits;
 - connector egress allowlists;
-- no secrets or raw PII in events;
+- no secrets or raw personal attributes in events;
+- purpose-bound access instead of masking accountability identifiers:
+  Keyverse `iss` plus `sub`, tenant, actor, and purpose remain visible to
+  authorized reviewers because masking those fields would stop audit and
+  command authorization; raw names, emails, and credentials stay in Keyverse;
 - explicit review before inferred/proposed assertions become authoritative.

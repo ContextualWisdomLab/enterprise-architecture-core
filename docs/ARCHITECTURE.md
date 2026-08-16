@@ -41,6 +41,13 @@ Object revisions, relationships, identity links, and lifecycle intervals carry
 real-world validity and system recording intervals. Queries may therefore ask
 both what was valid at a date and what the system knew at a historical cutoff.
 
+## Process surface
+
+The installable process binds `0.0.0.0:$PORT` and implements `GET /health`
+then `GET /ready`. Domain commands stay unpublished until a purpose-bound
+Keyverse boundary exists. Neighbor systems connect through
+`contracts/connectors/ecosystem.json`.
+
 ## Scenario direction
 
 A future target state is represented as an immutable baseline plus ordered

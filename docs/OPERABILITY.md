@@ -2,9 +2,11 @@
 
 ## Initial service objectives
 
-- `/health` reports process liveness only.
-- `/ready` requires database connectivity, applied migrations, and valid
-  contract resources.
+- Start `ea-core` on `0.0.0.0:$PORT`.
+- `/health` reports process liveness only. Next action: call `/ready`.
+- `/ready` requires valid contract resources and a passing database probe.
+  Next action on 503: inspect `contract_ready` and `database_ready`, then
+  repair that dependency.
 - outbox backlog, publish age, failure count, and projection lag are mandatory
   metrics.
 - all commands carry correlation and causation identifiers.

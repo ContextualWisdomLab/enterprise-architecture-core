@@ -3,7 +3,7 @@
   "info": {
     "title": "Enterprise Architecture Core API",
     "version": "0.1.0",
-    "description": "Foundation service contract. Only the implemented liveness endpoint is advertised until typed, idempotent domain commands are available."
+    "description": "Implemented process surface. Call GET /health to confirm the process is up, then GET /ready before sending tenant traffic. Typed domain commands remain a later milestone."
   },
   "servers": [{"url": "https://ea-core.example.invalid"}],
   "security": [{"keyverseBearer": []}],
@@ -12,9 +12,42 @@
       "get": {
         "operationId": "getHealth",
         "security": [],
+        "summary": "Confirm the process is alive",
+        "description": "Use this probe to confirm the OS process is running. Then call GET /ready before routing tenant traffic.",
         "responses": {
           "200": {
-            "description": "Service process is alive"
+            "description": "Process is alive. Next action: call GET /ready.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/HealthStatus"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "getReady",
+        "security": [],
+        "summary": "Confirm contracts and database dependencies",
+        "description": "Use this probe after GET /health. A 503 means keep the instance out of the load-balancer pool until contract and database checks pass.",
+        "responses": {
+          "200": {
+            "description": "Dependencies are ready. Next action: keep the instance in the serving pool.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ReadyStatus"}
+              }
+            }
+          },
+          "503": {
+            "description": "A required dependency is not ready. Next action: inspect contract_ready and database_ready, then repair that dependency.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ReadyStatus"}
+              }
+            }
           }
         }
       }
@@ -26,6 +59,45 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "HealthStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["service_name", "status_code"],
+        "properties": {
+          "service_name": {
+            "type": "string",
+            "const": "enterprise-architecture-core"
+          },
+          "status_code": {
+            "type": "string",
+            "const": "alive"
+          }
+        }
+      },
+      "ReadyStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "service_name",
+          "status_code",
+          "contract_ready",
+          "database_ready"
+        ],
+        "properties": {
+          "service_name": {
+            "type": "string",
+            "const": "enterprise-architecture-core"
+          },
+          "status_code": {
+            "type": "string",
+            "enum": ["ready", "not_ready"]
+          },
+          "contract_ready": {"type": "boolean"},
+          "database_ready": {"type": "boolean"}
+        }
       }
     }
   },

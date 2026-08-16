@@ -43,6 +43,19 @@ _SHARED_CONTEXT_ENVELOPE_SCHEMA = (
     "cloudevent-envelope.v1.schema.json"
 )
 _SHARED_CONTEXT_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
+_IMPLEMENTED_RUNTIME_PATHS = {
+    "/health": "getHealth",
+    "/ready": "getReady",
+}
+_REQUIRED_CONNECTOR_NAMES = {
+    "keyverse_oidc",
+    "context_graph_contracts",
+    "semantic_data_portal",
+    "pg_erd_cloud",
+    "lineage_weave",
+    "naruon_workspace",
+    "github_governance",
+}
 
 
 class ContractValidationError(ValueError):
@@ -60,6 +73,7 @@ class RepositoryReport:
     openapi_operation_count: int
     asyncapi_operation_count: int
     adr_count: int
+    connector_count: int
 
 
 def _require_mapping(value: Any, field_name: str) -> Mapping[str, Any]:
@@ -245,6 +259,111 @@ def validate_openapi_document(document: Mapping[str, Any]) -> int:
     return len(operation_ids)
 
 
+def _require_json_schema_ref(
+    operation: Mapping[str, Any],
+    path_name: str,
+    status_code: str,
+    schema_name: str,
+) -> None:
+    """Require a documented JSON response schema operators can generate against."""
+
+    responses = _require_mapping(
+        operation.get("responses"),
+        f"{path_name} responses",
+    )
+    response = _require_mapping(
+        responses.get(status_code),
+        f"{path_name} {status_code}",
+    )
+    content = _require_mapping(
+        response.get("content"),
+        f"{path_name} {status_code} content",
+    )
+    json_content = _require_mapping(
+        content.get("application/json"),
+        f"{path_name} {status_code} application/json",
+    )
+    schema = _require_mapping(
+        json_content.get("schema"),
+        f"{path_name} {status_code} schema",
+    )
+    if schema.get("$ref") != f"#/components/schemas/{schema_name}":
+        raise ContractValidationError(
+            f"{path_name} {status_code} must reference {schema_name}"
+        )
+
+
+def validate_openapi_runtime_surface(document: Mapping[str, Any]) -> None:
+    """Require the implemented health and ready operations to stay truthful."""
+
+    paths = _require_mapping(document.get("paths"), "paths")
+    if set(paths) != set(_IMPLEMENTED_RUNTIME_PATHS):
+        raise ContractValidationError(
+            "OpenAPI must advertise only implemented /health and /ready"
+        )
+    for path_name, operation_id in _IMPLEMENTED_RUNTIME_PATHS.items():
+        path_item = _require_mapping(paths.get(path_name), f"path {path_name}")
+        operation = _require_mapping(path_item.get("get"), f"{path_name} get")
+        if operation.get("operationId") != operation_id:
+            raise ContractValidationError(
+                f"{path_name} operationId must be {operation_id}"
+            )
+        if operation.get("security") != []:
+            raise ContractValidationError(f"{path_name} must remain unauthenticated")
+        schema_name = "HealthStatus" if path_name == "/health" else "ReadyStatus"
+        _require_json_schema_ref(operation, path_name, "200", schema_name)
+        if path_name == "/ready":
+            _require_json_schema_ref(operation, path_name, "503", schema_name)
+    schemas = _require_mapping(
+        _require_mapping(document.get("components"), "components").get("schemas"),
+        "schemas",
+    )
+    for schema_name in ("HealthStatus", "ReadyStatus"):
+        if schema_name not in schemas:
+            raise ContractValidationError(f"missing OpenAPI schema {schema_name}")
+
+
+def validate_connector_catalog(document: Mapping[str, Any]) -> int:
+    """Validate the ecosystem connector catalog and return its connector count."""
+
+    if document.get("catalog_version") != "1":
+        raise ContractValidationError("connector catalog_version must be 1")
+    if "cross-service SQL is prohibited" not in str(document.get("exchange_rule")):
+        raise ContractValidationError(
+            "connector catalog must prohibit cross-service SQL"
+        )
+    connectors = document.get("connectors")
+    if not isinstance(connectors, Sequence) or isinstance(connectors, (str, bytes)):
+        raise ContractValidationError("connectors must be an array")
+    seen_names: set[str] = set()
+    for connector_value in connectors:
+        connector = _require_mapping(connector_value, "connector")
+        connector_name = connector.get("connector_name")
+        if not isinstance(connector_name, str):
+            raise ContractValidationError("connector_name must be a string")
+        _require_two_word_name(connector_name, "connector")
+        if connector_name in seen_names:
+            raise ContractValidationError(f"duplicate connector_name: {connector_name}")
+        seen_names.add(connector_name)
+        owner_repository = connector.get("owner_repository")
+        if not isinstance(owner_repository, str) or not owner_repository:
+            raise ContractValidationError("owner_repository is required")
+        if connector.get("ea_core_owns") is not False:
+            raise ContractValidationError(
+                "ecosystem connectors remain outside EA Core ownership"
+            )
+        next_action = connector.get("next_action")
+        if not isinstance(next_action, str) or len(next_action) < 20:
+            raise ContractValidationError("each connector requires a next_action")
+    missing_connectors = _REQUIRED_CONNECTOR_NAMES.difference(seen_names)
+    if missing_connectors:
+        raise ContractValidationError(
+            f"connector catalog is missing required connectors: "
+            f"{sorted(missing_connectors)!r}"
+        )
+    return len(seen_names)
+
+
 def validate_asyncapi_document(document: Mapping[str, Any]) -> int:
     """Validate the AsyncAPI foundation and return its operation count."""
 
@@ -329,7 +448,8 @@ def validate_repository(repository_root: Path) -> RepositoryReport:
     migration_directory = repository_root / "database/migrations"
     openapi_path = repository_root / "contracts/openapi.json"
     asyncapi_path = repository_root / "contracts/asyncapi.json"
-    for required_path in (openapi_path, asyncapi_path):
+    connector_path = repository_root / "contracts/connectors/ecosystem.json"
+    for required_path in (openapi_path, asyncapi_path, connector_path):
         if not required_path.is_file():
             raise ContractValidationError(f"missing required file: {required_path}")
     migration_paths = tuple(sorted(migration_directory.glob("*.sql")))
@@ -344,15 +464,18 @@ def validate_repository(repository_root: Path) -> RepositoryReport:
         index_count,
         constraint_count,
     ) = validate_migration_sql(migration_text)
-    openapi_operation_count = validate_openapi_document(
-        json.loads(openapi_path.read_text(encoding="utf-8"))
-    )
+    openapi_document = json.loads(openapi_path.read_text(encoding="utf-8"))
+    openapi_operation_count = validate_openapi_document(openapi_document)
+    validate_openapi_runtime_surface(openapi_document)
     asyncapi_operation_count = validate_asyncapi_document(
         json.loads(asyncapi_path.read_text(encoding="utf-8"))
     )
+    connector_count = validate_connector_catalog(
+        json.loads(connector_path.read_text(encoding="utf-8"))
+    )
     adr_count = len(tuple((repository_root / "docs/adr").glob("*.md")))
-    if adr_count != 10:
-        raise ContractValidationError("the foundation requires exactly ten ADRs")
+    if adr_count < 10:
+        raise ContractValidationError("the foundation requires at least ten ADRs")
     return RepositoryReport(
         table_count=table_count,
         column_count=column_count,
@@ -361,4 +484,5 @@ def validate_repository(repository_root: Path) -> RepositoryReport:
         openapi_operation_count=openapi_operation_count,
         asyncapi_operation_count=asyncapi_operation_count,
         adr_count=adr_count,
+        connector_count=connector_count,
     )

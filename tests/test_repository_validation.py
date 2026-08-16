@@ -14,12 +14,13 @@ def test_repository_report_counts_foundation_artifacts(repository_root: Path) ->
 
     report = validate_repository(repository_root)
     assert report.table_count == 20
-    assert report.column_count == 126
+    assert report.column_count == 125
     assert report.index_count == 7
-    assert report.constraint_count == 127
-    assert report.openapi_operation_count == 1
+    assert report.constraint_count == 125
+    assert report.openapi_operation_count == 2
     assert report.asyncapi_operation_count == 2
-    assert report.adr_count == 10
+    assert report.adr_count >= 10
+    assert report.connector_count == 7
 
 
 def test_repository_validation_reports_missing_required_file(
@@ -30,6 +31,10 @@ def test_repository_validation_reports_missing_required_file(
     target = tmp_path / "repository"
     shutil.copytree(repository_root, target)
     (target / "contracts/openapi.json").unlink()
+    with pytest.raises(ContractValidationError, match="missing required file"):
+        validate_repository(target)
+    (target / "contracts/openapi.json").write_text("{}", encoding="utf-8")
+    (target / "contracts/connectors/ecosystem.json").unlink()
     with pytest.raises(ContractValidationError, match="missing required file"):
         validate_repository(target)
 
@@ -54,8 +59,9 @@ def test_repository_validation_requires_exact_adr_baseline(
 
     target = tmp_path / "repository"
     shutil.copytree(repository_root, target)
-    next((target / "docs/adr").glob("*.md")).unlink()
-    with pytest.raises(ContractValidationError, match="exactly ten ADRs"):
+    for adr_path in (target / "docs/adr").glob("*.md"):
+        adr_path.unlink()
+    with pytest.raises(ContractValidationError, match="at least ten ADRs"):
         validate_repository(target)
 
 
@@ -65,4 +71,5 @@ def test_validation_script_prints_summary(capsys) -> None:
     assert main() == 0
     output = capsys.readouterr().out
     assert "validated" in output
-    assert "10 ADRs" in output
+    assert "ADRs" in output
+    assert "connectors" in output

@@ -25,9 +25,9 @@ evidence producer.
 
 ## Repository status
 
-This initial pull request establishes the reviewed product boundary, 3NF schema,
+This repository establishes the reviewed product boundary, 3NF schema,
 OpenAPI/AsyncAPI contracts, Keyverse OIDC boundary, lifecycle and outbox model,
-security baseline, and ten architecture decisions. The database foundation
+security baseline, and accepted architecture decisions. The database foundation
 also enforces UUIDv7 identity, canonical URI consistency, governed relation
 endpoint types, non-overlapping active intervals, tenant RLS as defense in
 depth, and transactional outbox rollback through executable PostgreSQL
@@ -37,10 +37,24 @@ not authorization evidence. Runtime domain commands and queries remain a
 separate implementation milestone and must bind verified Keyverse claims before
 receiving purpose-bound database authority.
 
+The installable distribution is `enterprise-architecture-core`. Start the
+process, call `GET /health`, then call `GET /ready` before sending traffic.
+
+## Run the process surface
+
+```bash
+uv sync --extra dev --locked
+uv run --extra dev ea-core
+```
+
+The process binds `0.0.0.0:$PORT`. After `GET /health` returns `alive`, call
+`GET /ready`. A 503 means inspect `contract_ready` and `database_ready` and
+repair that dependency before adding the instance to a load balancer.
+
 ## Validation
 
 ```bash
-uv sync --extra dev
+uv sync --extra dev --locked
 uv run --extra dev python -m coverage run -m pytest -q
 uv run --extra dev python -m coverage report
 uv run --extra dev python scripts/validate_repository.py

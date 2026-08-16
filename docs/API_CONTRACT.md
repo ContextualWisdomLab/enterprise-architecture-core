@@ -2,6 +2,10 @@
 
 The initial OpenAPI contract is in `contracts/openapi.json`.
 
+Start the `ea-core` process, call `GET /health`, then call `GET /ready`. Use
+the 503 payload fields to repair the failing dependency before sending tenant
+traffic.
+
 ## Command rules
 
 - Bearer authentication is required except for liveness and readiness.

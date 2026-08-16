@@ -3,9 +3,9 @@ requires = ["hatchling==1.31.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "enterprise-architecture-foundation"
+name = "enterprise-architecture-core"
 version = "0.1.0"
-description = "Validation and conformance utilities for the CWL Enterprise Architecture Core foundation"
+description = "Authoritative enterprise architecture decision plane for ContextualWisdomLab"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
@@ -30,6 +30,9 @@ dev = [
   "pytest==9.1.1",
   "ruff==0.16.0",
 ]
+
+[project.scripts]
+ea-core = "ea_core_foundation.service:main"
 
 [tool.uv]
 required-version = "==0.11.32"

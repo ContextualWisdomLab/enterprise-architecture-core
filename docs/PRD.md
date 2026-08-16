@@ -44,8 +44,11 @@ application is replaced.
 
 ## Acceptance criteria
 
-- Ten architecture decisions are accepted and internally consistent.
+- Accepted architecture decisions are internally consistent.
 - The initial migration passes naming, temporal, outbox, and 3NF review gates.
-- OpenAPI identifies Keyverse verification requirements.
+- OpenAPI identifies Keyverse verification requirements and the implemented
+  health/ready process surface.
 - AsyncAPI publishes object and lifecycle change contracts.
+- The connector catalog names Keyverse, Context Graph, Semantic Data Portal,
+  pg-erd-cloud, LineageWeave, naruon, and organization governance exchanges.
 - Repository validation and all tests pass at 100% statement/branch coverage.

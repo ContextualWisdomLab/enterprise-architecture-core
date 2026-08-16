@@ -11,7 +11,9 @@ stored in this database.
 
 - Tenant isolation is enforced at the API and PostgreSQL layers.
 - Event payloads contain opaque references, not credentials or raw personal
-  information.
+  attributes. Accountability identifiers (`iss`, `sub`, tenant, actor, purpose)
+  stay visible to authorized reviewers; masking them would stop audit and
+  command authorization. Raw names, emails, and credentials stay in Keyverse.
 - Evidence digests prove byte identity but do not establish authorization.
 - Imported and inferred records enter a review queue before authoritative use.
 - Relation traversal must enforce bounded depth and approved relation types.

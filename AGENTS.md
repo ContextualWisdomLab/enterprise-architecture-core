@@ -6,7 +6,10 @@
 - It does not own datasets, columns, data quality, physical database snapshots,
   inferred narrative lineage, credentials, or project execution truth.
 - Services exchange OpenAPI, AsyncAPI/CloudEvents, and canonical references;
-  direct cross-service SQL is prohibited.
+  direct cross-service SQL is prohibited. Neighbor exchanges are listed in
+  `contracts/connectors/ecosystem.json`.
+- The process surface is `GET /health` then `GET /ready` on `0.0.0.0:$PORT`.
+  Domain commands stay unpublished until Keyverse claims are bound.
 
 ## Data model
 
