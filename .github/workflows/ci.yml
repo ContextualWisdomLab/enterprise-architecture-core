@@ -99,6 +99,40 @@ jobs:
               --set ON_ERROR_STOP=1 --file "$acceptance_path"
           done
 
+  compose-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Start documented database profile
+        env:
+          EA_OWNER_PASSWORD: ea_owner_test_password
+          EA_RUNTIME_PASSWORD: ea_runtime_test_password
+        run: docker compose up --detach --wait
+      - name: Prepare tenant fixtures through owner connection
+        env:
+          PGPASSWORD: ea_owner_test_password
+        run: >-
+          psql --host 127.0.0.1 --port 54328 --username ea_owner --dbname ea_core
+          --set ON_ERROR_STOP=1
+          --file database/acceptance/runtime/prepare_runtime_fixture.sql
+      - name: Verify exact application DSN role and row-level security
+        run: |
+          set -euo pipefail
+          runtime_dsn="$(grep '^EA_DATABASE_DSN=' .env.example | cut -d= -f2-)"
+          runtime_dsn="${runtime_dsn/change-me-runtime/ea_runtime_test_password}"
+          psql "$runtime_dsn" \
+            --set ON_ERROR_STOP=1 \
+            --file database/acceptance/runtime/verify_runtime_role.sql
+      - name: Stop documented database profile
+        if: always()
+        env:
+          EA_OWNER_PASSWORD: ea_owner_test_password
+          EA_RUNTIME_PASSWORD: ea_runtime_test_password
+        run: docker compose down --volumes --remove-orphans
+
   package:
     runs-on: ubuntu-latest
     timeout-minutes: 10
