@@ -97,6 +97,49 @@ jobs:
             echo "checksum drift was unexpectedly accepted" >&2
             exit 1
           fi
+      - name: Rehearse upgrade from the previous migration boundary
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: ea_app
+          PGPASSWORD: ea_test_password
+        run: |
+          set -euo pipefail
+          probe_database="ea_core_upgrade_probe"
+          prior_directory="$(mktemp -d)"
+          cleanup() {
+            rm -rf "$prior_directory"
+            psql --dbname postgres --set ON_ERROR_STOP=1 \
+              --command "DROP DATABASE IF EXISTS ${probe_database};"
+          }
+          trap cleanup EXIT
+          psql --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE DATABASE ${probe_database};"
+          cp database/migrations/000{1..7}_*.sql "$prior_directory/"
+          PGDATABASE="$probe_database" \
+            bash database/scripts/apply_migrations.sh "$prior_directory"
+          prior_ledger_count="$(
+            PGDATABASE="$probe_database" psql --tuples-only --no-align \
+              --set ON_ERROR_STOP=1 \
+              --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
+          )"
+          test "$prior_ledger_count" -eq 7
+          PGDATABASE="$probe_database" \
+            bash database/scripts/apply_migrations.sh database/migrations
+          upgraded_ledger_count="$(
+            PGDATABASE="$probe_database" psql --tuples-only --no-align \
+              --set ON_ERROR_STOP=1 \
+              --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
+          )"
+          test "$upgraded_ledger_count" -eq 8
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname IN ('object_revision_evidence_required', 'architecture_relation_evidence_required') ORDER BY conname;" \
+            | grep --fixed-strings 'architecture_relation_evidence_required'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname IN ('object_revision_evidence_required', 'architecture_relation_evidence_required') ORDER BY conname;" \
+            | grep --fixed-strings 'object_revision_evidence_required'
       - name: Prove failed migration rolls back schema and ledger atomically
         env:
           PGHOST: 127.0.0.1
@@ -149,7 +192,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$ledger_count" -eq 7
+          test "$ledger_count" -eq 8
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
