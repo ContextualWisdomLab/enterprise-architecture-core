@@ -16,6 +16,9 @@
   target-session connection semantics, and rejects unknown or ambiguous query
   parameters.
 - Committed `uv.lock` and CI lock-check so reviewed dependencies cannot drift.
+- Exact-head SPDX 3.0.1 SBOM and SHA-256 wheel/sdist evidence on pull requests
+  and protected-main builds, plus protected-main SLSA build-provenance and SBOM
+  attestations using immutably pinned GitHub/Anchore actions.
 - Ecosystem connector catalog for Keyverse, context-graph-contracts, Semantic
   Data Portal, pg-erd-cloud, LineageWeave, naruon, and organization `.github`.
 - Enterprise Architecture Decision Plane product and responsibility baseline.
@@ -43,3 +46,6 @@
   requirements.
 - Accepted ADR and doctoring baseline with executable standard-to-test
   traceability.
+- Foundation threat model distinguishing currently enforced runtime/database
+  controls from graph, connector, domain-command, model-backed, and UI controls
+  that must fail closed before those future surfaces ship.
