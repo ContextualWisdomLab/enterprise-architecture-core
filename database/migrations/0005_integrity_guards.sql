@@ -4,7 +4,10 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 ALTER TABLE architecture_core.tenant_record
     ADD CONSTRAINT tenant_record_code_format
-    CHECK (tenant_code ~ '^[a-z][a-z0-9_]{1,62}$'),
+    CHECK (
+        tenant_code ~ '^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$'
+        AND length(tenant_code) BETWEEN 2 AND 63
+    ),
     ADD CONSTRAINT tenant_record_uuid_version
     CHECK (uuid_extract_version(tenant_record_id) = 7);
 
@@ -15,9 +18,10 @@ ALTER TABLE architecture_core.evidence_record
 ALTER TABLE architecture_core.identity_link
     ADD CONSTRAINT identity_link_uuid_version
     CHECK (uuid_extract_version(identity_link_id) = 7),
-    ADD CONSTRAINT identity_link_active_interval_exclusion
+    ADD CONSTRAINT identity_link_issuer_subject_validity_exclude
     EXCLUDE USING gist (
         tenant_record_id WITH =,
+        issuer_uri WITH =,
         keyverse_subject_id WITH =,
         tstzrange(valid_from, valid_to, '[)') WITH &&
     ) WHERE (superseded_at IS NULL);
@@ -98,7 +102,7 @@ ALTER TABLE architecture_core.projection_receipt
     ADD CONSTRAINT projection_receipt_source_format
     CHECK (
         event_source_uri ~
-        '^urn:cwl:[a-z][a-z0-9_]{1,62}:[a-z][a-z0-9_]{1,62}$'
+        '^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}$)[a-z][a-z0-9]+(?:_[a-z0-9]+)*$'
     ),
     ADD CONSTRAINT projection_receipt_identifier_format
     CHECK (
