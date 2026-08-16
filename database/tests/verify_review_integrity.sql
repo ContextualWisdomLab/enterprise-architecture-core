@@ -28,6 +28,49 @@ BEGIN
 END;
 $$;
 
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.architecture_object
+       SET object_type_id = '0195d145-64e8-7f4f-8a23-a0cc784cb802',
+           canonical_asset_uri =
+             'urn:cwl:tenant_001:ea_core:application_record:' ||
+             '0195d145-64e8-7f4f-8a23-a0cc784cb901'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND architecture_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb901';
+    RAISE EXCEPTION 'referenced object type unexpectedly changed';
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+  END;
+END;
+$$;
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.tenant_record
+       SET tenant_code = 'tenant_renamed'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711';
+    RAISE EXCEPTION 'referenced tenant code unexpectedly changed';
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+  END;
+END;
+$$;
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.object_type
+       SET object_type_code = 'capability_renamed'
+     WHERE object_type_id = '0195d145-64e8-7f4f-8a23-a0cc784cb801';
+    RAISE EXCEPTION 'referenced object type code unexpectedly changed';
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+  END;
+END;
+$$;
+
 INSERT INTO architecture_core.object_revision (
     tenant_record_id,
     object_revision_id,
