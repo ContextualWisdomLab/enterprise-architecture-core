@@ -87,6 +87,59 @@ def test_database_probe_preserves_supported_libpq_query_semantics() -> None:
     assert "test-pass" not in " ".join(captured["args"])
 
 
+def test_database_probe_preserves_multi_host_order_and_ports() -> None:
+    """PostgreSQL URI failover topology must reach libpq without being collapsed."""
+
+    captured: dict[str, Any] = {}
+
+    def runner(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        captured.update(kwargs)
+        return CompletedProcess(args, 0, stdout="t\n", stderr="")
+
+    dsn = (
+        "postgresql://ea_runtime:test-pass@"
+        "db-a.example:5432,db-b.example:5433/ea_core"
+        "?target_session_attrs=read-write"
+    )
+    probe = build_database_readiness_probe(
+        dsn,
+        runner=runner,
+        base_environment={},
+    )
+
+    assert probe() is True
+    assert captured["env"]["PGHOST"] == "db-a.example,db-b.example"
+    assert captured["env"]["PGPORT"] == "5432,5433"
+    assert captured["env"]["PGTARGETSESSIONATTRS"] == "read-write"
+
+
+def test_database_probe_decodes_unix_socket_host_without_password_leak() -> None:
+    """A percent-encoded absolute socket directory remains a socket connection."""
+
+    captured: dict[str, Any] = {}
+
+    def runner(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        captured["args"] = args
+        captured.update(kwargs)
+        return CompletedProcess(args, 0, stdout="t\n", stderr="")
+
+    dsn = (
+        "postgresql://ea_runtime:test-pass@"
+        "%2Fvar%2Frun%2Fpostgresql/ea_core"
+    )
+    probe = build_database_readiness_probe(
+        dsn,
+        runner=runner,
+        base_environment={},
+    )
+
+    assert probe() is True
+    assert captured["env"]["PGHOST"] == "/var/run/postgresql"
+    assert captured["env"]["PGUSER"] == "ea_runtime"
+    assert captured["env"]["PGPASSWORD"] == "test-pass"
+    assert "test-pass" not in " ".join(captured["args"])
+
+
 def test_database_probe_rejects_unpreserved_connection_parameters() -> None:
     """Unknown connection semantics fail closed instead of silently changing policy."""
 
