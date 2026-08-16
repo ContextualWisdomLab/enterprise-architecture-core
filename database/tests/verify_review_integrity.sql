@@ -32,10 +32,7 @@ DO $$
 BEGIN
   BEGIN
     UPDATE architecture_core.architecture_object
-       SET object_type_id = '0195d145-64e8-7f4f-8a23-a0cc784cb802',
-           canonical_asset_uri =
-             'urn:cwl:tenant_001:ea_core:application_record:' ||
-             '0195d145-64e8-7f4f-8a23-a0cc784cb901'
+       SET object_type_id = '0195d145-64e8-7f4f-8a23-a0cc784cb802'
      WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
        AND architecture_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb901';
     RAISE EXCEPTION 'referenced object type unexpectedly changed';
