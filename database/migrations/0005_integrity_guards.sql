@@ -151,6 +151,50 @@ ON architecture_core.architecture_object
 FOR EACH ROW
 EXECUTE FUNCTION architecture_core.validate_architecture_object_identity();
 
+CREATE FUNCTION architecture_core.reject_canonical_identity_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION USING
+    ERRCODE = '23514',
+    MESSAGE = format(
+        'canonical identity field on %s is immutable after creation',
+        TG_TABLE_NAME
+    );
+END;
+$$;
+
+CREATE TRIGGER tenant_record_identity_immutable_guard
+BEFORE UPDATE OF tenant_code
+ON architecture_core.tenant_record
+FOR EACH ROW
+WHEN (OLD.tenant_code IS DISTINCT FROM NEW.tenant_code)
+EXECUTE FUNCTION architecture_core.reject_canonical_identity_mutation();
+
+CREATE TRIGGER object_type_identity_immutable_guard
+BEFORE UPDATE OF object_type_code
+ON architecture_core.object_type
+FOR EACH ROW
+WHEN (OLD.object_type_code IS DISTINCT FROM NEW.object_type_code)
+EXECUTE FUNCTION architecture_core.reject_canonical_identity_mutation();
+
+CREATE TRIGGER architecture_object_identity_immutable_guard
+BEFORE UPDATE OF
+    tenant_record_id,
+    architecture_object_id,
+    object_type_id,
+    canonical_asset_uri
+ON architecture_core.architecture_object
+FOR EACH ROW
+WHEN (
+    OLD.tenant_record_id IS DISTINCT FROM NEW.tenant_record_id
+    OR OLD.architecture_object_id IS DISTINCT FROM NEW.architecture_object_id
+    OR OLD.object_type_id IS DISTINCT FROM NEW.object_type_id
+    OR OLD.canonical_asset_uri IS DISTINCT FROM NEW.canonical_asset_uri
+)
+EXECUTE FUNCTION architecture_core.reject_canonical_identity_mutation();
+
 CREATE FUNCTION architecture_core.validate_architecture_relation_types()
 RETURNS trigger
 LANGUAGE plpgsql
