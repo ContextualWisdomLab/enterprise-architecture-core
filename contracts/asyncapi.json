@@ -1,0 +1,65 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Enterprise Architecture Core Events",
+    "version": "0.1.0"
+  },
+  "channels": {
+    "architectureObjectEvents": {
+      "address": "org.contextualwisdomlab.ea.object.changed.v1",
+      "messages": {"ArchitectureObjectChanged": {"$ref": "#/components/messages/ArchitectureObjectChanged"}}
+    },
+    "lifecycleEvents": {
+      "address": "org.contextualwisdomlab.ea.lifecycle.changed.v1",
+      "messages": {"LifecycleChanged": {"$ref": "#/components/messages/LifecycleChanged"}}
+    }
+  },
+  "operations": {
+    "publishObjectChanged": {
+      "action": "send",
+      "channel": {"$ref": "#/channels/architectureObjectEvents"},
+      "messages": [{"$ref": "#/channels/architectureObjectEvents/messages/ArchitectureObjectChanged"}]
+    },
+    "publishLifecycleChanged": {
+      "action": "send",
+      "channel": {"$ref": "#/channels/lifecycleEvents"},
+      "messages": [{"$ref": "#/channels/lifecycleEvents/messages/LifecycleChanged"}]
+    }
+  },
+  "components": {
+    "messages": {
+      "ArchitectureObjectChanged": {
+        "payload": {
+          "type": "object",
+          "required": ["specversion", "id", "source", "type", "subject", "time", "datacontenttype", "data"],
+          "properties": {
+            "specversion": {"const": "1.0"},
+            "id": {"type": "string", "format": "uuid"},
+            "source": {"type": "string"},
+            "type": {"const": "org.contextualwisdomlab.ea.object.changed.v1"},
+            "subject": {"type": "string"},
+            "time": {"type": "string", "format": "date-time"},
+            "datacontenttype": {"const": "application/json"},
+            "data": {"type": "object"}
+          }
+        }
+      },
+      "LifecycleChanged": {
+        "payload": {
+          "type": "object",
+          "required": ["specversion", "id", "source", "type", "subject", "time", "datacontenttype", "data"],
+          "properties": {
+            "specversion": {"const": "1.0"},
+            "id": {"type": "string", "format": "uuid"},
+            "source": {"type": "string"},
+            "type": {"const": "org.contextualwisdomlab.ea.lifecycle.changed.v1"},
+            "subject": {"type": "string"},
+            "time": {"type": "string", "format": "date-time"},
+            "datacontenttype": {"const": "application/json"},
+            "data": {"type": "object"}
+          }
+        }
+      }
+    }
+  }
+}

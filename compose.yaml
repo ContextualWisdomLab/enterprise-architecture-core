@@ -1,0 +1,19 @@
+services:
+  architecture_database:
+    image: postgres:18.4
+    environment:
+      POSTGRES_DB: ea_core
+      POSTGRES_USER: ea_app
+      POSTGRES_PASSWORD: ${EA_POSTGRES_PASSWORD:?EA_POSTGRES_PASSWORD is required}
+    ports:
+      - "127.0.0.1:54328:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ea_app -d ea_core"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - architecture_database_data:/var/lib/postgresql/data
+
+volumes:
+  architecture_database_data:
