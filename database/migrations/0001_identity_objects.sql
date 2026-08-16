@@ -98,7 +98,6 @@ CREATE TABLE architecture_core.architecture_object (
     tenant_record_id uuid NOT NULL,
     architecture_object_id uuid NOT NULL DEFAULT uuidv7(),
     object_type_id uuid NOT NULL,
-    canonical_asset_uri text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     CONSTRAINT architecture_object_primary_key
@@ -108,14 +107,7 @@ CREATE TABLE architecture_core.architecture_object (
         REFERENCES architecture_core.tenant_record (tenant_record_id),
     CONSTRAINT architecture_object_type_foreign
         FOREIGN KEY (object_type_id)
-        REFERENCES architecture_core.object_type (object_type_id),
-    CONSTRAINT architecture_object_uri_unique
-        UNIQUE (tenant_record_id, canonical_asset_uri),
-    CONSTRAINT architecture_object_uri_format
-        CHECK (
-            canonical_asset_uri ~
-            '^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:ea_core:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-        )
+        REFERENCES architecture_core.object_type (object_type_id)
 );
 
 CREATE TABLE architecture_core.object_revision (
