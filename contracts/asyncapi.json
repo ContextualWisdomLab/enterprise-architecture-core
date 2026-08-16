@@ -1,5 +1,5 @@
 {
-  "asyncapi": "3.0.0",
+  "asyncapi": "3.1.0",
   "info": {
     "title": "Enterprise Architecture Core Events",
     "version": "0.1.0"
@@ -34,10 +34,10 @@
           "required": ["specversion", "id", "source", "type", "subject", "time", "datacontenttype", "data"],
           "properties": {
             "specversion": {"const": "1.0"},
-            "id": {"type": "string", "format": "uuid"},
-            "source": {"type": "string"},
+            "id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+            "source": {"type": "string", "pattern": "^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}$)[a-z][a-z0-9]+(?:_[a-z0-9]+)*$"},
             "type": {"const": "org.contextualwisdomlab.ea.object.changed.v1"},
-            "subject": {"type": "string"},
+            "subject": {"type": "string", "pattern": "^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
             "time": {"type": "string", "format": "date-time"},
             "datacontenttype": {"const": "application/json"},
             "data": {"type": "object"}
@@ -50,10 +50,10 @@
           "required": ["specversion", "id", "source", "type", "subject", "time", "datacontenttype", "data"],
           "properties": {
             "specversion": {"const": "1.0"},
-            "id": {"type": "string", "format": "uuid"},
-            "source": {"type": "string"},
+            "id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+            "source": {"type": "string", "pattern": "^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}$)[a-z][a-z0-9]+(?:_[a-z0-9]+)*$"},
             "type": {"const": "org.contextualwisdomlab.ea.lifecycle.changed.v1"},
-            "subject": {"type": "string"},
+            "subject": {"type": "string", "pattern": "^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
             "time": {"type": "string", "format": "date-time"},
             "datacontenttype": {"const": "application/json"},
             "data": {"type": "object"}
@@ -61,5 +61,15 @@
         }
       }
     }
+  },
+  "x-context-graph-contract": {
+    "state": "provisional-pr-head",
+    "repository": "ContextualWisdomLab/context-graph-contracts",
+    "schemaIds": [
+      "https://schemas.contextualwisdomlab.org/context/canonical-authority-uri.v1.schema.json",
+      "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json",
+      "https://schemas.contextualwisdomlab.org/context/cloudevent-envelope.v1.schema.json"
+    ],
+    "requiredBeforeMerge": "immutable released dependency"
   }
 }
