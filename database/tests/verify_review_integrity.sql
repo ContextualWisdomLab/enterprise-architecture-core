@@ -98,7 +98,8 @@ BEGIN
         revision_number,
         object_title,
         valid_from,
-        truth_status_code
+        truth_status_code,
+        evidence_record_id
     ) VALUES (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cba13',
@@ -106,7 +107,8 @@ BEGIN
         3,
         'Second Authoritative Overlap',
         '2026-06-15T00:00:00Z',
-        'authoritative'
+        'authoritative',
+        '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
     );
     RAISE EXCEPTION 'second authoritative revision unexpectedly succeeded';
   EXCEPTION
@@ -145,7 +147,8 @@ BEGIN
         source_object_id,
         target_object_id,
         valid_from,
-        truth_status_code
+        truth_status_code,
+        evidence_record_id
     ) VALUES (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cbb13',
@@ -153,7 +156,8 @@ BEGIN
         '0195d145-64e8-7f4f-8a23-a0cc784cb902',
         '0195d145-64e8-7f4f-8a23-a0cc784cb901',
         '2026-06-15T00:00:00Z',
-        'authoritative'
+        'authoritative',
+        '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
     );
     RAISE EXCEPTION 'second authoritative relation unexpectedly succeeded';
   EXCEPTION
