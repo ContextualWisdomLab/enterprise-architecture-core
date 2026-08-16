@@ -36,6 +36,10 @@ BEGIN
 END;
 $$;
 
+-- An application connection can set arbitrary custom GUC text, so that value
+-- must never confer table authority by itself. Domain access will be exposed
+-- only through purpose-bound command/query functions after Keyverse claims are
+-- verified and bound by the service boundary.
 SELECT set_config(
     'app.tenant_record_id',
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
@@ -43,32 +47,15 @@ SELECT set_config(
 );
 
 DO $$
-DECLARE
-  visible_tenant_count integer;
 BEGIN
-  SELECT count(*)
-    INTO visible_tenant_count
-    FROM architecture_core.tenant_record;
-
-  IF visible_tenant_count <> 1 THEN
-    RAISE EXCEPTION
-      'runtime row-level security exposed % tenant rows',
-      visible_tenant_count;
-  END IF;
+  BEGIN
+    PERFORM count(*) FROM architecture_core.tenant_record;
+    RAISE EXCEPTION 'runtime direct table read unexpectedly succeeded';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+  END;
 END;
 $$;
-
-INSERT INTO architecture_core.evidence_record (
-    tenant_record_id,
-    evidence_record_id,
-    evidence_uri,
-    sha256_digest
-) VALUES (
-    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-    '0195d145-64e8-7f4f-8a23-a0cc784cbe01',
-    'urn:cwl:evidence:runtime_allowed',
-    repeat('a', 64)
-);
 
 DO $$
 BEGIN
@@ -79,12 +66,12 @@ BEGIN
         evidence_uri,
         sha256_digest
     ) VALUES (
-        '0195d145-64e8-7f4f-8a23-a0cc784cb712',
-        '0195d145-64e8-7f4f-8a23-a0cc784cbe02',
-        'urn:cwl:evidence:runtime_denied',
-        repeat('b', 64)
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0195d145-64e8-7f4f-8a23-a0cc784cbe01',
+        'urn:cwl:evidence:runtime_must_be_denied',
+        repeat('a', 64)
     );
-    RAISE EXCEPTION 'cross-tenant runtime insert unexpectedly succeeded';
+    RAISE EXCEPTION 'runtime direct table write unexpectedly succeeded';
   EXCEPTION
     WHEN insufficient_privilege THEN NULL;
   END;
