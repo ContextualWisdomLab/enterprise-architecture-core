@@ -64,6 +64,17 @@ the proposal. Identity links and lifecycle intervals remain non-overlapping
 while active, because those tables do not expose the truth-status vocabulary.
 Superseded system-time history remains queryable rather than being hard-deleted.
 
+`authoritative` and `observed` object revisions and architecture relations must
+reference an `evidence_record`; `inferred`, `proposed`, `superseded`, and
+`rejected` remain evidence-optional because the shared Context Assertion
+contract does not require provenance for those truth origins. The composite
+foreign keys keep an evidence row inside the same relational tenant, and the
+`evidence_record_tenant_guard` additionally requires the tenant segment inside
+`evidence_uri` to equal the row's `tenant_record.tenant_code`. Evidence from a
+different CWL authority remains valid when it names the same tenant. This keeps
+cross-product provenance usable without allowing a syntactically valid
+foreign-tenant URI to masquerade as local evidence.
+
 ## Assessment
 
 Framework, dimension, scale, cycle, and object assessment are normalized so a
@@ -84,5 +95,6 @@ foundation PR.
 - `outbox_event` provides atomic publication and object-shaped JSON payloads.
 - `projection_receipt` makes inbound event replay idempotent and validates the
   authority URI plus UUIDv7 event identity.
-- `evidence_record` stores opaque evidence references and byte digests.
+- `evidence_record` stores opaque, tenant-consistent evidence references and
+  byte digests.
 - `identity_link` stores Keyverse subject links, not credentials.
