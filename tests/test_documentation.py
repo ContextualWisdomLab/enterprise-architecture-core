@@ -16,6 +16,7 @@ _REQUIRED_DOCUMENTS = (
     "docs/TEST_STRATEGY.md",
     "docs/OPERABILITY.md",
     "docs/SECURITY.md",
+    "docs/THREAT_MODEL.md",
     "docs/doctoring/REFERENCES.md",
     "docs/doctoring/STANDARD_TRACEABILITY.md",
     "docs/doctoring/PRODUCT_CAPABILITY_CROSSWALK.md",
