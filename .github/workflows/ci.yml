@@ -97,16 +97,22 @@ jobs:
             echo "checksum drift was unexpectedly accepted" >&2
             exit 1
           fi
-      - name: Verify required tables and migration ledger
+      - name: Verify required tables, views, and migration ledger
         env:
           PGPASSWORD: ea_test_password
         run: |
           table_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
               --tuples-only --no-align \
-              --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core';"
+              --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core' AND table_type = 'BASE TABLE';"
           )"
           test "$table_count" -eq 20
+          reference_view_count="$(
+            psql --host 127.0.0.1 --username ea_app --dbname ea_core \
+              --tuples-only --no-align \
+              --command "SELECT count(*) FROM information_schema.views WHERE table_schema = 'architecture_core' AND table_name = 'architecture_object_reference';"
+          )"
+          test "$reference_view_count" -eq 1
           ledger_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
               --tuples-only --no-align \
