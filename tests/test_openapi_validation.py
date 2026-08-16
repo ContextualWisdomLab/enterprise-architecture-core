@@ -8,16 +8,16 @@ from ea_core_foundation import ContractValidationError, validate_openapi_documen
 
 
 def test_checked_in_openapi_contract_is_valid(openapi_document) -> None:
-    """The checked-in OpenAPI document exposes the intended operations."""
+    """The checked-in OpenAPI document exposes only implemented operations."""
 
-    assert validate_openapi_document(openapi_document) == 7
+    assert validate_openapi_document(openapi_document) == 1
 
 
 def test_openapi_rejects_wrong_version(openapi_document) -> None:
     """The contract uses one explicit OpenAPI dialect."""
 
-    openapi_document["openapi"] = "3.0.3"
-    with pytest.raises(ContractValidationError, match="3.1.1"):
+    openapi_document["openapi"] = "3.1.1"
+    with pytest.raises(ContractValidationError, match="3.2.0"):
         validate_openapi_document(openapi_document)
 
 
