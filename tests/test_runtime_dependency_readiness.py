@@ -57,6 +57,68 @@ def test_database_probe_uses_runtime_role_without_exposing_dsn_password() -> Non
     assert "has_table_privilege" in command
 
 
+def test_database_probe_preserves_supported_libpq_query_semantics() -> None:
+    """TLS and target-host policy in the application DSN reach libpq unchanged."""
+
+    captured: dict[str, Any] = {}
+
+    def runner(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        captured["args"] = args
+        captured.update(kwargs)
+        return CompletedProcess(args, 0, stdout="t\n", stderr="")
+
+    dsn = (
+        f"{_VALID_DSN}?sslmode=verify-full"
+        "&sslrootcert=%2Frun%2Fsecrets%2Froot.crt"
+        "&target_session_attrs=read-write"
+        "&channel_binding=require"
+    )
+    probe = build_database_readiness_probe(
+        dsn,
+        runner=runner,
+        base_environment={},
+    )
+
+    assert probe() is True
+    assert captured["env"]["PGSSLMODE"] == "verify-full"
+    assert captured["env"]["PGSSLROOTCERT"] == "/run/secrets/root.crt"
+    assert captured["env"]["PGTARGETSESSIONATTRS"] == "read-write"
+    assert captured["env"]["PGCHANNELBINDING"] == "require"
+    assert "test-pass" not in " ".join(captured["args"])
+
+
+def test_database_probe_rejects_unpreserved_connection_parameters() -> None:
+    """Unknown connection semantics fail closed instead of silently changing policy."""
+
+    called = False
+
+    def runner(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        nonlocal called
+        del kwargs
+        called = True
+        return CompletedProcess(args, 0, stdout="t\n", stderr="")
+
+    probe = build_database_readiness_probe(
+        f"{_VALID_DSN}?sslmode=verify-full&future_security_mode=strict",
+        runner=runner,
+        base_environment={},
+    )
+
+    assert probe() is False
+    assert called is False
+
+
+def test_database_probe_rejects_ambiguous_duplicate_connection_parameters() -> None:
+    """Duplicate connection controls cannot rely on parser-specific precedence."""
+
+    probe = build_database_readiness_probe(
+        f"{_VALID_DSN}?sslmode=require&sslmode=verify-full",
+        base_environment={},
+    )
+
+    assert probe() is False
+
+
 def test_database_probe_fails_closed_for_missing_or_malformed_config() -> None:
     """Missing or malformed database configuration cannot enter the serving pool."""
 
