@@ -19,6 +19,7 @@ services:
       - ./database/init/002_apply_foundation_migrations.sh:/docker-entrypoint-initdb.d/002_apply_foundation_migrations.sh:ro
       - ./database/init/003_grant_runtime_access.sql:/docker-entrypoint-initdb.d/003_grant_runtime_access.sql:ro
       - ./database/migrations:/opt/ea-core/migrations:ro
+      - ./database/scripts:/opt/ea-core/scripts:ro
 
 volumes:
   architecture_database_data:
