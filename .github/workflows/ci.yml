@@ -97,6 +97,37 @@ jobs:
             echo "checksum drift was unexpectedly accepted" >&2
             exit 1
           fi
+      - name: Prove failed migration rolls back schema and ledger atomically
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: ea_app
+          PGPASSWORD: ea_test_password
+        run: |
+          set -euo pipefail
+          probe_database="ea_core_atomicity_probe"
+          probe_directory="$(mktemp -d)"
+          cleanup() {
+            rm -rf "$probe_directory"
+            psql --dbname postgres --set ON_ERROR_STOP=1 \
+              --command "DROP DATABASE IF EXISTS ${probe_database};"
+          }
+          trap cleanup EXIT
+          psql --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE DATABASE ${probe_database};"
+          cp database/migrations/0001_identity_objects.sql "$probe_directory/"
+          sed -i '$i SELECT 1 / 0;' "$probe_directory/0001_identity_objects.sql"
+          if PGDATABASE="$probe_database" \
+             bash database/scripts/apply_migrations.sh "$probe_directory"; then
+            echo "failing migration unexpectedly committed" >&2
+            exit 1
+          fi
+          schema_absent="$(
+            PGDATABASE="$probe_database" psql --tuples-only --no-align \
+              --set ON_ERROR_STOP=1 \
+              --command "SELECT to_regnamespace('architecture_core') IS NULL;"
+          )"
+          test "$schema_absent" = "t"
       - name: Verify required tables, views, and migration ledger
         env:
           PGPASSWORD: ea_test_password
