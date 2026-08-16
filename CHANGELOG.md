@@ -4,8 +4,14 @@
 
 ### Added
 
-- Installable `enterprise-architecture-core` process with `GET /health` and
-  `GET /ready` on `0.0.0.0:$PORT`.
+- Installable `enterprise-architecture-core` process with process-only
+  `GET /health` and fail-closed dependency-aware `GET /ready` on
+  `0.0.0.0:$PORT`.
+- Exact installed Context Graph contract-version readiness and PostgreSQL
+  runtime-role readiness probes; the database probe keeps credentials out of
+  argv and preserves supported libpq TLS, channel-binding, host-selection, and
+  target-session connection semantics while rejecting unknown or ambiguous
+  parameters.
 - Committed `uv.lock` and CI lock-check so reviewed dependencies cannot drift.
 - Ecosystem connector catalog for Keyverse, context-graph-contracts, Semantic
   Data Portal, pg-erd-cloud, LineageWeave, naruon, and organization `.github`.
@@ -18,9 +24,16 @@
 - Database-enforced UUIDv7 identity and canonical asset URI consistency.
 - Governed relation endpoint types and non-overlapping active intervals for
   identity links, object revisions, architecture relations, and lifecycle.
+- Provenance integrity requiring `authoritative` and `observed` object revisions
+  and architecture relations to reference evidence, plus database rejection of
+  evidence URIs whose embedded CWL tenant differs from the owning row tenant.
 - Real PostgreSQL acceptance for RLS, tenant isolation, temporal exclusion,
-  typed relations, payload shape, projection identity, and outbox rollback.
+  typed relations, evidence insert/update tenant integrity, payload shape,
+  projection identity, and outbox rollback.
+- Clean-install, idempotent replay, checksum-drift, failed-migration atomicity,
+  and previous-boundary upgrade rehearsal through migration 0008.
 - OpenAPI and AsyncAPI contract baselines.
 - Keyverse OIDC, tenant-isolation, provenance, and append-preserving history
   requirements.
-- Ten accepted ADRs, doctoring references, test strategy, and operability plan.
+- Accepted ADR and doctoring baseline with executable standard-to-test
+  traceability.
