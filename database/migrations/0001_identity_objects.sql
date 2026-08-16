@@ -44,8 +44,16 @@ CREATE TABLE architecture_core.evidence_record (
         REFERENCES architecture_core.tenant_record (tenant_record_id),
     CONSTRAINT evidence_record_digest_format
         CHECK (sha256_digest ~ '^[0-9a-f]{64}$'),
-    CONSTRAINT evidence_record_uri_nonempty
-        CHECK (length(btrim(evidence_uri)) > 0),
+    CONSTRAINT evidence_record_uri_format
+        CHECK (
+            evidence_uri ~
+            '^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+        ),
+    CONSTRAINT evidence_record_source_locator_length
+        CHECK (
+            source_locator IS NULL
+            OR length(source_locator) BETWEEN 1 AND 2048
+        ),
     CONSTRAINT evidence_record_identity_unique
         UNIQUE (tenant_record_id, evidence_uri, sha256_digest)
 );
