@@ -21,11 +21,19 @@ args = sys.argv[1:]
 state_path = Path(os.environ[\"FAKE_PSQL_STATE\"])
 log_path = Path(os.environ[\"FAKE_PSQL_LOG\"])
 command = next(
-    (args[index + 1] for index, value in enumerate(args[:-1]) if value == \"--command\"),
+    (
+        args[index + 1]
+        for index, value in enumerate(args[:-1])
+        if value == \"--command\"
+    ),
     None,
 )
 file_path = next(
-    (args[index + 1] for index, value in enumerate(args[:-1]) if value == \"--file\"),
+    (
+        args[index + 1]
+        for index, value in enumerate(args[:-1])
+        if value == \"--file\"
+    ),
     None,
 )
 
@@ -51,7 +59,8 @@ if body:
             (
                 args[index + 1]
                 for index, value in enumerate(args[:-1])
-                if value == \"--set\" and args[index + 1].startswith(\"migration_sha256=\")
+                if value == \"--set\"
+                and args[index + 1].startswith(\"migration_sha256=\")
             ),
             \"migration_sha256=unknown\",
         ).split(\"=\", 1)[1]
