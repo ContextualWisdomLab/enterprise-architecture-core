@@ -342,12 +342,14 @@ $$;
 INSERT INTO architecture_core.identity_link (
     tenant_record_id,
     identity_link_id,
+    issuer_uri,
     keyverse_subject_id,
     valid_from,
     valid_to
 ) VALUES (
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
     '0195d145-64e8-7f4f-8a23-a0cc784cbc01',
+    'https://keyverse.example/issuer-a',
     'keyverse_subject_001',
     '2026-01-01T00:00:00Z',
     '2026-07-01T00:00:00Z'
@@ -359,11 +361,13 @@ BEGIN
     INSERT INTO architecture_core.identity_link (
         tenant_record_id,
         identity_link_id,
+        issuer_uri,
         keyverse_subject_id,
         valid_from
     ) VALUES (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cbc02',
+        'https://keyverse.example/issuer-a',
         'keyverse_subject_001',
         '2026-06-01T00:00:00Z'
     );
