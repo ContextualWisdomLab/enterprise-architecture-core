@@ -165,7 +165,7 @@ def probe_context_contract(
 
     try:
         installed_version = version_reader(CONTEXT_CONTRACT_DISTRIBUTION)
-    except PackageNotFoundError:
+    except Exception:
         return False
     return installed_version == SUPPORTED_CONTEXT_CONTRACT_VERSION
 
