@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 
 def _write_fake_psql(fake_path: Path) -> None:
@@ -14,8 +14,8 @@ def _write_fake_psql(fake_path: Path) -> None:
         """#!/usr/bin/env python3
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 args = sys.argv[1:]
 state_path = Path(os.environ[\"FAKE_PSQL_STATE\"])
@@ -28,17 +28,13 @@ file_path = next(
     (args[index + 1] for index, value in enumerate(args[:-1]) if value == \"--file\"),
     None,
 )
-stdin_text = sys.stdin.read()
 
 if command and \"to_regclass('architecture_core.schema_migration_record')\" in command:
     print(\"t\" if state_path.exists() else \"f\")
     raise SystemExit(0)
 
-body = stdin_text
-mode = \"stdin\"
-if file_path is not None:
-    body = Path(file_path).read_text(encoding=\"utf-8\")
-    mode = \"file\"
+body = Path(file_path).read_text(encoding=\"utf-8\") if file_path else sys.stdin.read()
+mode = \"file\" if file_path else \"stdin\"
 
 if \"SELECT migration_sha256\" in body:
     if state_path.exists():
