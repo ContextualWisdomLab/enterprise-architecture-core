@@ -98,3 +98,11 @@ foundation PR.
 - `evidence_record` stores opaque, tenant-consistent evidence references and
   byte digests.
 - `identity_link` stores Keyverse subject links, not credentials.
+
+Operational event timestamps preserve system-time causality at the database
+boundary: an outbox event cannot be marked published before its `recorded_at`,
+and an inbound projection cannot be marked processed before its `received_at`.
+The status/timestamp consistency checks remain orthogonal, so pending/processing
+rows still have no terminal timestamp while published/processed rows require
+one. These invariants are exercised on clean installation and on the migration
+upgrade path.
