@@ -29,6 +29,13 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
     assert counts[3] == 125
 
 
+def test_migration_inventory_requires_at_least_one_file() -> None:
+    """An empty migration directory cannot be treated as a valid sequence."""
+
+    with pytest.raises(ContractValidationError, match="at least one migration"):
+        validate_migration_inventory(())
+
+
 def test_migration_inventory_requires_contiguous_unique_ordinals() -> None:
     """A production migration sequence cannot contain duplicates or gaps."""
 
