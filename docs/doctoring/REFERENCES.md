@@ -28,6 +28,10 @@ OpenLineage Project. (2026). *OpenLineage specification*. Linux Foundation. http
 
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Constraints*. https://www.postgresql.org/docs/18/ddl-constraints.html
 
+PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Database connection control functions*. https://www.postgresql.org/docs/18/libpq-connect.html
+
+PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Environment variables*. https://www.postgresql.org/docs/18/libpq-envars.html
+
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Row security policies*. https://www.postgresql.org/docs/18/ddl-rowsecurity.html
 
 World Wide Web Consortium. (2024, December 12). *Web Content Accessibility Guidelines (WCAG) 2.2*. https://www.w3.org/TR/WCAG22/
