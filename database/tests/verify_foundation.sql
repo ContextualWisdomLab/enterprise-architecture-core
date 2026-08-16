@@ -77,27 +77,42 @@ INSERT INTO architecture_core.tenant_record (
 INSERT INTO architecture_core.architecture_object (
     tenant_record_id,
     architecture_object_id,
-    object_type_id,
-    canonical_asset_uri
+    object_type_id
 ) VALUES
     (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cb901',
-        '0195d145-64e8-7f4f-8a23-a0cc784cb801',
-        'urn:cwl:tenant_001:ea_core:business_capability:0195d145-64e8-7f4f-8a23-a0cc784cb901'
+        '0195d145-64e8-7f4f-8a23-a0cc784cb801'
     ),
     (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cb902',
-        '0195d145-64e8-7f4f-8a23-a0cc784cb802',
-        'urn:cwl:tenant_001:ea_core:application_record:0195d145-64e8-7f4f-8a23-a0cc784cb902'
+        '0195d145-64e8-7f4f-8a23-a0cc784cb802'
     ),
     (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cb903',
-        '0195d145-64e8-7f4f-8a23-a0cc784cb803',
-        'urn:cwl:tenant_001:ea_core:technology_component:0195d145-64e8-7f4f-8a23-a0cc784cb903'
+        '0195d145-64e8-7f4f-8a23-a0cc784cb803'
     );
+
+DO $$
+DECLARE
+  projected_asset_uri text;
+BEGIN
+  SELECT canonical_asset_uri
+    INTO projected_asset_uri
+    FROM architecture_core.architecture_object_reference
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND architecture_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
+
+  IF projected_asset_uri IS DISTINCT FROM
+      'urn:cwl:tenant_001:ea_core:application_record:0195d145-64e8-7f4f-8a23-a0cc784cb902' THEN
+    RAISE EXCEPTION
+      'canonical asset projection mismatch: %',
+      projected_asset_uri;
+  END IF;
+END;
+$$;
 
 INSERT INTO architecture_core.business_capability (
     tenant_record_id,
@@ -163,13 +178,11 @@ BEGIN
     INSERT INTO architecture_core.architecture_object (
         tenant_record_id,
         architecture_object_id,
-        object_type_id,
-        canonical_asset_uri
+        object_type_id
     ) VALUES (
         '0195d145-64e8-7f4f-8a23-a0cc784cb712',
         '0195d145-64e8-7f4f-8a23-a0cc784cb904',
-        '0195d145-64e8-7f4f-8a23-a0cc784cb802',
-        'urn:cwl:tenant_002:ea_core:application_record:0195d145-64e8-7f4f-8a23-a0cc784cb904'
+        '0195d145-64e8-7f4f-8a23-a0cc784cb802'
     );
     RAISE EXCEPTION 'cross-tenant insert unexpectedly succeeded';
   EXCEPTION
@@ -193,27 +206,6 @@ BEGIN
         repeat('a', 64)
     );
     RAISE EXCEPTION 'non-UUIDv7 identifier unexpectedly succeeded';
-  EXCEPTION
-    WHEN check_violation THEN NULL;
-  END;
-END;
-$$;
-
-DO $$
-BEGIN
-  BEGIN
-    INSERT INTO architecture_core.architecture_object (
-        tenant_record_id,
-        architecture_object_id,
-        object_type_id,
-        canonical_asset_uri
-    ) VALUES (
-        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-        '0195d145-64e8-7f4f-8a23-a0cc784cb905',
-        '0195d145-64e8-7f4f-8a23-a0cc784cb802',
-        'urn:cwl:tenant_002:ea_core:technology_component:0195d145-64e8-7f4f-8a23-a0cc784cb905'
-    );
-    RAISE EXCEPTION 'canonical URI mismatch unexpectedly succeeded';
   EXCEPTION
     WHEN check_violation THEN NULL;
   END;
