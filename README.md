@@ -29,9 +29,13 @@ This initial pull request establishes the reviewed product boundary, 3NF schema,
 OpenAPI/AsyncAPI contracts, Keyverse OIDC boundary, lifecycle and outbox model,
 security baseline, and ten architecture decisions. The database foundation
 also enforces UUIDv7 identity, canonical URI consistency, governed relation
-endpoint types, non-overlapping active intervals, tenant RLS, and transactional
-outbox rollback through an executable PostgreSQL acceptance script. Runtime
-CRUD services are a separate implementation milestone.
+endpoint types, non-overlapping active intervals, tenant RLS as defense in
+depth, and transactional outbox rollback through executable PostgreSQL
+acceptance. The documented `ea_runtime` login intentionally has no direct
+application-table privilege because caller-set PostgreSQL custom settings are
+not authorization evidence. Runtime domain commands and queries remain a
+separate implementation milestone and must bind verified Keyverse claims before
+receiving purpose-bound database authority.
 
 ## Validation
 
