@@ -20,6 +20,12 @@
 - least-privilege database roles;
 - tenant-scoped API enforcement, composite tenant foreign keys, and forced
   PostgreSQL row-level-security policies;
+- UUIDv7 checks on owned identities and exact canonical URI binding to tenant,
+  object type, and object ID;
+- non-overlapping active intervals for Keyverse links, object revisions,
+  architecture relations, and lifecycle phases;
+- relation endpoint type validation before a fact becomes authoritative;
+- object-shaped outbox payloads and validated projection source/event identity;
 - exact issuer/audience/JWKS validation;
 - immutable or append-preserving audit evidence;
 - bounded relation traversal;

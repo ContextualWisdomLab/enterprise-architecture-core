@@ -27,8 +27,11 @@ evidence producer.
 
 This initial pull request establishes the reviewed product boundary, 3NF schema,
 OpenAPI/AsyncAPI contracts, Keyverse OIDC boundary, lifecycle and outbox model,
-security baseline, and ten architecture decisions. Runtime CRUD services are a
-separate implementation milestone.
+security baseline, and ten architecture decisions. The database foundation
+also enforces UUIDv7 identity, canonical URI consistency, governed relation
+endpoint types, non-overlapping active intervals, tenant RLS, and transactional
+outbox rollback through an executable PostgreSQL acceptance script. Runtime
+CRUD services are a separate implementation milestone.
 
 ## Validation
 

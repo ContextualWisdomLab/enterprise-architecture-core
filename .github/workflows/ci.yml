@@ -38,7 +38,7 @@ jobs:
           python -m compileall -q src scripts
       - run: >-
           uv run --frozen --extra dev --python "${{ matrix.python-version }}"
-          python -m ruff check .
+          python -m ruff check . --output-format=github
       - run: >-
           uv run --frozen --extra dev --python "${{ matrix.python-version }}"
           python -m coverage run -m pytest -q
@@ -54,7 +54,7 @@ jobs:
     timeout-minutes: 10
     services:
       postgres:
-        image: postgres:18.4
+        image: postgres:18.4@sha256:3a82e1f56c8f0f5616a11103ac3d47e632c3938698946a7ad26da0df1334744a
         env:
           POSTGRES_DB: ea_core
           POSTGRES_USER: ea_app
@@ -89,6 +89,12 @@ jobs:
               --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core';"
           )"
           test "$table_count" -eq 19
+      - name: Exercise tenant, temporal, identity, and outbox invariants
+        env:
+          PGPASSWORD: ea_test_password
+        run: >-
+          psql --host 127.0.0.1 --username ea_app --dbname ea_core
+          --set ON_ERROR_STOP=1 --file database/tests/verify_foundation.sql
 
   package:
     runs-on: ubuntu-latest
