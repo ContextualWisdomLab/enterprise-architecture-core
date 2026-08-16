@@ -17,4 +17,6 @@
 | Concurrent interval integrity | PostgreSQL 18 exclusion constraints | migration 0005 and PostgreSQL overlap acceptance |
 | Tenant data isolation | PostgreSQL 18 row-level security | forced policies and non-superuser runtime acceptance; documented as defense-in-depth, not caller-authentication |
 | Database readiness connection policy | PostgreSQL 18 libpq connection parameters and environment variables | DSN-to-libpq translation preserves supported TLS, channel-binding, host-selection and session-target parameters; unknown or duplicate parameters fail closed; password remains outside argv |
+| Exact-head package SBOM | SPDX 3.0.1; Anchore Syft 1.51.0 | `supply-chain.yml` builds reviewed wheel/sdist, requests `spdx-json@3.0`, validates SPDX 3.0.1 JSON-LD creation/package semantics, computes SHA-256 checksums, and uploads exact-head evidence |
+| Protected-main package provenance | SLSA 1.2; GitHub artifact-attestation guidance | protected-main-only attestation job downloads exact-head package evidence and uses immutably pinned `actions/attest` to create SLSA build-provenance and SPDX SBOM attestations; PR heads never inherit that signed provenance claim |
 | Accessible future decision surfaces | WCAG 2.2 | UI is not shipped by this foundation; future graph/matrix/timeline work requires accessible exact-value alternatives |
