@@ -43,7 +43,6 @@ CREATE TABLE architecture_core.application_record (
     architecture_object_id uuid NOT NULL,
     application_code text NOT NULL,
     application_category_code text NOT NULL,
-    business_criticality_code text NOT NULL DEFAULT 'not_assessed',
     CONSTRAINT application_record_primary_key
         PRIMARY KEY (tenant_record_id, architecture_object_id),
     CONSTRAINT application_record_object_foreign
@@ -54,8 +53,6 @@ CREATE TABLE architecture_core.application_record (
         CHECK (length(btrim(application_code)) > 0),
     CONSTRAINT application_record_category_format
         CHECK (application_category_code ~ '^[a-z][a-z0-9_]+$'),
-    CONSTRAINT application_record_criticality_format
-        CHECK (business_criticality_code ~ '^[a-z][a-z0-9_]+$'),
     CONSTRAINT application_record_code_unique
         UNIQUE (tenant_record_id, application_code)
 );
