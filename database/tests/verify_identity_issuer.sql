@@ -1,5 +1,11 @@
 \set ON_ERROR_STOP on
 
+SELECT set_config(
+    'app.tenant_record_id',
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    false
+);
+
 INSERT INTO architecture_core.identity_link (
     tenant_record_id,
     issuer_uri,
@@ -56,3 +62,5 @@ BEGIN
     END;
 END;
 $$;
+
+RESET app.tenant_record_id;
