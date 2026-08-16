@@ -165,6 +165,8 @@ def probe_context_contract(
 
     try:
         installed_version = version_reader(CONTEXT_CONTRACT_DISTRIBUTION)
+    except PackageNotFoundError:
+        return False
     except Exception:
         return False
     return installed_version == SUPPORTED_CONTEXT_CONTRACT_VERSION
@@ -377,7 +379,7 @@ class FoundationServiceHandler(BaseHTTPRequestHandler):
         self._dispatch("POST")
 
     def _dispatch(self, method: str) -> None:
-        """Route one request to the matching documented response."""
+        """Route one request to the matching documented response or rejection."""
 
         verb, route = classify_request(method, self.path)
         if verb == "OTHER":
