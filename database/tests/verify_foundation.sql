@@ -212,6 +212,20 @@ BEGIN
 END;
 $$;
 
+INSERT INTO architecture_core.evidence_record (
+    tenant_record_id,
+    evidence_record_id,
+    evidence_uri,
+    sha256_digest,
+    source_locator
+) VALUES (
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    '0195d145-64e8-7f4f-8a23-a0cc784cbf10',
+    'urn:cwl:tenant_001:semantic_data_portal:data_asset:0195d145-64e8-7f4f-8a23-a0cc784cb910',
+    repeat('a', 64),
+    'catalog:evidence-001'
+);
+
 DO $$
 BEGIN
   BEGIN
@@ -222,7 +236,8 @@ BEGIN
         source_object_id,
         target_object_id,
         valid_from,
-        truth_status_code
+        truth_status_code,
+        evidence_record_id
     ) VALUES (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cbb01',
@@ -230,7 +245,8 @@ BEGIN
         '0195d145-64e8-7f4f-8a23-a0cc784cb903',
         '0195d145-64e8-7f4f-8a23-a0cc784cb901',
         '2026-01-01T00:00:00Z',
-        'authoritative'
+        'authoritative',
+        '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
     );
     RAISE EXCEPTION 'relation endpoint type mismatch unexpectedly succeeded';
   EXCEPTION
@@ -247,7 +263,8 @@ INSERT INTO architecture_core.architecture_relation (
     target_object_id,
     valid_from,
     valid_to,
-    truth_status_code
+    truth_status_code,
+    evidence_record_id
 ) VALUES (
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
     '0195d145-64e8-7f4f-8a23-a0cc784cbb02',
@@ -256,7 +273,8 @@ INSERT INTO architecture_core.architecture_relation (
     '0195d145-64e8-7f4f-8a23-a0cc784cb901',
     '2026-01-01T00:00:00Z',
     '2026-07-01T00:00:00Z',
-    'authoritative'
+    'authoritative',
+    '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
 );
 
 DO $$
@@ -269,7 +287,8 @@ BEGIN
         source_object_id,
         target_object_id,
         valid_from,
-        truth_status_code
+        truth_status_code,
+        evidence_record_id
     ) VALUES (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cbb03',
@@ -277,7 +296,8 @@ BEGIN
         '0195d145-64e8-7f4f-8a23-a0cc784cb902',
         '0195d145-64e8-7f4f-8a23-a0cc784cb901',
         '2026-06-01T00:00:00Z',
-        'authoritative'
+        'authoritative',
+        '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
     );
     RAISE EXCEPTION 'overlapping relation unexpectedly succeeded';
   EXCEPTION
@@ -294,7 +314,8 @@ INSERT INTO architecture_core.object_revision (
     object_title,
     valid_from,
     valid_to,
-    truth_status_code
+    truth_status_code,
+    evidence_record_id
 ) VALUES (
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
     '0195d145-64e8-7f4f-8a23-a0cc784cba01',
@@ -303,7 +324,8 @@ INSERT INTO architecture_core.object_revision (
     'Legacy Order Platform',
     '2026-01-01T00:00:00Z',
     '2026-07-01T00:00:00Z',
-    'authoritative'
+    'authoritative',
+    '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
 );
 
 DO $$
@@ -316,7 +338,8 @@ BEGIN
         revision_number,
         object_title,
         valid_from,
-        truth_status_code
+        truth_status_code,
+        evidence_record_id
     ) VALUES (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0195d145-64e8-7f4f-8a23-a0cc784cba02',
@@ -324,7 +347,8 @@ BEGIN
         2,
         'Overlapping Revision',
         '2026-06-01T00:00:00Z',
-        'authoritative'
+        'authoritative',
+        '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
     );
     RAISE EXCEPTION 'overlapping object revision unexpectedly succeeded';
   EXCEPTION
