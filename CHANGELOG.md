@@ -8,8 +8,10 @@
   `GET /health` and fail-closed dependency-aware `GET /ready` on
   `0.0.0.0:$PORT`.
 - Exact installed Context Graph contract-version readiness and PostgreSQL
-  runtime-role readiness probes; the database probe keeps inline credentials
-  out of argv, preserves supported libpq TLS, channel-binding, host-selection,
+  runtime-role readiness probes; package-metadata discovery exceptions now fail
+  closed on the contract dimension instead of terminating the process surface,
+  while the database probe keeps inline credentials out of argv, preserves
+  supported libpq TLS, channel-binding, host-selection,
   password-file/passwordless authentication, default Unix-socket, and
   target-session connection semantics, and rejects unknown or ambiguous query
   parameters.
