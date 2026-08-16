@@ -113,6 +113,26 @@ def test_database_probe_preserves_multi_host_order_and_ports() -> None:
     assert captured["env"]["PGTARGETSESSIONATTRS"] == "read-write"
 
 
+def test_database_probe_preserves_empty_multi_host_slot() -> None:
+    """An empty failover host item retains libpq's documented default-host slot."""
+
+    captured: dict[str, Any] = {}
+
+    def runner(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        captured.update(kwargs)
+        return CompletedProcess(args, 0, stdout="t\n", stderr="")
+
+    probe = build_database_readiness_probe(
+        "postgresql://ea_runtime:test-pass@db-a.example:5432,:5433/ea_core",
+        runner=runner,
+        base_environment={},
+    )
+
+    assert probe() is True
+    assert captured["env"]["PGHOST"] == "db-a.example,"
+    assert captured["env"]["PGPORT"] == "5432,5433"
+
+
 def test_database_probe_decodes_unix_socket_host_without_password_leak() -> None:
     """A percent-encoded absolute socket directory remains a socket connection."""
 
@@ -138,6 +158,59 @@ def test_database_probe_decodes_unix_socket_host_without_password_leak() -> None
     assert captured["env"]["PGUSER"] == "ea_runtime"
     assert captured["env"]["PGPASSWORD"] == "test-pass"
     assert "test-pass" not in " ".join(captured["args"])
+
+
+def test_database_probe_preserves_query_socket_connection_form() -> None:
+    """Named URI parameters can select a Unix socket without an authority host."""
+
+    captured: dict[str, Any] = {}
+
+    def runner(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        captured.update(kwargs)
+        return CompletedProcess(args, 0, stdout="t\n", stderr="")
+
+    dsn = (
+        "postgresql:///ea_core?host=%2Fvar%2Frun%2Fpostgresql"
+        "&user=ea_runtime&password=test-pass"
+    )
+    probe = build_database_readiness_probe(
+        dsn,
+        runner=runner,
+        base_environment={},
+    )
+
+    assert probe() is True
+    assert captured["env"]["PGHOST"] == "/var/run/postgresql"
+    assert captured["env"]["PGUSER"] == "ea_runtime"
+    assert captured["env"]["PGPASSWORD"] == "test-pass"
+    assert captured["env"]["PGDATABASE"] == "ea_core"
+
+
+def test_database_probe_preserves_named_database_and_identity_parameters() -> None:
+    """Named URI parameters remain available when the hierarchical fields are absent."""
+
+    captured: dict[str, Any] = {}
+
+    def runner(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        captured.update(kwargs)
+        return CompletedProcess(args, 0, stdout="t\n", stderr="")
+
+    dsn = (
+        "postgresql://db.example"
+        "?dbname=ea_core&user=ea_runtime&password=test-pass&port=5432"
+    )
+    probe = build_database_readiness_probe(
+        dsn,
+        runner=runner,
+        base_environment={},
+    )
+
+    assert probe() is True
+    assert captured["env"]["PGHOST"] == "db.example"
+    assert captured["env"]["PGPORT"] == "5432"
+    assert captured["env"]["PGUSER"] == "ea_runtime"
+    assert captured["env"]["PGPASSWORD"] == "test-pass"
+    assert captured["env"]["PGDATABASE"] == "ea_core"
 
 
 def test_database_probe_rejects_unpreserved_connection_parameters() -> None:
