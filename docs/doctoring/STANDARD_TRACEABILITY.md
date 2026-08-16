@@ -2,11 +2,16 @@
 
 | Decision | Basis | Repository evidence |
 |---|---|---|
-| Architecture-description terminology | ISO/IEC/IEEE 42010:2022 | PRD, architecture, ADR 0001 |
-| UUIDv7 identity | RFC 9562 | defaults, database checks, and canonical-reference schema |
-| Structured service events | CloudEvents 1.0.2 | AsyncAPI, outbox, and projection receipt |
-| Provenance references | W3C PROV-O | evidence model and ADR 0007 |
-| Data-lineage interoperability | OpenLineage | external projection boundary; not yet implemented |
-| Bitemporal facts | Product audit requirement | revision, relation, lifecycle, and identity intervals |
-| Concurrent interval integrity | PostgreSQL range and exclusion constraints | migration 0005 and PostgreSQL acceptance |
-| Tenant data isolation | PostgreSQL row-level security | forced policies and non-superuser acceptance |
+| Architecture-description terminology and viewpoints | ISO/IEC/IEEE 42010:2022 | PRD, architecture, ADR 0001 |
+| UUIDv7 identity | RFC 9562 | UUID defaults/checks, canonical reference projection, PostgreSQL acceptance |
+| Canonical JSON contract dialect | JSON Schema Draft 2020-12 | downstream Context Graph dependency boundary; conformance consumption remains gated on its immutable release |
+| Structured service events | CloudEvents 1.0.2 | AsyncAPI, transactional outbox, projection receipt; shared envelope consumption remains gated on Context Graph release |
+| HTTP API description | OpenAPI 3.2.0 | `contracts/openapi.json` health-only implemented surface and repository validator |
+| Message API description | AsyncAPI 3.1.0 | `contracts/asyncapi.json` and repository validator |
+| Provenance references | W3C PROV-O plus Context Graph provenance schema | `evidence_record`, canonical reference/digest constraints, ADR 0007, PostgreSQL hostile-input acceptance |
+| External subject identity | OpenID Connect Core 1.0 (`iss`, `sub`) plus Keyverse boundary | issuer-qualified `identity_link`, validity exclusion, issuer acceptance tests |
+| Data-lineage interoperability | OpenLineage | external projection boundary; ingestion is planned and explicitly not shipped by this foundation |
+| Bitemporal facts | Product audit requirement plus PostgreSQL temporal/range semantics | revision, relation, lifecycle, and identity valid/system intervals |
+| Concurrent interval integrity | PostgreSQL 18 exclusion constraints | migration 0005 and PostgreSQL overlap acceptance |
+| Tenant data isolation | PostgreSQL 18 row-level security | forced policies and non-superuser runtime acceptance; documented as defense-in-depth, not caller-authentication |
+| Accessible future decision surfaces | WCAG 2.2 | UI is not shipped by this foundation; future graph/matrix/timeline work requires accessible exact-value alternatives |
