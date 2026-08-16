@@ -150,6 +150,24 @@ FOR EACH ROW
 WHEN (OLD.tenant_code IS DISTINCT FROM NEW.tenant_code)
 EXECUTE FUNCTION architecture_core.reject_canonical_identity_mutation();
 
+CREATE TRIGGER identity_link_key_immutable_guard
+BEFORE UPDATE OF
+    tenant_record_id,
+    identity_link_id,
+    issuer_uri,
+    keyverse_subject_id,
+    valid_from
+ON architecture_core.identity_link
+FOR EACH ROW
+WHEN (
+    OLD.tenant_record_id IS DISTINCT FROM NEW.tenant_record_id
+    OR OLD.identity_link_id IS DISTINCT FROM NEW.identity_link_id
+    OR OLD.issuer_uri IS DISTINCT FROM NEW.issuer_uri
+    OR OLD.keyverse_subject_id IS DISTINCT FROM NEW.keyverse_subject_id
+    OR OLD.valid_from IS DISTINCT FROM NEW.valid_from
+)
+EXECUTE FUNCTION architecture_core.reject_canonical_identity_mutation();
+
 CREATE TRIGGER object_type_identity_immutable_guard
 BEFORE UPDATE OF object_type_code
 ON architecture_core.object_type
