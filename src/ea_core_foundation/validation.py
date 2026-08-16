@@ -32,6 +32,12 @@ _COLUMN_PATTERN = re.compile(
     r"(?:uuid|text|integer|boolean|timestamptz|date|numeric|jsonb)\b",
     re.MULTILINE,
 )
+_GLOBAL_TABLE_NAMES = {
+    "schema_migration_record",
+    "object_type",
+    "relation_type",
+    "lifecycle_phase",
+}
 
 
 class ContractValidationError(ValueError):
@@ -149,6 +155,13 @@ def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
             f"migration is missing required tokens: {missing_tokens!r}"
         )
     normalized_sql = re.sub(r"\s+", " ", sql_text)
+    if (
+        "CREATE TABLE architecture_core.schema_migration_record" not in normalized_sql
+        or "migration_sha256" not in normalized_sql
+    ):
+        raise ContractValidationError(
+            "migration checksum ledger must persist migration name and SHA-256 digest"
+        )
     required_tenant_fragments = {
         "FOREIGN KEY (tenant_record_id, source_object_id)",
         "FOREIGN KEY (tenant_record_id, target_object_id)",
@@ -165,7 +178,13 @@ def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
             "migration is missing tenant-bound composite keys: "
             f"{missing_fragments!r}"
         )
-    tenant_table_count = len(tables) - 3
+    missing_global_tables = _GLOBAL_TABLE_NAMES.difference(tables)
+    if missing_global_tables:
+        raise ContractValidationError(
+            "migration is missing required global tables: "
+            f"{sorted(missing_global_tables)!r}"
+        )
+    tenant_table_count = len(tables) - len(_GLOBAL_TABLE_NAMES)
     policy_count = normalized_sql.count("CREATE POLICY tenant_isolation_policy")
     if policy_count != tenant_table_count:
         raise ContractValidationError(
