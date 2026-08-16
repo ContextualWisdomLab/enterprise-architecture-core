@@ -112,7 +112,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$ledger_count" -eq 6
+          test "$ledger_count" -eq 7
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
