@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 _EXPECTED_OBJECT_TYPES = (
     "business_capability",
     "organization_unit",
