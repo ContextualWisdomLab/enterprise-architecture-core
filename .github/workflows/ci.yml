@@ -131,7 +131,7 @@ jobs:
               --set ON_ERROR_STOP=1 \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$upgraded_ledger_count" -eq 8
+          test "$upgraded_ledger_count" -eq 9
           PGDATABASE="$probe_database" psql --tuples-only --no-align \
             --set ON_ERROR_STOP=1 \
             --command "SELECT conname FROM pg_constraint WHERE conname IN ('object_revision_evidence_required', 'architecture_relation_evidence_required') ORDER BY conname;" \
@@ -140,6 +140,14 @@ jobs:
             --set ON_ERROR_STOP=1 \
             --command "SELECT conname FROM pg_constraint WHERE conname IN ('object_revision_evidence_required', 'architecture_relation_evidence_required') ORDER BY conname;" \
             | grep --fixed-strings 'object_revision_evidence_required'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname IN ('outbox_event_publish_chronology', 'projection_receipt_process_chronology') ORDER BY conname;" \
+            | grep --fixed-strings 'outbox_event_publish_chronology'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname IN ('outbox_event_publish_chronology', 'projection_receipt_process_chronology') ORDER BY conname;" \
+            | grep --fixed-strings 'projection_receipt_process_chronology'
       - name: Prove failed migration rolls back schema and ledger atomically
         env:
           PGHOST: 127.0.0.1
@@ -192,7 +200,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$ledger_count" -eq 8
+          test "$ledger_count" -eq 9
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
