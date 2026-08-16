@@ -27,11 +27,13 @@ The foundation includes the seven inventory extensions listed above.
 scenario milestone and are not represented as completed schema in this PR.
 
 Tenant-owned extension tables use `(tenant_record_id, architecture_object_id)`
-as their composite primary and foreign key. This prevents an object identifier
-from being attached across tenants while keeping type-specific attributes in
-separate 3NF relations. Provider and version associations are represented by
-`architecture_relation`, rather than duplicated foreign keys in extension
-tables.
+as their composite primary and foreign key. Database type-guard triggers also
+require the referenced `architecture_object.object_type_id` to resolve to the
+extension's exact object type code, so an application cannot be persisted as a
+business capability or another contradictory typed record. This preserves the
+3NF common-identity pattern without weakening domain type integrity. Provider
+and version associations are represented by `architecture_relation`, rather
+than duplicated foreign keys in extension tables.
 
 ## Relationships and lifecycle
 
@@ -41,9 +43,13 @@ tables.
 - `lifecycle_interval` records time-bounded object phases.
 
 Database triggers reject relation endpoints whose object types contradict the
-relation type. GiST exclusion constraints prevent overlapping active identity
-links, object revisions, identical architecture relations, and lifecycle
-intervals while allowing superseded system-time history to remain queryable.
+relation type. GiST exclusion constraints prevent overlapping current
+**authoritative** object revisions and identical authoritative architecture
+relations. `observed`, `inferred`, and `proposed` assertions may overlap an
+authoritative fact so reviewers can compare evidence without silently promoting
+the proposal. Identity links and lifecycle intervals remain non-overlapping
+while active, because those tables do not expose the truth-status vocabulary.
+Superseded system-time history remains queryable rather than being hard-deleted.
 
 ## Assessment
 
