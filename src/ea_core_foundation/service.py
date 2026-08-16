@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.metadata import PackageNotFoundError, version as distribution_version
 from typing import Literal
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qsl, unquote, urlparse
 
 SERVICE_NAME = "enterprise-architecture-core"
 DEFAULT_BIND_HOST = "0.0.0.0"
@@ -18,6 +18,44 @@ DEFAULT_BIND_PORT = 8080
 CONTEXT_CONTRACT_DISTRIBUTION = "cwl-context-contracts"
 SUPPORTED_CONTEXT_CONTRACT_VERSION = "0.1.0"
 _DATABASE_DSN_ENV = "EA_DATABASE_DSN"
+_LIBPQ_QUERY_ENVIRONMENT = {
+    "host": "PGHOST",
+    "hostaddr": "PGHOSTADDR",
+    "port": "PGPORT",
+    "dbname": "PGDATABASE",
+    "user": "PGUSER",
+    "password": "PGPASSWORD",
+    "passfile": "PGPASSFILE",
+    "require_auth": "PGREQUIREAUTH",
+    "channel_binding": "PGCHANNELBINDING",
+    "service": "PGSERVICE",
+    "options": "PGOPTIONS",
+    "application_name": "PGAPPNAME",
+    "sslnegotiation": "PGSSLNEGOTIATION",
+    "sslmode": "PGSSLMODE",
+    "requiressl": "PGREQUIRESSL",
+    "sslcompression": "PGSSLCOMPRESSION",
+    "sslcert": "PGSSLCERT",
+    "sslkey": "PGSSLKEY",
+    "sslcertmode": "PGSSLCERTMODE",
+    "sslrootcert": "PGSSLROOTCERT",
+    "sslcrl": "PGSSLCRL",
+    "sslcrldir": "PGSSLCRLDIR",
+    "sslsni": "PGSSLSNI",
+    "requirepeer": "PGREQUIREPEER",
+    "ssl_min_protocol_version": "PGSSLMINPROTOCOLVERSION",
+    "ssl_max_protocol_version": "PGSSLMAXPROTOCOLVERSION",
+    "gssencmode": "PGGSSENCMODE",
+    "krbsrvname": "PGKRBSRVNAME",
+    "gsslib": "PGGSSLIB",
+    "gssdelegation": "PGGSSDELEGATION",
+    "connect_timeout": "PGCONNECT_TIMEOUT",
+    "client_encoding": "PGCLIENTENCODING",
+    "target_session_attrs": "PGTARGETSESSIONATTRS",
+    "load_balance_hosts": "PGLOADBALANCEHOSTS",
+    "min_protocol_version": "PGMINPROTOCOLVERSION",
+    "max_protocol_version": "PGMAXPROTOCOLVERSION",
+}
 _DATABASE_READINESS_SQL = """
 SELECT (
     current_database() = 'ea_core'
@@ -139,34 +177,43 @@ def _postgres_environment(
     dsn: str,
     base_environment: Mapping[str, str] | None,
 ) -> dict[str, str] | None:
-    """Translate the documented PostgreSQL URI into libpq environment values."""
+    """Translate one PostgreSQL URI to equivalent supported libpq environment values."""
 
     try:
         parsed = urlparse(dsn)
         port = parsed.port or 5432
+        query_items = parse_qsl(parsed.query, keep_blank_values=True)
     except ValueError:
         return None
-    database_name = unquote(parsed.path.lstrip("/"))
-    required_parts = (
-        parsed.scheme in {"postgres", "postgresql"},
-        parsed.hostname is not None,
-        parsed.username is not None,
-        parsed.password is not None,
-        bool(database_name),
-    )
-    if not all(required_parts):
+    if parsed.scheme not in {"postgres", "postgresql"}:
         return None
+
+    query_parameters: dict[str, str] = {}
+    for name, value in query_items:
+        environment_name = _LIBPQ_QUERY_ENVIRONMENT.get(name)
+        if environment_name is None or name in query_parameters:
+            return None
+        query_parameters[name] = value
+
     environment = dict(os.environ if base_environment is None else base_environment)
-    environment.update(
-        {
-            "PGHOST": parsed.hostname or "",
-            "PGPORT": str(port),
-            "PGUSER": unquote(parsed.username or ""),
-            "PGPASSWORD": unquote(parsed.password or ""),
-            "PGDATABASE": database_name,
-            "PGCONNECT_TIMEOUT": "3",
-        }
-    )
+    if parsed.hostname is not None:
+        environment["PGHOST"] = parsed.hostname
+    environment["PGPORT"] = str(port)
+    if parsed.username is not None:
+        environment["PGUSER"] = unquote(parsed.username)
+    if parsed.password is not None:
+        environment["PGPASSWORD"] = unquote(parsed.password)
+    database_name = unquote(parsed.path.lstrip("/"))
+    if database_name:
+        environment["PGDATABASE"] = database_name
+
+    for name, value in query_parameters.items():
+        environment[_LIBPQ_QUERY_ENVIRONMENT[name]] = value
+
+    required_environment = ("PGHOST", "PGUSER", "PGPASSWORD", "PGDATABASE")
+    if any(not environment.get(name) for name in required_environment):
+        return None
+    environment.setdefault("PGCONNECT_TIMEOUT", "3")
     return environment
 
 
