@@ -162,7 +162,7 @@ def test_http_surface_serves_health_ready_and_operator_errors() -> None:
 
 
 def test_http_ready_without_a_configured_probe_is_not_ready() -> None:
-    """The default process stays out of the pool until a database probe exists."""
+    """The default embedded server fails closed until dependencies are explicit."""
 
     server = create_service_server(BindAddress("127.0.0.1", 0))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -176,7 +176,7 @@ def test_http_ready_without_a_configured_probe_is_not_ready() -> None:
         thread.join(timeout=2)
 
     assert status == 503
-    assert body["contract_ready"] is True
+    assert body["contract_ready"] is False
     assert body["database_ready"] is False
 
 
@@ -243,7 +243,7 @@ def test_main_returns_cleanly_on_supervisor_interrupt(
 
     monkeypatch.setattr(
         "ea_core_foundation.service.resolve_bind_address",
-        lambda: BindAddress("127.0.0.1", 18080),
+        lambda **kwargs: BindAddress("127.0.0.1", 18080),
     )
     monkeypatch.setattr(
         "ea_core_foundation.service.create_service_server",
@@ -275,7 +275,7 @@ def test_main_returns_zero_after_a_clean_serve(
 
     monkeypatch.setattr(
         "ea_core_foundation.service.resolve_bind_address",
-        lambda: BindAddress("127.0.0.1", 18081),
+        lambda **kwargs: BindAddress("127.0.0.1", 18081),
     )
     monkeypatch.setattr(
         "ea_core_foundation.service.create_service_server",

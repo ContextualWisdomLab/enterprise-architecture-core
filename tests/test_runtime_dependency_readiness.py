@@ -7,8 +7,11 @@ from typing import Any
 from ea_core_foundation.service import (
     SUPPORTED_CONTEXT_CONTRACT_VERSION,
     build_database_readiness_probe,
+    build_readiness_report,
     probe_context_contract,
 )
+
+_VALID_DSN = "postgresql://ea_runtime:test-pass@127.0.0.1:54328/ea_core"
 
 
 def test_context_contract_probe_requires_the_exact_installed_distribution() -> None:
@@ -38,25 +41,43 @@ def test_database_probe_uses_runtime_role_without_exposing_dsn_password() -> Non
         return CompletedProcess(args, 0, stdout="t\n", stderr="")
 
     probe = build_database_readiness_probe(
-        "postgresql://ea_runtime:secret-value@127.0.0.1:54328/ea_core",
+        _VALID_DSN,
         runner=runner,
         base_environment={},
     )
 
     assert probe() is True
-    assert "secret-value" not in " ".join(captured["args"])
-    assert captured["env"]["PGPASSWORD"] == "secret-value"
+    assert "test-pass" not in " ".join(captured["args"])
+    assert captured["env"]["PGPASSWORD"] == "test-pass"
     assert captured["env"]["PGUSER"] == "ea_runtime"
     assert captured["env"]["PGDATABASE"] == "ea_core"
+    assert captured["env"]["PGPORT"] == "54328"
     command = captured["args"][captured["args"].index("--command") + 1]
     assert "architecture_core" in command
     assert "has_table_privilege" in command
 
 
-def test_database_probe_fails_closed_for_missing_config_and_probe_errors() -> None:
-    """Missing DSN, missing psql, timeout, or a false query result is not ready."""
+def test_database_probe_fails_closed_for_missing_or_malformed_config() -> None:
+    """Missing or malformed database configuration cannot enter the serving pool."""
 
     assert build_database_readiness_probe(None)() is False
+    assert build_database_readiness_probe("")() is False
+    assert (
+        build_database_readiness_probe(
+            "http://ea_runtime:test-pass@127.0.0.1:5432/ea_core"
+        )()
+        is False
+    )
+    assert (
+        build_database_readiness_probe(
+            "postgresql://ea_runtime:test-pass@127.0.0.1:notaport/ea_core"
+        )()
+        is False
+    )
+
+
+def test_database_probe_fails_closed_for_probe_errors_and_false_results() -> None:
+    """Missing psql or unsuccessful query evidence remains non-passing."""
 
     def missing_psql(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
         del args, kwargs
@@ -64,7 +85,7 @@ def test_database_probe_fails_closed_for_missing_config_and_probe_errors() -> No
 
     assert (
         build_database_readiness_probe(
-            "postgresql://ea_runtime:secret@127.0.0.1:54328/ea_core",
+            _VALID_DSN,
             runner=missing_psql,
             base_environment={},
         )()
@@ -77,9 +98,35 @@ def test_database_probe_fails_closed_for_missing_config_and_probe_errors() -> No
 
     assert (
         build_database_readiness_probe(
-            "postgresql://ea_runtime:secret@127.0.0.1:54328/ea_core",
+            _VALID_DSN,
             runner=false_result,
             base_environment={},
         )()
         is False
     )
+
+    def failed_command(args: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        del kwargs
+        return CompletedProcess(args, 2, stdout="", stderr="connection failed")
+
+    assert (
+        build_database_readiness_probe(
+            "postgresql://ea_runtime:test-pass@127.0.0.1/ea_core",
+            runner=failed_command,
+        )()
+        is False
+    )
+
+
+def test_readiness_report_fails_closed_when_a_probe_raises() -> None:
+    """Unexpected dependency-probe exceptions must produce 503 rather than 500."""
+
+    def broken_probe() -> bool:
+        raise RuntimeError("probe broke")
+
+    report = build_readiness_report(
+        contract_ready=True,
+        database_probe=broken_probe,
+    )
+    assert report.http_status() == 503
+    assert report.database_ready is False

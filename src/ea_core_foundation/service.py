@@ -4,17 +4,38 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from importlib.metadata import PackageNotFoundError, version as distribution_version
 from typing import Literal
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 SERVICE_NAME = "enterprise-architecture-core"
 DEFAULT_BIND_HOST = "0.0.0.0"
 DEFAULT_BIND_PORT = 8080
+CONTEXT_CONTRACT_DISTRIBUTION = "cwl-context-contracts"
+SUPPORTED_CONTEXT_CONTRACT_VERSION = "0.1.0"
+_DATABASE_DSN_ENV = "EA_DATABASE_DSN"
+_DATABASE_READINESS_SQL = """
+SELECT (
+    current_database() = 'ea_core'
+    AND current_user = 'ea_runtime'
+    AND to_regnamespace('architecture_core') IS NOT NULL
+    AND to_regclass('architecture_core.architecture_object_reference') IS NOT NULL
+    AND to_regclass('architecture_core.application_record') IS NOT NULL
+    AND NOT has_table_privilege(
+        current_user,
+        'architecture_core.application_record',
+        'SELECT'
+    )
+);
+""".strip()
 
 ReadinessProbe = Callable[[], bool]
+VersionReader = Callable[[str], str]
+CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 HttpMethod = Literal["GET", "OTHER"]
 RouteName = Literal["health", "ready", "not_found"]
 
@@ -95,10 +116,117 @@ def resolve_bind_address(
     return BindAddress(bind_host=bind_host, bind_port=bind_port)
 
 
+def probe_context_contract(
+    *,
+    version_reader: VersionReader = distribution_version,
+) -> bool:
+    """Return whether the exact supported Context Graph contract is installed."""
+
+    try:
+        installed_version = version_reader(CONTEXT_CONTRACT_DISTRIBUTION)
+    except PackageNotFoundError:
+        return False
+    return installed_version == SUPPORTED_CONTEXT_CONTRACT_VERSION
+
+
+def _false_probe() -> bool:
+    """Return a reusable fail-closed dependency probe."""
+
+    return False
+
+
+def _postgres_environment(
+    dsn: str,
+    base_environment: Mapping[str, str] | None,
+) -> dict[str, str] | None:
+    """Translate the documented PostgreSQL URI into libpq environment values."""
+
+    try:
+        parsed = urlparse(dsn)
+        port = parsed.port or 5432
+    except ValueError:
+        return None
+    database_name = unquote(parsed.path.lstrip("/"))
+    required_parts = (
+        parsed.scheme in {"postgres", "postgresql"},
+        parsed.hostname is not None,
+        parsed.username is not None,
+        parsed.password is not None,
+        bool(database_name),
+    )
+    if not all(required_parts):
+        return None
+    environment = dict(os.environ if base_environment is None else base_environment)
+    environment.update(
+        {
+            "PGHOST": parsed.hostname or "",
+            "PGPORT": str(port),
+            "PGUSER": unquote(parsed.username or ""),
+            "PGPASSWORD": unquote(parsed.password or ""),
+            "PGDATABASE": database_name,
+            "PGCONNECT_TIMEOUT": "3",
+        }
+    )
+    return environment
+
+
+def build_database_readiness_probe(
+    dsn: str | None,
+    *,
+    runner: CommandRunner = subprocess.run,
+    base_environment: Mapping[str, str] | None = None,
+) -> ReadinessProbe:
+    """Build a fail-closed PostgreSQL probe without granting table authority."""
+
+    if not dsn:
+        return _false_probe
+    connection_environment = _postgres_environment(dsn, base_environment)
+    if connection_environment is None:
+        return _false_probe
+
+    def probe() -> bool:
+        """Authenticate as the runtime role and prove the expected schema boundary."""
+
+        try:
+            result = runner(
+                [
+                    "psql",
+                    "--no-psqlrc",
+                    "--tuples-only",
+                    "--no-align",
+                    "--set",
+                    "ON_ERROR_STOP=1",
+                    "--command",
+                    _DATABASE_READINESS_SQL,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+                env=connection_environment,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        return result.returncode == 0 and result.stdout.strip() == "t"
+
+    return probe
+
+
 def build_health_report() -> HealthReport:
     """Return process liveness. Call GET /ready before sending tenant traffic."""
 
     return HealthReport(service_name=SERVICE_NAME, status_code="alive")
+
+
+def _run_readiness_probe(probe: ReadinessProbe | None) -> bool:
+    """Execute one dependency probe and fail closed on probe exceptions."""
+
+    if probe is None:
+        return False
+    try:
+        return bool(probe())
+    except Exception:
+        return False
 
 
 def build_readiness_report(
@@ -106,9 +234,9 @@ def build_readiness_report(
     contract_ready: bool,
     database_probe: ReadinessProbe | None = None,
 ) -> ReadinessReport:
-    """Return readiness from contract presence and an optional database probe."""
+    """Return readiness from an exact contract check and database probe."""
 
-    database_ready = False if database_probe is None else database_probe()
+    database_ready = _run_readiness_probe(database_probe)
     status_code: Literal["ready", "not_ready"]
     if contract_ready and database_ready:
         status_code = "ready"
@@ -140,10 +268,11 @@ class FoundationServiceHandler(BaseHTTPRequestHandler):
     """Serve the documented liveness and readiness endpoints."""
 
     server_version = "EACore/0.1"
-    def _contract_ready(self) -> bool:
-        """Read the contract probe from the bound server, defaulting to ready."""
 
-        return bool(getattr(self.server, "contract_ready", True))
+    def _contract_ready(self) -> bool:
+        """Read the contract probe result from the bound server, failing closed."""
+
+        return bool(getattr(self.server, "contract_ready", False))
 
     def _database_probe(self) -> ReadinessProbe | None:
         """Read the optional database probe from the bound server."""
@@ -213,7 +342,7 @@ class FoundationServiceHandler(BaseHTTPRequestHandler):
 def create_service_server(
     bind_address: BindAddress,
     *,
-    contract_ready: bool = True,
+    contract_ready: bool = False,
     database_probe: ReadinessProbe | None = None,
 ) -> ThreadingHTTPServer:
     """Create a bound server. Callers must shut it down after use."""
@@ -234,11 +363,19 @@ def serve_forever(server: ThreadingHTTPServer) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Start the foundation HTTP surface on ``0.0.0.0:$PORT``."""
+    """Start the fail-closed runtime surface on ``0.0.0.0:$PORT``."""
 
     del argv
-    bind_address = resolve_bind_address()
-    server = create_service_server(bind_address)
+    environment: Mapping[str, str] = os.environ
+    bind_address = resolve_bind_address(environ=environment)
+    database_probe = build_database_readiness_probe(
+        environment.get(_DATABASE_DSN_ENV)
+    )
+    server = create_service_server(
+        bind_address,
+        contract_ready=probe_context_contract(),
+        database_probe=database_probe,
+    )
     try:
         serve_forever(server)
     except KeyboardInterrupt:
