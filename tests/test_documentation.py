@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 _REQUIRED_DOCUMENTS = (
     "README.md",
     "AGENTS.md",
