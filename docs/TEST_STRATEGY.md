@@ -6,9 +6,11 @@
   validation;
 - real PostgreSQL 18.4 clean installation of every ordered migration;
 - non-superuser RLS visibility and cross-tenant write denial;
-- UUIDv7, canonical URI, relation endpoint, JSON payload, and projection event
-  identity rejection tests;
-- overlapping identity, revision, relation, and lifecycle interval rejection;
+- UUIDv7, canonical URI, typed-extension identity, relation endpoint, JSON
+  payload, and projection event identity rejection tests;
+- overlapping active identity and lifecycle interval rejection;
+- overlapping current authoritative revision and relation rejection while
+  overlapping proposed assertions remain reviewable beside authoritative facts;
 - transactional outbox rollback verification;
 - OpenAPI operation, uniqueness, and Keyverse verification contract checks;
 - AsyncAPI channel/message/publisher checks;
