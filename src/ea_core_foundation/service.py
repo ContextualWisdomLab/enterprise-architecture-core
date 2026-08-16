@@ -176,6 +176,33 @@ def _false_probe() -> bool:
     return False
 
 
+def _postgres_authority_host_port(
+    netloc: str,
+) -> tuple[str | None, str | None] | None:
+    """Preserve PostgreSQL URI host order, ports, IPv6, and socket directories."""
+
+    host_specification = netloc.rpartition("@")[2]
+    if not host_specification:
+        return None, None
+
+    host_values: list[str] = []
+    port_values: list[str] = []
+    has_explicit_port = False
+    try:
+        for host_entry in host_specification.split(","):
+            parsed_entry = urlparse(f"postgresql://{host_entry}")
+            host_values.append(unquote(parsed_entry.hostname or ""))
+            entry_port = parsed_entry.port
+            port_values.append("" if entry_port is None else str(entry_port))
+            has_explicit_port = has_explicit_port or entry_port is not None
+    except ValueError:
+        return None
+
+    host_list = ",".join(host_values)
+    port_list = ",".join(port_values) if has_explicit_port else None
+    return host_list, port_list
+
+
 def _postgres_environment(
     dsn: str,
     base_environment: Mapping[str, str] | None,
@@ -184,12 +211,16 @@ def _postgres_environment(
 
     try:
         parsed = urlparse(dsn)
-        port = parsed.port or 5432
         query_items = parse_qsl(parsed.query, keep_blank_values=True)
     except ValueError:
         return None
     if parsed.scheme not in {"postgres", "postgresql"}:
         return None
+
+    authority_host_port = _postgres_authority_host_port(parsed.netloc)
+    if authority_host_port is None:
+        return None
+    authority_host, authority_port = authority_host_port
 
     query_parameters: dict[str, str] = {}
     for name, value in query_items:
@@ -199,9 +230,10 @@ def _postgres_environment(
         query_parameters[name] = value
 
     environment = dict(os.environ if base_environment is None else base_environment)
-    if parsed.hostname is not None:
-        environment["PGHOST"] = parsed.hostname
-    environment["PGPORT"] = str(port)
+    if authority_host is not None:
+        environment["PGHOST"] = authority_host
+    if authority_port is not None:
+        environment["PGPORT"] = authority_port
     if parsed.username is not None:
         environment["PGUSER"] = unquote(parsed.username)
     if parsed.password is not None:
