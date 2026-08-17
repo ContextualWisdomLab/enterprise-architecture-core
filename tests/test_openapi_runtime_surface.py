@@ -260,7 +260,9 @@ def test_approval_requires_exact_operation_identity_and_keyverse_security(
         validate_openapi_runtime_surface(changed)
 
 
-def test_approval_requires_exact_path_parameter_and_request_body(openapi_document) -> None:
+def test_approval_requires_exact_path_parameter_and_request_body(
+    openapi_document,
+) -> None:
     """The approval contract stays aligned with strict executable command parsing."""
 
     changed = deepcopy(openapi_document)
@@ -286,7 +288,9 @@ def test_approval_requires_exact_path_parameter_and_request_body(openapi_documen
         validate_openapi_runtime_surface(changed)
 
 
-def test_approval_requires_receipt_and_fail_closed_error_shapes(openapi_document) -> None:
+def test_approval_requires_receipt_and_fail_closed_error_shapes(
+    openapi_document,
+) -> None:
     """Fresh/replayed approvals and errors remain stable for generated clients."""
 
     changed = deepcopy(openapi_document)
