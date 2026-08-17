@@ -249,7 +249,8 @@ def test_approval_requires_exact_operation_identity_and_keyverse_security(
     """The human approval command cannot drift to another identity or auth model."""
 
     changed = deepcopy(openapi_document)
-    changed["paths"][_APPROVAL_PATH]["post"]["operationId"] = "approveTargetState"
+    approval = changed["paths"][_APPROVAL_PATH]["post"]
+    approval["operationId"] = "approveTargetState"
     with pytest.raises(ContractValidationError, match="approval operationId"):
         validate_openapi_runtime_surface(changed)
 
@@ -268,14 +269,14 @@ def test_approval_requires_exact_path_parameter_and_request_body(openapi_documen
         validate_openapi_runtime_surface(changed)
 
     changed = deepcopy(openapi_document)
-    changed["paths"][_APPROVAL_PATH]["post"]["parameters"][0]["required"] = False
+    approval_parameter = changed["paths"][_APPROVAL_PATH]["post"]["parameters"][0]
+    approval_parameter["required"] = False
     with pytest.raises(ContractValidationError, match="incorrect required state"):
         validate_openapi_runtime_surface(changed)
 
     changed = deepcopy(openapi_document)
-    changed["paths"][_APPROVAL_PATH]["post"]["parameters"][0]["schema"] = {
-        "type": "string"
-    }
+    approval_parameter = changed["paths"][_APPROVAL_PATH]["post"]["parameters"][0]
+    approval_parameter["schema"] = {"type": "string"}
     with pytest.raises(ContractValidationError, match="incorrect schema"):
         validate_openapi_runtime_surface(changed)
 
