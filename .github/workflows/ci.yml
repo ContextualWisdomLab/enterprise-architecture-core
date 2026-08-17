@@ -118,6 +118,7 @@ jobs:
           cp database/migrations/000{1..9}_*.sql "$prior_directory/"
           cp database/migrations/0010_*.sql "$prior_directory/"
           cp database/migrations/0011_*.sql "$prior_directory/"
+          cp database/migrations/0012_*.sql "$prior_directory/"
           PGDATABASE="$probe_database" \
             bash database/scripts/apply_migrations.sh "$prior_directory"
           prior_ledger_count="$(
@@ -125,7 +126,7 @@ jobs:
               --set ON_ERROR_STOP=1 \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$prior_ledger_count" -eq 11
+          test "$prior_ledger_count" -eq 12
           PGDATABASE="$probe_database" \
             bash database/scripts/apply_migrations.sh database/migrations
           upgraded_ledger_count="$(
@@ -133,7 +134,7 @@ jobs:
               --set ON_ERROR_STOP=1 \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$upgraded_ledger_count" -eq 12
+          test "$upgraded_ledger_count" -eq 13
           PGDATABASE="$probe_database" psql --tuples-only --no-align \
             --set ON_ERROR_STOP=1 \
             --command "SELECT conname FROM pg_constraint WHERE conname IN ('object_revision_evidence_required', 'architecture_relation_evidence_required') ORDER BY conname;" \
@@ -161,6 +162,14 @@ jobs:
           PGDATABASE="$probe_database" psql --tuples-only --no-align \
             --set ON_ERROR_STOP=1 \
             --command "SELECT to_regclass('architecture_core.architecture_scenario') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.scenario_relation_delta') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regprocedure('architecture_core.project_scenario_relations(uuid)') IS NOT NULL;" \
             | grep --fixed-strings 't'
       - name: Prove failed migration rolls back schema and ledger atomically
         env:
@@ -202,7 +211,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core' AND table_type = 'BASE TABLE';"
           )"
-          test "$table_count" -eq 33
+          test "$table_count" -eq 34
           reference_view_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
               --tuples-only --no-align \
@@ -214,7 +223,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$ledger_count" -eq 12
+          test "$ledger_count" -eq 13
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
