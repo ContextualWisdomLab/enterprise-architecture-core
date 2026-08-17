@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -34,6 +35,11 @@ CONTEXT_CONTRACT_DISTRIBUTION = "cwl-context-contracts"
 SUPPORTED_CONTEXT_CONTRACT_VERSION = "0.1.0"
 _DATABASE_DSN_ENV = "EA_DATABASE_DSN"
 _TARGET_STATE_PATH_PREFIX = "/v1/technology-target-state-plans/"
+_CWL_TIMESTAMP_PATTERN = re.compile(
+    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]"
+    r"(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?"
+    r"(?:[Zz]|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$"
+)
 _LIBPQ_QUERY_ENVIRONMENT = {
     "host": "PGHOST",
     "hostaddr": "PGHOSTADDR",
@@ -226,16 +232,21 @@ def _parse_uuid7(value: str, field_name: str) -> UUID:
 
 
 def _parse_timestamp(value: str, field_name: str) -> datetime:
-    """Parse an offset-aware RFC 3339-style timestamp and normalize to UTC."""
+    """Parse the shared leap-second-free CWL timestamp profile and return UTC."""
 
+    if _CWL_TIMESTAMP_PATTERN.fullmatch(value) is None:
+        raise PlannerRequestError(
+            f"{field_name} must satisfy the CWL timestamp profile"
+        )
+    normalized = f"{value[:10]}T{value[11:]}"
+    if normalized[-1] in {"Z", "z"}:
+        normalized = f"{normalized[:-1]}+00:00"
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(normalized)
     except ValueError as error:
         raise PlannerRequestError(
-            f"{field_name} must be an RFC 3339 timestamp"
+            f"{field_name} must satisfy the CWL timestamp profile"
         ) from error
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise PlannerRequestError(f"{field_name} must include a UTC offset")
     return parsed.astimezone(UTC)
 
 
