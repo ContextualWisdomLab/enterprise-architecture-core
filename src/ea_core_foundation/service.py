@@ -60,7 +60,7 @@ _LIBPQ_QUERY_ENVIRONMENT = {
     "sslrootcert": "PGSSLROOTCERT",
     "sslcrl": "PGSSLCRL",
     "sslcrldir": "PGSSLCRLDIR",
-    "sslsni": "PGSSNI",
+    "sslsni": "PGSSLSNI",
     "requirepeer": "PGREQUIREPEER",
     "ssl_min_protocol_version": "PGSSLMINPROTOCOLVERSION",
     "ssl_max_protocol_version": "PGSSLMAXPROTOCOLVERSION",
