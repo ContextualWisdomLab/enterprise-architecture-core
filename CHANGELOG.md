@@ -35,3 +35,7 @@
 - Real PostgreSQL acceptance for RLS, tenant isolation, temporal exclusion, typed relations, evidence tenant integrity, event chronology, payload shape, projection identity, and outbox rollback.
 - Clean-install, idempotent replay, checksum-drift, failed-migration atomicity, and previous-boundary upgrade rehearsal.
 - OpenAPI and AsyncAPI contract baselines, Keyverse OIDC boundary requirements, accepted ADRs, doctoring references, standard-to-test traceability, and threat-model distinctions between enforced and planned surfaces.
+
+### Fixed
+
+- Fail closed on literal and percent-encoded URI dot-segment aliases in configured Keyverse JWKS paths before the issuer-scope confinement check, preventing path normalization from escaping or ambiguously rewriting the trusted issuer hierarchy.
