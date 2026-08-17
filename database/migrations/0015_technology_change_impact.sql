@@ -218,6 +218,10 @@ BEGIN
       CASE
         WHEN impact_path.capability_object_id IS NULL
           THEN 'missing_capability_mapping'
+        WHEN impact_path.version_truth_status_code IN ('inferred', 'proposed')
+          OR impact_path.usage_truth_status_code IN ('inferred', 'proposed')
+          OR impact_path.capability_truth_status_code IN ('inferred', 'proposed')
+          THEN 'requires_truth_review'
         WHEN lifecycle_context.lifecycle_phase_code IS NULL
           OR lifecycle_context.evidence_record_id IS NULL
           THEN 'missing_lifecycle_evidence'
@@ -260,6 +264,8 @@ BEGIN
       WHEN classified_impact.evidence_state_code =
            'missing_capability_mapping'
         THEN 'complete_capability_mapping'
+      WHEN classified_impact.evidence_state_code = 'requires_truth_review'
+        THEN 'review_truth_origin'
       WHEN classified_impact.evidence_state_code = 'missing_lifecycle_evidence'
         THEN 'complete_lifecycle_evidence'
       WHEN classified_impact.impact_status_code = 'end_of_life'
@@ -290,6 +296,6 @@ COMMENT ON FUNCTION architecture_core.project_technology_change_impact(
     timestamptz,
     integer
 ) IS
-'Projects a tenant-scoped, bitemporal technology-version impact path through EA-owned component, application, capability, and lifecycle facts. It classifies risk only from lifecycle evidence visible at the requested valid/system cutoffs, preserves relation and decision provenance, surfaces missing mapping/lifecycle evidence, and returns deterministic next-action codes without mutating authoritative facts.';
+'Projects a tenant-scoped, bitemporal technology-version impact path through EA-owned component, application, capability, and lifecycle facts. It classifies risk only from lifecycle evidence visible at the requested valid/system cutoffs, preserves relation and decision provenance, routes inferred/proposed paths to explicit truth review instead of actionable authority, surfaces missing mapping/lifecycle evidence, and returns deterministic next-action codes without mutating authoritative facts.';
 
 COMMIT;
