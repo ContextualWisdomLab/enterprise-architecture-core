@@ -56,7 +56,7 @@ RETURNS TABLE (
     outbox_event_id uuid,
     decision_request_id uuid,
     approval_recorded_at timestamptz,
-    replayed boolean,
+    approval_replayed boolean,
     next_action text
 )
 LANGUAGE plpgsql
