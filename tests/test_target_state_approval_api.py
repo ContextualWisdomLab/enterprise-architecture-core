@@ -152,13 +152,18 @@ def test_approval_roles_are_configured_separately_from_read_roles() -> None:
         frozenset({"ea_reader"})
     )
     assert build_approval_authorization_config(environment) == _config()
-    assert build_approval_authorization_config(
-        {key: value for key, value in environment.items() if key != "EA_APPROVAL_ROLES"}
-    ) is None
+    approval_environment = {
+        key: value
+        for key, value in environment.items()
+        if key != "EA_APPROVAL_ROLES"
+    }
+    assert build_approval_authorization_config(approval_environment) is None
 
 
 def test_approval_request_requires_uuidv7_evidence_reason_and_aware_time() -> None:
-    """Approval parsing rejects spoofed actors, ambiguous fields, and weak identifiers."""
+    """Approval parsing rejects spoofed actors, ambiguous fields, and weak
+    identifiers.
+    """
 
     request = parse_target_state_approval_request(
         f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval",
@@ -175,7 +180,10 @@ def test_approval_request_requires_uuidv7_evidence_reason_and_aware_time() -> No
             _approval_payload(),
         ),
         (
-            f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval?force=true",
+            (
+                f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/"
+                "approval?force=true"
+            ),
             _approval_payload(),
         ),
         (
@@ -188,11 +196,15 @@ def test_approval_request_requires_uuidv7_evidence_reason_and_aware_time() -> No
         ),
         (
             f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval",
-            _approval_payload(decision_request_id="00000000-0000-4000-8000-000000000000"),
+            _approval_payload(
+                decision_request_id="00000000-0000-4000-8000-000000000000"
+            ),
         ),
         (
             f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval",
-            _approval_payload(evidence_record_id="00000000-0000-4000-8000-000000000000"),
+            _approval_payload(
+                evidence_record_id="00000000-0000-4000-8000-000000000000"
+            ),
         ),
         (
             f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval",
@@ -233,8 +245,11 @@ def test_approval_request_requires_uuidv7_evidence_reason_and_aware_time() -> No
         )
 
 
-def test_approval_writer_binds_verified_actor_without_exposing_database_secret() -> None:
-    """The runtime writer uses the narrow DB port and derives actor from verified identity."""
+def test_approval_writer_binds_verified_actor_without_exposing_database_secret(
+) -> None:
+    """The runtime writer uses the narrow DB port and derives actor from verified
+    identity.
+    """
 
     calls: list[tuple[list[str], dict[str, Any]]] = []
 
@@ -244,7 +259,8 @@ def test_approval_writer_binds_verified_actor_without_exposing_database_secret()
             command,
             0,
             stdout=(
-                '{"transformation_history_record_id":"0196e040-1111-7111-8111-111111111191",'
+                '{"transformation_history_record_id":'
+                '"0196e040-1111-7111-8111-111111111191",'
                 '"transformation_state_code":"approved",'
                 '"outbox_event_id":"0196e050-1111-7111-8111-111111111191",'
                 '"decision_request_id":"0196e030-1111-7111-8111-111111111191",'
@@ -270,7 +286,9 @@ def test_approval_writer_binds_verified_actor_without_exposing_database_secret()
 
 
 @pytest.mark.parametrize("dsn", [None, "http://not-postgres.example/db"])
-def test_approval_writer_fails_closed_without_a_safe_database_dsn(dsn: str | None) -> None:
+def test_approval_writer_fails_closed_without_a_safe_database_dsn(
+    dsn: str | None,
+) -> None:
     """No DSN or a non-PostgreSQL DSN cannot become write authority."""
 
     writer = build_target_state_approval_writer(dsn, base_environment={})
@@ -482,8 +500,11 @@ def test_http_approval_is_purpose_authorized_and_returns_actionable_receipt() ->
     assert writes == [("architecture-board-user-123", _DECISION_REQUEST_ID)]
 
 
-def test_http_approval_replay_returns_200_without_reframing_the_decision() -> None:
-    """An exact idempotent replay is observable but is not presented as a new approval."""
+def test_http_approval_replay_returns_200_without_reframing_the_decision(
+) -> None:
+    """An exact idempotent replay is observable but is not presented as a new
+    approval.
+    """
 
     server, thread, host, port = _start_server(
         approval_authorization_config=_config(),
@@ -511,7 +532,8 @@ def test_http_approval_replay_returns_200_without_reframing_the_decision() -> No
     assert body["replayed"] is True
 
 
-def test_http_approval_fails_closed_when_configuration_or_writer_is_missing() -> None:
+def test_http_approval_fails_closed_when_configuration_or_writer_is_missing(
+) -> None:
     """An endpoint without both approval policy and command port remains unavailable."""
 
     for kwargs in (
@@ -536,14 +558,22 @@ def test_http_approval_fails_closed_when_configuration_or_writer_is_missing() ->
 
 
 def test_http_approval_rejects_malformed_or_hostile_bodies_before_write() -> None:
-    """Media type, size, Unicode, JSON shape, duplicates, and actor spoofing fail closed."""
+    """Media type, size, Unicode, JSON shape, duplicates, and actor spoofing fail
+    closed.
+    """
 
     writes: list[str] = []
+
+    def record_write(context: Any, request: Any) -> dict[str, object]:
+        del context, request
+        writes.append("write")
+        return {}
+
     server, thread, host, port = _start_server(
         approval_authorization_config=_config(),
         jwks_loader=_jwks_loader,
         signature_verifier=lambda signing_input, signature, jwk: True,
-        target_state_approval_writer=lambda context, request: writes.append("write") or {},
+        target_state_approval_writer=record_write,
     )
     authorization = f"Bearer {_token()}"
     hostile_requests = (
@@ -554,8 +584,8 @@ def test_http_approval_rejects_malformed_or_hostile_bodies_before_write() -> Non
         (b"[]", "application/json", "2"),
         (
             (
-                '{"decision_request_id":"%s","decision_request_id":"%s"}'
-                % (_DECISION_REQUEST_ID, _DECISION_REQUEST_ID)
+                f'{{"decision_request_id":"{_DECISION_REQUEST_ID}",'
+                f'"decision_request_id":"{_DECISION_REQUEST_ID}"}}'
             ).encode(),
             "application/json",
             None,
@@ -596,7 +626,8 @@ def test_http_approval_rejects_invalid_content_length_without_reading_a_body() -
     connection = HTTPConnection(host, port, timeout=2)
     try:
         connection.putrequest(
-            "POST", f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval"
+            "POST",
+            f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval",
         )
         connection.putheader("Content-Type", "application/json")
         connection.putheader("Content-Length", "not-an-integer")
