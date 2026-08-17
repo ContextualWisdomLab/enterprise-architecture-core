@@ -4,6 +4,9 @@
 
 ### Added
 
+- Immutable target-state scenario baselines plus ordered object-presence deltas and deterministic `project_scenario_objects(uuid)` projection, preserving exact valid-time/system-time baseline cutoffs without mutating authoritative architecture truth.
+- Scenario integrity controls for UUIDv7 identity, tenant-bound foreign keys, forced RLS, authoritative/observed evidence, positive non-reusable delta ordering, target-time semantics, immutable baseline/decision meaning, one-time supersession, and hard-delete rejection.
+- Real PostgreSQL scenario-projection buyer acceptance and previous-boundary upgrade rehearsal from migration 0011 through migration 0012.
 - Versioned strategy execution facts for architecture objectives, remediation initiatives, objective-contribution links, and ordered initiative milestones with UUIDv7 identity, composite tenant foreign keys, forced RLS, valid/system time, explicit truth origin, and tenant-bound provenance.
 - Strategy semantic guards that require authoritative/observed evidence, contain initiative-objective links inside referenced valid-time intervals, keep milestone targets inside initiative validity, require positive milestone sequence values, prevent overlapping current authoritative facts, and preserve decision meaning through one-time supersession plus append.
 - Real PostgreSQL strategy-execution acceptance with observed RED-before-GREEN evidence and upgrade rehearsal from migration 0010 through migration 0011.
