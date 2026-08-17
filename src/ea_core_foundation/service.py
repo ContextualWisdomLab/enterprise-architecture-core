@@ -7,11 +7,11 @@ import os
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as distribution_version
-from typing import Any, Literal
+from typing import Literal
 from urllib.parse import parse_qsl, unquote, urlparse
 from uuid import UUID
 
@@ -193,7 +193,9 @@ class TargetStatePlanRequest:
         try:
             technology_id = UUID(technology_version_id)
         except ValueError as error:
-            raise PlannerRequestError("technology version id must be a UUID") from error
+            raise PlannerRequestError(
+                "technology version id must be a UUID"
+            ) from error
         valid_time = _parse_timestamp(valid_at, "valid_at")
         recorded_time = _parse_timestamp(recorded_at, "recorded_at")
         if planning_horizon_days < 1 or planning_horizon_days > 3650:
@@ -220,10 +222,12 @@ def _parse_timestamp(value: str, field_name: str) -> datetime:
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as error:
-        raise PlannerRequestError(f"{field_name} must be an RFC 3339 timestamp") from error
+        raise PlannerRequestError(
+            f"{field_name} must be an RFC 3339 timestamp"
+        ) from error
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise PlannerRequestError(f"{field_name} must include a UTC offset")
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def parse_target_state_request(path: str) -> TargetStatePlanRequest:
@@ -238,11 +242,15 @@ def parse_target_state_request(path: str) -> TargetStatePlanRequest:
     pairs = parse_qsl(parsed.query, keep_blank_values=True)
     allowed_names = {"valid_at", "recorded_at", "planning_horizon_days"}
     if any(name not in allowed_names for name, _ in pairs):
-        raise PlannerRequestError("target-state planner query contains unknown parameters")
+        raise PlannerRequestError(
+            "target-state planner query contains unknown parameters"
+        )
     values: dict[str, str] = {}
     for name, value in pairs:
         if name in values:
-            raise PlannerRequestError(f"duplicate planner query parameter: {name}")
+            raise PlannerRequestError(
+                f"duplicate planner query parameter: {name}"
+            )
         values[name] = value
     if not values.get("valid_at") or not values.get("recorded_at"):
         raise PlannerRequestError("valid_at and recorded_at are required")
@@ -250,7 +258,9 @@ def parse_target_state_request(path: str) -> TargetStatePlanRequest:
     try:
         horizon = int(raw_horizon)
     except ValueError as error:
-        raise PlannerRequestError("planning_horizon_days must be an integer") from error
+        raise PlannerRequestError(
+            "planning_horizon_days must be an integer"
+        ) from error
     return TargetStatePlanRequest.from_values(
         technology_version_id,
         values["valid_at"],
