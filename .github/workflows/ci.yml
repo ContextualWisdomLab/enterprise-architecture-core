@@ -197,6 +197,10 @@ jobs:
             | grep --fixed-strings 't'
           PGDATABASE="$probe_database" psql --tuples-only --no-align \
             --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regprocedure('architecture_core.project_technology_target_state_plan(uuid,timestamp with time zone,timestamp with time zone,integer)') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
             --command "SELECT conname FROM pg_constraint WHERE conname = 'application_context_projection_receipt_fact_unique';" \
             | grep --fixed-strings 'application_context_projection_receipt_fact_unique'
           PGDATABASE="$probe_database" psql --tuples-only --no-align \
@@ -259,7 +263,11 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$ledger_count" -eq 19
+          expected_ledger_count="$(
+            find database/migrations -maxdepth 1 -type f \
+              -name '[0-9][0-9][0-9][0-9]_*.sql' -print | wc -l
+          )"
+          test "$ledger_count" -eq "$expected_ledger_count"
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
