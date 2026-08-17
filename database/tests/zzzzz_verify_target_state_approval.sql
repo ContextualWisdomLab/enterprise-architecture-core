@@ -37,7 +37,7 @@ INSERT INTO architecture_core.architecture_transformation (
     'Exercise one purpose-bound human target-state approval command.',
     '2026-08-01T00:00:00Z',
     '2028-01-01T00:00:00Z',
-    '2026-09-01T00:00:00Z',
+    clock_timestamp() - interval '2 seconds',
     'authoritative',
     '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
 );
@@ -60,11 +60,48 @@ INSERT INTO architecture_core.transformation_history_record (
     1,
     'proposed',
     '2026-10-01T00:00:00Z',
-    '2026-10-01T01:00:00Z',
+    clock_timestamp() - interval '1 second',
     'urn:cwl:actor:architecture-board',
     'Target-state evidence is ready for governed approval.',
     'proposed'
 );
+
+-- A real-world approval cannot be backdated before the proposal became valid.
+-- The failed command must leave both history and outbox state untouched.
+DO $$
+DECLARE
+  backward_history_count integer;
+  backward_event_count integer;
+BEGIN
+  BEGIN
+    PERFORM *
+      FROM architecture_core.approve_target_state(
+          '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+          '0196e010-1111-7111-8111-111111111191',
+          '0196e030-1111-7111-8111-111111111190',
+          '2026-09-30T23:59:59Z',
+          'keyverse:https://id.example/realms/cwl#architecture-board-user-123',
+          'Backdated approval must be rejected without partial state.',
+          '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
+      );
+    RAISE EXCEPTION 'backdated target-state approval was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  SELECT count(*) INTO backward_history_count
+    FROM architecture_core.transformation_history_record
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND decision_request_id = '0196e030-1111-7111-8111-111111111190';
+  SELECT count(*) INTO backward_event_count
+    FROM architecture_core.outbox_event
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND decision_request_id = '0196e030-1111-7111-8111-111111111190';
+  IF backward_history_count <> 0 OR backward_event_count <> 0 THEN
+    RAISE EXCEPTION 'backdated approval partially committed history/event';
+  END IF;
+END;
+$$;
 
 CREATE TEMP TABLE approval_receipt AS
 SELECT *
