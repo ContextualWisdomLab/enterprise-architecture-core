@@ -35,6 +35,20 @@ that 503 is intentional. Once the protected contract release exists, install the
 exact supported distribution and re-run the process-level readiness acceptance
 before promoting this service.
 
+## Protected integration evidence
+
+A green workflow is promotion evidence only for the exact integration candidate
+that executed it. Before merge, release, or deployment, re-fetch the repository
+default branch and its live applied rules and prove that the intended integration
+branch is the protected default ref. A successful pull-request merge ref built
+against a predecessor base, or protection attached to a different default
+branch, is non-passing evidence even when the source head is unchanged.
+
+After any base-branch or default-branch change, generate a fresh pull-request
+candidate and re-run every required repository/security/package gate against
+that candidate. Never transfer checks, reviews, or merge-readiness claims from a
+predecessor merge ref merely because the feature tree is byte-identical.
+
 ## Backup and recovery
 
 Authoritative PostgreSQL data requires encrypted backups, point-in-time
