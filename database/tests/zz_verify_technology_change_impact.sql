@@ -18,11 +18,17 @@ INSERT INTO architecture_core.architecture_object (
     tenant_record_id,
     architecture_object_id,
     object_type_id
-) VALUES (
-    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-    '0196f100-1111-7111-8111-111111111111',
-    '0195d145-64e8-7f4f-8a23-a0cc784cb807'
-);
+) VALUES
+    (
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196f100-1111-7111-8111-111111111111',
+        '0195d145-64e8-7f4f-8a23-a0cc784cb807'
+    ),
+    (
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196f120-2222-7222-8222-222222222222',
+        '0195d145-64e8-7f4f-8a23-a0cc784cb802'
+    );
 
 INSERT INTO architecture_core.technology_version (
     tenant_record_id,
@@ -36,6 +42,18 @@ INSERT INTO architecture_core.technology_version (
     '12.4',
     '2024-01-15',
     '2026-12-31'
+);
+
+INSERT INTO architecture_core.application_record (
+    tenant_record_id,
+    architecture_object_id,
+    application_code,
+    application_category_code
+) VALUES (
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    '0196f120-2222-7222-8222-222222222222',
+    'inventory_planning',
+    'saas_application'
 );
 
 INSERT INTO architecture_core.architecture_relation (
@@ -81,6 +99,28 @@ INSERT INTO architecture_core.architecture_relation (
         '2026-09-01T00:00:00Z',
         'authoritative',
         '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
+    ),
+    (
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196f121-2222-7222-8222-222222222222',
+        '0195d145-64e8-7f4f-8a23-a0cc784cb812',
+        '0196f120-2222-7222-8222-222222222222',
+        '0195d145-64e8-7f4f-8a23-a0cc784cb903',
+        '2026-01-01T00:00:00Z',
+        '2026-08-01T00:00:00Z',
+        'proposed',
+        NULL
+    ),
+    (
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196f122-2222-7222-8222-222222222222',
+        '0195d145-64e8-7f4f-8a23-a0cc784cb811',
+        '0196f120-2222-7222-8222-222222222222',
+        '0195d145-64e8-7f4f-8a23-a0cc784cb901',
+        '2026-01-01T00:00:00Z',
+        '2026-08-01T00:00:00Z',
+        'proposed',
+        NULL
     );
 
 INSERT INTO architecture_core.lifecycle_interval (
@@ -144,7 +184,8 @@ BEGIN
         '2026-08-17T00:00:00Z',
         '2026-08-15T00:00:00Z',
         180
-    );
+    )
+   WHERE application_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
 
   IF impacted_row.technology_component_id IS DISTINCT FROM
       '0195d145-64e8-7f4f-8a23-a0cc784cb903'::uuid
@@ -178,7 +219,8 @@ BEGIN
         '2026-08-17T00:00:00Z',
         '2026-09-15T00:00:00Z',
         180
-    );
+    )
+   WHERE application_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
 
   IF impacted_row.capability_object_id IS DISTINCT FROM
       '0195d145-64e8-7f4f-8a23-a0cc784cb901'::uuid
@@ -191,6 +233,30 @@ BEGIN
      OR impacted_row.usage_relation_truth_status_code <> 'authoritative'
      OR impacted_row.capability_relation_truth_status_code <> 'authoritative' THEN
     RAISE EXCEPTION 'impact action or truth provenance is incorrect';
+  END IF;
+END;
+$$;
+
+DO $$
+DECLARE
+  impacted_row record;
+BEGIN
+  SELECT *
+    INTO impacted_row
+    FROM architecture_core.project_technology_change_impact(
+        '0196f100-1111-7111-8111-111111111111',
+        '2026-08-17T00:00:00Z',
+        '2026-09-15T00:00:00Z',
+        180
+    )
+   WHERE application_object_id = '0196f120-2222-7222-8222-222222222222';
+
+  IF impacted_row.evidence_state_code <> 'requires_truth_review'
+     OR impacted_row.recommended_action_code <> 'review_truth_origin'
+     OR impacted_row.usage_relation_truth_status_code <> 'proposed'
+     OR impacted_row.capability_relation_truth_status_code <> 'proposed' THEN
+    RAISE EXCEPTION
+      'proposed dependency path silently became an actionable architecture fact';
   END IF;
 END;
 $$;
@@ -215,7 +281,8 @@ BEGIN
         '2026-08-17T00:00:00Z',
         '2026-09-15T00:00:00Z',
         180
-    );
+    )
+   WHERE application_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
 
   IF impacted_row.impact_status_code <> 'lifecycle_change_soon'
      OR impacted_row.lifecycle_change_at IS DISTINCT FROM
@@ -237,7 +304,8 @@ BEGIN
         '2027-01-15T00:00:00Z',
         '2027-01-15T00:00:00Z',
         180
-    );
+    )
+   WHERE application_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
 
   IF impacted_row.lifecycle_phase_code <> 'end_of_life'
      OR impacted_row.impact_status_code <> 'end_of_life'
