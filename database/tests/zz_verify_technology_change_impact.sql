@@ -1,8 +1,8 @@
 \set ON_ERROR_STOP on
 
 -- Buyer acceptance for the first Technology Change Impact & Target-State Planner
--- projection. This test intentionally lands before migration 0015 so the first
--- branch head is RED at the missing deterministic impact projector boundary.
+-- projection. The initial branch commit proved this test RED before migration
+-- 0015 introduced the deterministic impact projector boundary.
 
 DO $$
 BEGIN
@@ -123,6 +123,15 @@ INSERT INTO architecture_core.lifecycle_interval (
         '2026-08-01T00:00:00Z',
         '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
     );
+
+-- The projector is tenant-bound even when the migration acceptance connection
+-- is the schema-owner test user. Every acceptance file runs in a fresh psql
+-- session, so set the application tenant explicitly before invoking it.
+SELECT set_config(
+    'app.tenant_record_id',
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    false
+);
 
 DO $$
 DECLARE
