@@ -1,4 +1,4 @@
-"""Regressions for the implemented OpenAPI process and planner surface."""
+"""Regressions for the implemented OpenAPI process and decision surface."""
 
 from copy import deepcopy
 
@@ -10,10 +10,13 @@ from ea_core_foundation import (
 )
 
 _PLANNER_PATH = "/v1/technology-target-state-plans/{technology_version_id}"
+_APPROVAL_PATH = (
+    "/v1/architecture-transformations/{architecture_transformation_id}/approval"
+)
 
 
 def test_checked_in_openapi_runtime_surface_is_truthful(openapi_document) -> None:
-    """The advertised process and planner surface matches implemented HTTP routes."""
+    """The advertised process and decision surface matches implemented HTTP routes."""
 
     validate_openapi_runtime_surface(openapi_document)
 
@@ -69,6 +72,8 @@ def test_runtime_surface_requires_json_response_schemas(openapi_document) -> Non
         "ReadyStatus",
         "TargetStatePlanResponse",
         "TargetStateDecision",
+        "TargetStateApprovalRequest",
+        "TargetStateApprovalReceipt",
         "ErrorStatus",
     ],
 )
@@ -232,6 +237,66 @@ def test_planner_requires_success_and_error_response_shapes(openapi_document) ->
 
     changed = deepcopy(openapi_document)
     changed["paths"][_PLANNER_PATH]["get"]["responses"]["401"]["content"][
+        "application/json"
+    ]["schema"] = {"$ref": "#/components/schemas/ReadyStatus"}
+    with pytest.raises(ContractValidationError, match="ErrorStatus"):
+        validate_openapi_runtime_surface(changed)
+
+
+def test_approval_requires_exact_operation_identity_and_keyverse_security(
+    openapi_document,
+) -> None:
+    """The human approval command cannot drift to another identity or auth model."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_APPROVAL_PATH]["post"]["operationId"] = "approveTargetState"
+    with pytest.raises(ContractValidationError, match="approval operationId"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_APPROVAL_PATH]["post"]["security"] = []
+    with pytest.raises(ContractValidationError, match="approval must require Keyverse"):
+        validate_openapi_runtime_surface(changed)
+
+
+def test_approval_requires_exact_path_parameter_and_request_body(openapi_document) -> None:
+    """The approval contract stays aligned with strict executable command parsing."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_APPROVAL_PATH]["post"]["parameters"] = []
+    with pytest.raises(ContractValidationError, match="approval parameters"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_APPROVAL_PATH]["post"]["parameters"][0]["required"] = False
+    with pytest.raises(ContractValidationError, match="incorrect required state"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_APPROVAL_PATH]["post"]["parameters"][0]["schema"] = {
+        "type": "string"
+    }
+    with pytest.raises(ContractValidationError, match="incorrect schema"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_APPROVAL_PATH]["post"]["requestBody"]["required"] = False
+    with pytest.raises(ContractValidationError, match="approval request body"):
+        validate_openapi_runtime_surface(changed)
+
+
+def test_approval_requires_receipt_and_fail_closed_error_shapes(openapi_document) -> None:
+    """Fresh/replayed approvals and errors remain stable for generated clients."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_APPROVAL_PATH]["post"]["responses"]["201"]["content"][
+        "application/json"
+    ]["schema"] = {"$ref": "#/components/schemas/ErrorStatus"}
+    with pytest.raises(ContractValidationError, match="TargetStateApprovalReceipt"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_APPROVAL_PATH]["post"]["responses"]["403"]["content"][
         "application/json"
     ]["schema"] = {"$ref": "#/components/schemas/ReadyStatus"}
     with pytest.raises(ContractValidationError, match="ErrorStatus"):
