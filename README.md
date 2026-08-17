@@ -6,7 +6,9 @@ It records business capabilities, applications, interfaces, technology component
 
 ## What a buyer can decide
 
-The current development stack includes a read-only **Technology Change Impact & Target-State Planner**. Given a technology version plus explicit real-world and system-recording cutoffs, it joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
+The current development stack includes a **Technology Change Impact & Target-State Planner** plus a separately authorized human approval command. Given a technology version plus explicit real-world and system-recording cutoffs, the planner joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
+
+When the planner returns `approve_target_state`, an authorized human can submit the exact proposed transformation, UUIDv7 decision request, effective time, reason, and evidence reference. EA Core derives the actor from the verified Keyverse identity, appends authoritative transformation history, and emits the privacy-minimized transformation approval outbox event atomically. Exact retries are idempotent; conflicting reuse of a decision request fails closed.
 
 `semantic-data-portal` remains the Data/AI Context system of record; `pg-erd-cloud` remains physical schema/design evidence; LineageWeave evidence remains inferred/proposed unless governed elsewhere. EA Core stores canonical references and receipt evidence rather than copying those products or querying their application tables.
 
@@ -16,7 +18,7 @@ The canonical write model is normalized PostgreSQL with UUIDv7 identity, canonic
 
 Target-state scenarios use immutable baselines plus ordered append-preserving object/relation deltas. `project_scenario_objects(uuid)` and `project_scenario_relations(uuid)` reconstruct target state without mutating authoritative facts. Requested-present relations whose projected source or target is absent remain auditable but cannot appear active.
 
-## Run the process and planner
+## Run the process and decision surface
 
 ```bash
 uv sync --extra dev --locked
@@ -34,9 +36,23 @@ GET /v1/technology-target-state-plans/{technology_version_id}
     &planning_horizon_days=<1..3650>
 ```
 
-It requires a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`. Signature, issuer, audience, expiration, tenant UUID, and read role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
+The governed approval endpoint is:
 
-The `ea_runtime` login has no direct application-table or underlying-projector authority. It receives only the purpose-bound `read_technology_target_state_plan(...)` function after service-side verification. This is a read surface, not a command or authorization framework for future mutations.
+```text
+POST /v1/architecture-transformations/{architecture_transformation_id}/approval
+Content-Type: application/json
+
+{
+  "decision_request_id": "<UUIDv7>",
+  "effective_at": "<RFC3339 timestamp>",
+  "decision_reason_text": "<human decision reason>",
+  "evidence_record_id": "<UUIDv7>"
+}
+```
+
+Both surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`; configure `EA_APPROVAL_ROLES` separately for the mutation boundary. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
+
+The `ea_runtime` login has no direct application-table authority. It receives only the purpose-bound `read_technology_target_state_plan(...)` read wrapper and `approve_target_state(...)` command wrapper after service-side verification. No caller-supplied actor field is accepted by the approval API, and neither surface grants direct access to foreign product stores.
 
 ## Validation
 
@@ -47,4 +63,4 @@ uv run --extra dev python -m coverage report
 uv run --extra dev python scripts/validate_repository.py
 ```
 
-CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.
+CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, planner/approval behavior, OpenAPI/AsyncAPI contracts, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.
