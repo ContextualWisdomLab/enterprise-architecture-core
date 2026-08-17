@@ -4,6 +4,8 @@
 
 ### Added
 
+- Relation-aware target-state scenarios through normalized `scenario_relation_delta` and deterministic `project_scenario_relations(uuid)`, preserving typed endpoint semantics, truth/evidence, immutable append history, and explicit endpoint-integrity state without mutating authoritative relations.
+- Relation projection composes with final scenario object presence so a requested-present edge with an absent source or target remains auditable but cannot appear active; real PostgreSQL acceptance covers latest-delta precedence, endpoint typing, provenance, RLS, and previous-boundary upgrade from migration 0012 through 0013.
 - Immutable target-state scenario baselines plus ordered object-presence deltas and deterministic `project_scenario_objects(uuid)` projection, preserving exact valid-time/system-time baseline cutoffs without mutating authoritative architecture truth.
 - Scenario integrity controls for UUIDv7 identity, tenant-bound foreign keys, forced RLS, authoritative/observed evidence, positive non-reusable delta ordering, target-time semantics, immutable baseline/decision meaning, one-time supersession, and hard-delete rejection.
 - Real PostgreSQL scenario-projection buyer acceptance and previous-boundary upgrade rehearsal from migration 0011 through migration 0012.
