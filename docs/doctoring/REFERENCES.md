@@ -12,6 +12,8 @@ GitHub. (n.d.). *Using artifact attestations to establish provenance for builds*
 
 International Organization for Standardization, International Electrotechnical Commission, & Institute of Electrical and Electronics Engineers. (2022). *ISO/IEC/IEEE 42010:2022 Software, systems and enterprise—Architecture description*. International Organization for Standardization.
 
+Internet Engineering Task Force. (2005). *Uniform resource identifier (URI): Generic syntax* (RFC 3986). RFC Editor. https://www.rfc-editor.org/rfc/rfc3986
+
 Internet Engineering Task Force. (2015). *JSON Web Key (JWK)* (RFC 7517). RFC Editor. https://www.rfc-editor.org/rfc/rfc7517
 
 Internet Engineering Task Force. (2015). *JSON Web Token (JWT)* (RFC 7519). RFC Editor. https://www.rfc-editor.org/rfc/rfc7519
