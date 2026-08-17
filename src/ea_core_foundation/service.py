@@ -244,7 +244,9 @@ class TargetStateApprovalRequest:
         decision_reason_text: str,
         evidence_record_id: str,
     ) -> TargetStateApprovalRequest:
-        """Validate immutable command meaning before authorization reaches PostgreSQL."""
+        """Validate immutable command meaning before authorization reaches
+        PostgreSQL.
+        """
 
         transformation_id = _parse_uuid7(
             architecture_transformation_id,
@@ -352,15 +354,18 @@ def parse_target_state_approval_request(
     if parsed.query or parsed.fragment:
         raise PlannerRequestError("approval path cannot contain query or fragment data")
     route = parsed.path
-    if not route.startswith(_TARGET_STATE_APPROVAL_PATH_PREFIX) or not route.endswith(
-        _TARGET_STATE_APPROVAL_PATH_SUFFIX
+    if (
+        not route.startswith(_TARGET_STATE_APPROVAL_PATH_PREFIX)
+        or not route.endswith(_TARGET_STATE_APPROVAL_PATH_SUFFIX)
     ):
         raise PlannerRequestError("target-state approval path is invalid")
-    transformation_id = route[
-        len(_TARGET_STATE_APPROVAL_PATH_PREFIX) : -len(_TARGET_STATE_APPROVAL_PATH_SUFFIX)
-    ]
+    prefix_length = len(_TARGET_STATE_APPROVAL_PATH_PREFIX)
+    suffix_length = len(_TARGET_STATE_APPROVAL_PATH_SUFFIX)
+    transformation_id = route[prefix_length:-suffix_length]
     if not transformation_id or "/" in transformation_id:
-        raise PlannerRequestError("target-state approval requires one transformation UUID")
+        raise PlannerRequestError(
+            "target-state approval requires one transformation UUID"
+        )
     required_names = {
         "decision_request_id",
         "effective_at",
@@ -368,7 +373,9 @@ def parse_target_state_approval_request(
         "evidence_record_id",
     }
     if set(payload) != required_names:
-        raise PlannerRequestError("approval body must contain only the documented fields")
+        raise PlannerRequestError(
+            "approval body must contain only the documented fields"
+        )
     if not all(isinstance(payload[name], str) for name in required_names):
         raise PlannerRequestError("approval fields must be JSON strings")
     return TargetStateApprovalRequest.from_values(
@@ -983,7 +990,12 @@ class FoundationServiceHandler(BaseHTTPRequestHandler):
     def _read_approval_json(self) -> Mapping[str, object]:
         """Read one bounded unambiguous application/json command body."""
 
-        media_type = self.headers.get("Content-Type", "").partition(";")[0].strip().lower()
+        media_type = (
+            self.headers.get("Content-Type", "")
+            .partition(";")[0]
+            .strip()
+            .lower()
+        )
         if media_type != "application/json":
             raise PlannerRequestError("approval requires application/json")
         raw_length = self.headers.get("Content-Length")
