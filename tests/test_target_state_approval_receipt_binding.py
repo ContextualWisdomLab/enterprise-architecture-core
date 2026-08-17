@@ -25,7 +25,10 @@ def test_approval_writer_rejects_receipt_for_another_decision_request() -> None:
     key.
     """
 
-    def runner(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+    def runner(
+        command: list[str],
+        **kwargs: object,
+    ) -> subprocess.CompletedProcess[str]:
         del kwargs
         return subprocess.CompletedProcess(
             command,
