@@ -67,15 +67,24 @@ ON FUNCTION architecture_core.read_technology_target_state_plan(
 )
 FROM PUBLIC;
 
-GRANT EXECUTE
-ON FUNCTION architecture_core.read_technology_target_state_plan(
-    uuid,
-    uuid,
-    timestamptz,
-    timestamptz,
-    integer
-)
-TO ea_runtime;
+-- Repository migration rehearsals intentionally run before deployment-only
+-- role bootstrap. Grant during an in-place upgrade only when the runtime role
+-- already exists; clean installation re-establishes the same narrow grant in
+-- database/init/003_grant_runtime_access.sql after the role is created.
+DO $$
+BEGIN
+  IF EXISTS (
+      SELECT 1
+        FROM pg_catalog.pg_roles
+       WHERE rolname = 'ea_runtime'
+  ) THEN
+    EXECUTE
+      'GRANT EXECUTE ON FUNCTION '
+      'architecture_core.read_technology_target_state_plan('
+      'uuid,uuid,timestamptz,timestamptz,integer) TO ea_runtime';
+  END IF;
+END;
+$$;
 
 COMMENT ON FUNCTION architecture_core.read_technology_target_state_plan(
     uuid,
