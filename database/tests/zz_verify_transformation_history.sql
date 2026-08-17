@@ -295,6 +295,12 @@ INSERT INTO architecture_core.transformation_history_record (
      'Target-state execution completed with retained evidence.',
      'observed', '0195d145-64e8-7f4f-8a23-a0cc784cbf10');
 
+SELECT set_config(
+    'app.tenant_record_id',
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    false
+);
+
 DO $$
 DECLARE
   state_at_valid_cutoff text;
