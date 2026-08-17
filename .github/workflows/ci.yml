@@ -203,6 +203,10 @@ jobs:
             --set ON_ERROR_STOP=1 \
             --command "SELECT conname FROM pg_constraint WHERE conname = 'projection_receipt_source_uri_format';" \
             | grep --fixed-strings 'projection_receipt_source_uri_format'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT tgname FROM pg_trigger WHERE tgname = 'projection_receipt_history_guard' AND NOT tgisinternal;" \
+            | grep --fixed-strings 'projection_receipt_history_guard'
       - name: Prove failed migration rolls back schema and ledger atomically
         env:
           PGHOST: 127.0.0.1
@@ -255,7 +259,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$ledger_count" -eq 18
+          test "$ledger_count" -eq 19
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
