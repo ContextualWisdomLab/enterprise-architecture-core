@@ -8,7 +8,10 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
 
     assert openapi_document["openapi"] == "3.2.0"
     planner_path = "/v1/technology-target-state-plans/{technology_version_id}"
-    approval_path = "/v1/architecture-transformations/{architecture_transformation_id}/approval"
+    approval_path = (
+        "/v1/architecture-transformations/"
+        "{architecture_transformation_id}/approval"
+    )
     assert set(openapi_document["paths"]) == {
         "/health",
         "/ready",
@@ -26,7 +29,10 @@ def test_openapi_binds_governed_approval_request_receipt_and_role(
 ) -> None:
     """The published command contract matches the executable approval boundary."""
 
-    approval_path = "/v1/architecture-transformations/{architecture_transformation_id}/approval"
+    approval_path = (
+        "/v1/architecture-transformations/"
+        "{architecture_transformation_id}/approval"
+    )
     operation = openapi_document["paths"][approval_path]["post"]
     assert operation["operationId"] == "approveTechnologyTargetState"
     assert operation["security"] == [{"keyverseBearer": []}]
