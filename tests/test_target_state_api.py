@@ -146,9 +146,12 @@ def test_real_rs256_fixture_verifies_and_binds_tenant_role() -> None:
 def test_bearer_verification_rejects_invalid_signature_and_claims() -> None:
     """Signature, issuer, audience, expiry, tenant, and role all fail closed."""
 
+    header, payload, signature = _VALID_TOKEN.split(".")
+    corrupt_prefix = "A" if signature[0] != "A" else "B"
+    corrupted_token = ".".join((header, payload, corrupt_prefix + signature[1:]))
     with pytest.raises(AuthorizationError, match="signature"):
         verify_keyverse_bearer(
-            f"Bearer {_VALID_TOKEN[:-1]}B",
+            f"Bearer {corrupted_token}",
             _config(),
             jwks_loader=_jwks_loader,
             now_epoch=1_800_000_000,
