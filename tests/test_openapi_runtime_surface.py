@@ -1,4 +1,4 @@
-"""Regressions for the implemented OpenAPI health and ready surface."""
+"""Regressions for the implemented OpenAPI process and planner surface."""
 
 from copy import deepcopy
 
@@ -9,9 +9,11 @@ from ea_core_foundation import (
     validate_openapi_runtime_surface,
 )
 
+_PLANNER_PATH = "/v1/technology-target-state-plans/{technology_version_id}"
+
 
 def test_checked_in_openapi_runtime_surface_is_truthful(openapi_document) -> None:
-    """The advertised process surface matches the implemented HTTP routes."""
+    """The advertised process and planner surface matches implemented HTTP routes."""
 
     validate_openapi_runtime_surface(openapi_document)
 
@@ -60,11 +62,20 @@ def test_runtime_surface_requires_json_response_schemas(openapi_document) -> Non
         validate_openapi_runtime_surface(changed)
 
 
-@pytest.mark.parametrize("schema_name", ["HealthStatus", "ReadyStatus"])
+@pytest.mark.parametrize(
+    "schema_name",
+    [
+        "HealthStatus",
+        "ReadyStatus",
+        "TargetStatePlanResponse",
+        "TargetStateDecision",
+        "ErrorStatus",
+    ],
+)
 def test_runtime_surface_requires_named_component_schemas(
     openapi_document, schema_name: str
 ) -> None:
-    """Health and ready payloads stay named so clients do not invent shapes."""
+    """Every executable response shape remains named for generated clients."""
 
     del openapi_document["components"]["schemas"][schema_name]
     with pytest.raises(ContractValidationError, match="missing OpenAPI schema"):
@@ -143,8 +154,85 @@ def test_runtime_surface_requires_application_json_schema_object(
 
 
 def test_runtime_surface_requires_schema_components_object(openapi_document) -> None:
-    """Named health and ready schemas live under components.schemas."""
+    """Named response schemas live under components.schemas."""
 
     openapi_document["components"]["schemas"] = []
     with pytest.raises(ContractValidationError, match="schemas must be an object"):
         validate_openapi_runtime_surface(openapi_document)
+
+
+def test_planner_requires_exact_operation_identity_and_keyverse_security(
+    openapi_document,
+) -> None:
+    """The planner cannot silently become anonymous or change generated identity."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["operationId"] = "getTechnologyPlan"
+    with pytest.raises(ContractValidationError, match="planner operationId"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["security"] = []
+    with pytest.raises(ContractValidationError, match="Keyverse bearer"):
+        validate_openapi_runtime_surface(changed)
+
+
+def test_planner_requires_exact_unique_parameter_set(openapi_document) -> None:
+    """OpenAPI parameters stay byte-for-behavior aligned with request parsing."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["parameters"] = {}
+    with pytest.raises(ContractValidationError, match="parameters must be an array"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    parameters = changed["paths"][_PLANNER_PATH]["get"]["parameters"]
+    parameters.append(deepcopy(parameters[0]))
+    with pytest.raises(ContractValidationError, match="duplicate planner parameter"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    del changed["paths"][_PLANNER_PATH]["get"]["parameters"][-1]
+    with pytest.raises(ContractValidationError, match="match executable request"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["parameters"][0]["name"] = 7
+    with pytest.raises(ContractValidationError, match="identity is incomplete"):
+        validate_openapi_runtime_surface(changed)
+
+
+def test_planner_requires_exact_parameter_required_state_and_schema(
+    openapi_document,
+) -> None:
+    """UUID/time/horizon semantics cannot drift from the executable parser."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["parameters"][0]["required"] = False
+    with pytest.raises(ContractValidationError, match="incorrect required state"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["parameters"][1]["schema"] = {
+        "type": "string"
+    }
+    with pytest.raises(ContractValidationError, match="incorrect schema"):
+        validate_openapi_runtime_surface(changed)
+
+
+def test_planner_requires_success_and_error_response_shapes(openapi_document) -> None:
+    """Buyer decisions and fail-closed errors keep stable generated shapes."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"] = {"$ref": "#/components/schemas/ErrorStatus"}
+    with pytest.raises(ContractValidationError, match="TargetStatePlanResponse"):
+        validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["responses"]["401"]["content"][
+        "application/json"
+    ]["schema"] = {"$ref": "#/components/schemas/ReadyStatus"}
+    with pytest.raises(ContractValidationError, match="ErrorStatus"):
+        validate_openapi_runtime_surface(changed)
