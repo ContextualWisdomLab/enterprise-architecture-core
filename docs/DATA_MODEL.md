@@ -88,7 +88,23 @@ Relation deltas reuse the authoritative relation-type guard; a proposed target-s
 
 An immutable baseline must exist before either delta type is appended. Baseline time cannot exceed the scenario target time, a delta cannot begin after that target, cross-tenant targets are rejected through composite foreign keys, and rejected/superseded deltas do not participate in the current projection. All scenario relations use forced RLS. Scenario history cannot be hard-deleted; baseline meaning is fully immutable, while scenario and delta records support only one-time supersession before replacement/continuation is appended.
 
-This milestone projects object and relation presence for a deterministic target-state graph. Approved transformation execution/history, cross-domain event projection, impact traversal, and buyer-facing scenario comparison UI remain later bounded slices; the scenario model is not an arbitrary meta-model editor, workflow engine, or substitute for another product's authoritative store.
+This milestone projects object and relation presence for a deterministic target-state graph. Cross-domain event projection, impact traversal, and buyer-facing scenario comparison UI remain later bounded slices; the scenario model is not an arbitrary meta-model editor, workflow engine, or substitute for another product's authoritative store.
+
+## Transformation execution history
+
+Migration 0014 binds an immutable target-state decision to governed execution history without turning the Enterprise Architecture Decision Plane into a project-management system:
+
+- `architecture_transformation`: one tenant-bound link from an `architecture_scenario` with an immutable baseline to a `remediation_initiative`, plus transformation identity, valid interval, system recording/supersession interval, truth status, and evidence.
+- `transformation_history_record`: append-only ordered state history with `effective_at`, independent `recorded_at`, actor reference, decision reason, truth status, and evidence.
+- `project_transformation_state(uuid,timestamptz,timestamptz)`: tenant-bound projection of the latest transformation state visible at both a real-world valid-time cutoff and a system-recording cutoff.
+
+A transformation cannot target an inactive scenario or initiative, its valid interval must be contained in both parent intervals, the scenario target instant must lie inside the transformation interval, and the scenario must already have its immutable baseline. Current authoritative transformations with the same code cannot overlap.
+
+History begins with `proposed` sequence 1. The database permits only `proposed -> approved|rejected`, `approved -> started|cancelled`, and `started -> completed|cancelled`. Approval, cancellation, and rejection require authoritative truth; started and completed states require authoritative or observed truth. Authoritative and observed facts require evidence, so proposed or inferred automation output cannot silently become an approved architecture decision.
+
+Real-world and system time remain distinct. A future-effective approval may be recorded before its `effective_at`; there is deliberately no `recorded_at >= effective_at` constraint. Sequence history itself stays deterministic: sequence numbers are contiguous and neither effective nor recording order may move backward within one transformation stream. The projector independently applies the requested valid-time and recorded-time cutoffs.
+
+Transformation meaning is immutable after insertion except for one-time supersession, while history rows reject update and delete operations. Forced RLS and composite tenant foreign keys preserve tenant isolation. `decision_actor_ref` is an auditable identity reference, not a replacement for Keyverse authorization. Project tasks, staffing, sprint state, deployment telemetry, and external execution-system state remain outside this model.
 
 ## Integration
 
