@@ -75,9 +75,9 @@ INSERT INTO architecture_core.projection_receipt (
     failure_code
 ) VALUES (
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-    '0196f200-1000-7100-8100-000000000002',
+    '0196f200-1000-7100-8100-000000000005',
     'urn:cwl:tenant_001:semantic_data_portal',
-    '0196f200-1000-7100-8100-000000000102',
+    '0196f200-1000-7100-8100-000000000105',
     repeat('c', 64),
     'context-assertion/v1',
     '2026-08-23T00:10:00Z',
@@ -96,7 +96,7 @@ BEGIN
      WHERE tenant_record_id =
            '0195d145-64e8-7f4f-8a23-a0cc784cb711'
        AND projection_receipt_id =
-           '0196f200-1000-7100-8100-000000000002';
+           '0196f200-1000-7100-8100-000000000005';
     RAISE EXCEPTION 'failed projection receipt regressed to received';
   EXCEPTION
     WHEN check_violation THEN NULL;
