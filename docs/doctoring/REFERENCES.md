@@ -14,6 +14,8 @@ International Organization for Standardization, International Electrotechnical C
 
 Internet Engineering Task Force. (2005). *Uniform resource identifier (URI): Generic syntax* (RFC 3986). RFC Editor. https://www.rfc-editor.org/rfc/rfc3986
 
+Internet Engineering Task Force. (2015). *JSON Web Signature (JWS)* (RFC 7515). RFC Editor. https://www.rfc-editor.org/rfc/rfc7515
+
 Internet Engineering Task Force. (2015). *JSON Web Key (JWK)* (RFC 7517). RFC Editor. https://www.rfc-editor.org/rfc/rfc7517
 
 Internet Engineering Task Force. (2015). *JSON Web Token (JWT)* (RFC 7519). RFC Editor. https://www.rfc-editor.org/rfc/rfc7519
