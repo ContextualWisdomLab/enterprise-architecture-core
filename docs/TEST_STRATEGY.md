@@ -17,17 +17,35 @@
 - exact ADR-count and repository completeness checks;
 - public API docstring coverage.
 
-## Runtime test requirements
+## Portfolio assessment acceptance
 
-Before runtime code may merge, add:
+The portfolio-assessment milestone extends the real PostgreSQL boundary rather
+than testing SQL as source text. Acceptance must prove:
 
-- migration upgrade rehearsal from each released schema version;
+- migration 0010 clean installation and upgrade from the exact 0001-0009
+  predecessor boundary with checksum-ledger continuity;
+- normalized framework/version, scale/value, dimension, cycle, and object
+  assessment persistence;
+- rejection when a score value is from a scale other than the dimension's
+  scale;
+- rejection when a review cycle belongs to a framework other than the
+  dimension's framework derived through its scale;
+- evidence-required `authoritative` and `observed` assessment truth;
+- exclusion of overlapping current authoritative assessment intervals while an
+  inferred competing assertion remains reviewable;
+- forced-RLS tenant isolation for assessment facts under the non-superuser
+  runtime role.
+
+## Subsequent runtime test requirements
+
+Before the corresponding behaviors may merge, add executable evidence for:
+
 - command/outbox atomicity under concurrent application transactions;
-- event replay and duplicate-receipt tests;
-- OIDC signature, issuer, audience, expiry, tenant, and role tests;
-- scenario determinism and non-mutation tests;
-- depth-bounded impact traversal tests;
-- hostile JSON, Unicode, and oversized payload tests.
+- event replay and duplicate-receipt behavior;
+- OIDC signature, issuer, audience, expiry, tenant, and role enforcement;
+- scenario determinism and current-state non-mutation;
+- depth-bounded technology-impact traversal;
+- hostile JSON, Unicode, and oversized payload handling.
 
 Production statement and branch coverage remain 100% and skipped security or
 integration tests fail the quality gate.
