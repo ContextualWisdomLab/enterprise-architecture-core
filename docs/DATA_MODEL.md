@@ -44,7 +44,7 @@ and version associations are represented by `architecture_relation`, rather
 than duplicated foreign keys in extension tables.
 
 `application_record` intentionally carries no business-criticality column.
-Business criticality enters through the future versioned assessment model so a
+Business criticality is represented through the versioned assessment model so a
 score cannot disagree with the framework, dimension, scale, cycle, or evidence
 that defines its meaning.
 
@@ -77,9 +77,34 @@ foreign-tenant URI to masquerade as local evidence.
 
 ## Assessment
 
-Framework, dimension, scale, cycle, and object assessment are normalized so a
-score never silently changes meaning when a framework version changes. These
-tables are planned, not implemented in the foundation PR.
+Portfolio assessment is normalized into six tenant-owned relations:
+
+- `assessment_framework` identifies a framework code and immutable version
+  label across a real-world validity interval.
+- `assessment_scale` belongs to one framework version.
+- `assessment_scale_value` defines the numeric value, label, and ordinal rank
+  of one value in a scale.
+- `assessment_dimension` belongs to one scale; its framework is derived through
+  that scale rather than duplicated on the dimension row.
+- `assessment_cycle` identifies a bounded review period for one framework
+  version.
+- `object_assessment` binds an architecture object to a dimension, cycle, scale
+  value, truth origin, evidence reference, real-world validity, and
+  system-recorded history.
+
+The database verifies that an assessment value belongs to the dimension's scale
+and that the cycle belongs to the same framework version derived through that
+scale. `authoritative` and `observed` assessments require evidence; inferred and
+proposed alternatives may coexist for review without silently becoming current
+truth. A GiST exclusion constraint prevents overlapping current authoritative
+assessments for the same object, dimension, and cycle. Composite tenant foreign
+keys plus forced RLS preserve tenant isolation across the entire assessment
+chain.
+
+Framework version and scale semantics are therefore stable determinants of a
+score. The write model does not copy framework identity onto dimensions or
+objects merely for query convenience; projections may denormalize those facts
+outside the authoritative relational store.
 
 ## Transformation
 
@@ -87,8 +112,8 @@ tables are planned, not implemented in the foundation PR.
 - `scenario_change` stores an ordered delta.
 - current-state records are unchanged until an approved change is executed.
 
-These tables and the scenario projector are planned, not implemented in the
-foundation PR.
+These tables and the scenario projector remain planned and are not implemented
+by the portfolio-assessment milestone.
 
 ## Integration
 
