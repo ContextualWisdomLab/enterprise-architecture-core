@@ -4,6 +4,8 @@
 
 ### Added
 
+- Bitemporal Technology Change Impact & Target-State Planner projection through `project_technology_change_impact(uuid,timestamptz,timestamptz,integer)`, traversing EA-owned technology-version -> component -> application -> capability facts while preserving relation truth origin, provenance, valid time, and recorded time.
+- Deterministic buyer next-action states for lifecycle/support risk and incomplete evidence (`monitor`, `plan_target_state`, `start_remediation`, `complete_capability_mapping`, `complete_support_evidence`), with bounded planning horizons and real PostgreSQL clean-install/upgrade/acceptance evidence.
 - Relation-aware target-state scenarios through normalized `scenario_relation_delta` and deterministic `project_scenario_relations(uuid)`, preserving typed endpoint semantics, truth/evidence, immutable append history, and explicit endpoint-integrity state without mutating authoritative relations.
 - Relation projection composes with final scenario object presence so a requested-present edge with an absent source or target remains auditable but cannot appear active; real PostgreSQL acceptance covers latest-delta precedence, endpoint typing, provenance, RLS, and previous-boundary upgrade from migration 0012 through 0013.
 - Immutable target-state scenario baselines plus ordered object-presence deltas and deterministic `project_scenario_objects(uuid)` projection, preserving exact valid-time/system-time baseline cutoffs without mutating authoritative architecture truth.
