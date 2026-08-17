@@ -8,25 +8,25 @@ CREATE FUNCTION architecture_core.read_technology_target_state_plan(
     planning_horizon_days integer DEFAULT 180
 )
 RETURNS TABLE (
-    technology_version_id uuid,
-    application_object_id uuid,
-    capability_object_id uuid,
-    application_code text,
-    capability_code text,
-    impact_status_code text,
-    impact_evidence_state_code text,
-    external_context_reference_id uuid,
-    external_object_kind_code text,
-    external_truth_status_code text,
-    external_evidence_state_code text,
-    remediation_initiative_id uuid,
-    remediation_initiative_code text,
-    architecture_scenario_id uuid,
-    scenario_code text,
-    architecture_transformation_id uuid,
-    transformation_state_code text,
-    decision_readiness_code text,
-    recommended_action_code text
+  technology_version_id uuid,
+  application_object_id uuid,
+  capability_object_id uuid,
+  application_code text,
+  capability_code text,
+  impact_status_code text,
+  impact_evidence_state_code text,
+  external_context_reference_id uuid,
+  external_object_kind_code text,
+  external_truth_status_code text,
+  external_evidence_state_code text,
+  remediation_initiative_id uuid,
+  remediation_initiative_code text,
+  architecture_scenario_id uuid,
+  scenario_code text,
+  architecture_transformation_id uuid,
+  transformation_state_code text,
+  decision_readiness_code text,
+  recommended_action_code text
 )
 LANGUAGE plpgsql
 STABLE
