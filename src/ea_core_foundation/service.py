@@ -190,12 +190,7 @@ class TargetStatePlanRequest:
     ) -> TargetStatePlanRequest:
         """Validate and normalize one buyer query from HTTP-safe strings."""
 
-        try:
-            technology_id = UUID(technology_version_id)
-        except ValueError as error:
-            raise PlannerRequestError(
-                "technology version id must be a UUID"
-            ) from error
+        technology_id = _parse_uuid7(technology_version_id, "technology version id")
         valid_time = _parse_timestamp(valid_at, "valid_at")
         recorded_time = _parse_timestamp(recorded_at, "recorded_at")
         if planning_horizon_days < 1 or planning_horizon_days > 3650:
@@ -214,6 +209,20 @@ TargetStatePlanReader = Callable[
     [AuthorizationContext, TargetStatePlanRequest],
     Sequence[Mapping[str, object]],
 ]
+
+
+def _parse_uuid7(value: str, field_name: str) -> UUID:
+    """Parse one canonical lowercase hyphenated UUIDv7 wire identifier."""
+
+    try:
+        parsed = UUID(value)
+    except (TypeError, ValueError, AttributeError) as error:
+        raise PlannerRequestError(
+            f"{field_name} must be a canonical UUIDv7"
+        ) from error
+    if parsed.version != 7 or str(parsed) != value:
+        raise PlannerRequestError(f"{field_name} must be a canonical UUIDv7")
+    return parsed
 
 
 def _parse_timestamp(value: str, field_name: str) -> datetime:
@@ -709,8 +718,8 @@ class FoundationServiceHandler(BaseHTTPRequestHandler):
                 {
                     "error_code": "invalid_planner_request",
                     "next_action": (
-                        "Provide one technology UUID, valid_at, recorded_at, and a "
-                        "planning horizon from 1 to 3650 days."
+                        "Provide one canonical UUIDv7 technology identifier, valid_at, "
+                        "recorded_at, and a planning horizon from 1 to 3650 days."
                     ),
                 },
             )
