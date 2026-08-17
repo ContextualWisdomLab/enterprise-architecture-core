@@ -21,7 +21,9 @@ _EVIDENCE_ID = "0195d145-64e8-7f4f-8a23-a0cc784cbf10"
 
 
 def test_approval_writer_rejects_receipt_for_another_decision_request() -> None:
-    """A successful DB call cannot acknowledge a different idempotency command key."""
+    """A successful DB call cannot acknowledge a different idempotency command
+    key.
+    """
 
     def runner(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         del kwargs
