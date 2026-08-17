@@ -10,14 +10,13 @@ from uuid import UUID
 import pytest
 
 from ea_core_foundation.authorization import AuthorizationContext, KeyverseAuthorizationConfig
-from ea_core_foundation.service import (
-    PlannerExecutionError,
-    PlannerRequestError,
+from ea_core_foundation.runtime import (
     TargetStateScheduleRequest,
     build_schedule_authorization_config,
     build_target_state_schedule_writer,
     parse_target_state_schedule_request,
 )
+from ea_core_foundation.service import PlannerExecutionError, PlannerRequestError
 
 _TENANT_ID = "018f47b2-905a-7b16-bfd4-7e4f53f10e91"
 _TRANSFORMATION_ID = "0196e010-1111-7111-8111-111111111191"
