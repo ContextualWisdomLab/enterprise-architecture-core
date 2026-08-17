@@ -15,7 +15,7 @@ RETURNS TABLE (
     version_label text,
     application_code text,
     capability_code text,
-    support_end_date date,
+    lifecycle_change_at timestamptz,
     lifecycle_phase_code text,
     impact_status_code text,
     evidence_state_code text,
@@ -170,38 +170,74 @@ BEGIN
        lifecycle_interval.lifecycle_interval_id DESC
      LIMIT 1
   ),
+  future_lifecycle_context AS (
+    SELECT
+      lifecycle_phase.lifecycle_phase_code,
+      lifecycle_interval.valid_from AS lifecycle_change_at,
+      lifecycle_interval.evidence_record_id
+      FROM architecture_core.lifecycle_interval AS lifecycle_interval
+      JOIN architecture_core.lifecycle_phase AS lifecycle_phase
+        ON lifecycle_phase.lifecycle_phase_id =
+           lifecycle_interval.lifecycle_phase_id
+     WHERE lifecycle_interval.tenant_record_id =
+           architecture_core.current_tenant_id()
+       AND lifecycle_interval.architecture_object_id =
+           requested_technology_version_id
+       AND lifecycle_interval.valid_from > assessment_valid_at
+       AND lifecycle_interval.recorded_at <= assessment_recorded_at
+       AND (
+          lifecycle_interval.superseded_at IS NULL
+          OR lifecycle_interval.superseded_at > assessment_recorded_at
+       )
+       AND lifecycle_phase.lifecycle_phase_code IN
+           ('phase_out', 'end_of_life', 'retired')
+     ORDER BY
+       lifecycle_interval.valid_from,
+       lifecycle_interval.recorded_at DESC,
+       lifecycle_interval.lifecycle_interval_id DESC
+     LIMIT 1
+  ),
   classified_impact AS (
     SELECT
       impact_path.*,
       technology_version.version_label,
-      technology_version.support_end_date,
+      future_lifecycle_context.lifecycle_change_at,
       lifecycle_context.lifecycle_phase_code,
-      lifecycle_context.evidence_record_id AS lifecycle_evidence_record_id,
       CASE
         WHEN lifecycle_context.lifecycle_phase_code IN
              ('end_of_life', 'retired') THEN 'end_of_life'
-        WHEN technology_version.support_end_date IS NOT NULL
-         AND technology_version.support_end_date < assessment_valid_at::date
-          THEN 'unsupported'
         WHEN lifecycle_context.lifecycle_phase_code = 'phase_out'
           THEN 'phase_out'
-        WHEN technology_version.support_end_date IS NOT NULL
-         AND technology_version.support_end_date <=
-             assessment_valid_at::date + planning_horizon_days
-          THEN 'support_ending_soon'
+        WHEN future_lifecycle_context.lifecycle_change_at IS NOT NULL
+         AND future_lifecycle_context.lifecycle_change_at <=
+             assessment_valid_at
+             + (planning_horizon_days * interval '1 day')
+          THEN 'lifecycle_change_soon'
         ELSE 'supported'
       END::text AS impact_status_code,
       CASE
         WHEN impact_path.capability_object_id IS NULL
           THEN 'missing_capability_mapping'
         WHEN lifecycle_context.lifecycle_phase_code IS NULL
-         AND technology_version.support_end_date IS NULL
-          THEN 'missing_support_evidence'
+          OR lifecycle_context.evidence_record_id IS NULL
+          THEN 'missing_lifecycle_evidence'
         ELSE 'complete'
-      END::text AS evidence_state_code
+      END::text AS evidence_state_code,
+      CASE
+        WHEN lifecycle_context.lifecycle_phase_code IN
+             ('end_of_life', 'retired', 'phase_out')
+          THEN lifecycle_context.evidence_record_id
+        WHEN future_lifecycle_context.lifecycle_change_at IS NOT NULL
+         AND future_lifecycle_context.lifecycle_change_at <=
+             assessment_valid_at
+             + (planning_horizon_days * interval '1 day')
+          THEN future_lifecycle_context.evidence_record_id
+        ELSE lifecycle_context.evidence_record_id
+      END AS lifecycle_evidence_record_id
       FROM impact_path
       CROSS JOIN architecture_core.technology_version AS technology_version
       LEFT JOIN lifecycle_context ON true
+      LEFT JOIN future_lifecycle_context ON true
      WHERE technology_version.tenant_record_id =
            architecture_core.current_tenant_id()
        AND technology_version.architecture_object_id =
@@ -216,7 +252,7 @@ BEGIN
     classified_impact.version_label,
     classified_impact.application_code,
     classified_impact.capability_code,
-    classified_impact.support_end_date,
+    classified_impact.lifecycle_change_at,
     classified_impact.lifecycle_phase_code,
     classified_impact.impact_status_code,
     classified_impact.evidence_state_code,
@@ -224,13 +260,12 @@ BEGIN
       WHEN classified_impact.evidence_state_code =
            'missing_capability_mapping'
         THEN 'complete_capability_mapping'
-      WHEN classified_impact.evidence_state_code = 'missing_support_evidence'
-        THEN 'complete_support_evidence'
-      WHEN classified_impact.impact_status_code IN
-           ('end_of_life', 'unsupported')
+      WHEN classified_impact.evidence_state_code = 'missing_lifecycle_evidence'
+        THEN 'complete_lifecycle_evidence'
+      WHEN classified_impact.impact_status_code = 'end_of_life'
         THEN 'start_remediation'
       WHEN classified_impact.impact_status_code IN
-           ('phase_out', 'support_ending_soon')
+           ('phase_out', 'lifecycle_change_soon')
         THEN 'plan_target_state'
       ELSE 'monitor'
     END::text AS recommended_action_code,
@@ -255,6 +290,6 @@ COMMENT ON FUNCTION architecture_core.project_technology_change_impact(
     timestamptz,
     integer
 ) IS
-'Projects a tenant-scoped, bitemporal technology-version impact path through EA-owned component, application, and capability relations. It preserves relation truth/evidence, surfaces missing mapping/support evidence, and returns deterministic next-action codes without mutating authoritative facts.';
+'Projects a tenant-scoped, bitemporal technology-version impact path through EA-owned component, application, capability, and lifecycle facts. It classifies risk only from lifecycle evidence visible at the requested valid/system cutoffs, preserves relation and decision provenance, surfaces missing mapping/lifecycle evidence, and returns deterministic next-action codes without mutating authoritative facts.';
 
 COMMIT;
