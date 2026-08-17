@@ -158,9 +158,11 @@ BEGIN
     RAISE EXCEPTION
       'late-recorded capability evidence leaked across the system-time cutoff';
   END IF;
-  IF impacted_row.impact_status_code <> 'support_ending_soon'
-     OR impacted_row.lifecycle_phase_code <> 'active' THEN
-    RAISE EXCEPTION 'support-horizon or lifecycle classification is incorrect';
+  IF impacted_row.impact_status_code <> 'lifecycle_change_soon'
+     OR impacted_row.lifecycle_phase_code <> 'active'
+     OR impacted_row.lifecycle_change_at IS DISTINCT FROM
+        '2026-10-01T00:00:00Z'::timestamptz THEN
+    RAISE EXCEPTION 'bitemporal lifecycle horizon classification is incorrect';
   END IF;
 END;
 $$;
@@ -189,6 +191,37 @@ BEGIN
      OR impacted_row.usage_relation_truth_status_code <> 'authoritative'
      OR impacted_row.capability_relation_truth_status_code <> 'authoritative' THEN
     RAISE EXCEPTION 'impact action or truth provenance is incorrect';
+  END IF;
+END;
+$$;
+
+-- `technology_version.support_end_date` predates the bitemporal lifecycle model
+-- and has no system-recording interval. Mutating that current metadata must not
+-- rewrite a historical impact projection; lifecycle_interval is the auditable
+-- source for time-travel risk classification.
+UPDATE architecture_core.technology_version
+   SET support_end_date = '2026-08-18'
+ WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+   AND architecture_object_id = '0196f100-1111-7111-8111-111111111111';
+
+DO $$
+DECLARE
+  impacted_row record;
+BEGIN
+  SELECT *
+    INTO impacted_row
+    FROM architecture_core.project_technology_change_impact(
+        '0196f100-1111-7111-8111-111111111111',
+        '2026-08-17T00:00:00Z',
+        '2026-09-15T00:00:00Z',
+        180
+    );
+
+  IF impacted_row.impact_status_code <> 'lifecycle_change_soon'
+     OR impacted_row.lifecycle_change_at IS DISTINCT FROM
+        '2026-10-01T00:00:00Z'::timestamptz THEN
+    RAISE EXCEPTION
+      'mutable non-temporal version metadata rewrote bitemporal impact history';
   END IF;
 END;
 $$;
