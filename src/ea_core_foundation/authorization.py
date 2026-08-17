@@ -14,7 +14,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from uuid import UUID
 
 _MAX_JWKS_BYTES = 1_048_576
@@ -66,6 +66,15 @@ SignatureVerifier = Callable[[bytes, bytes, Mapping[str, Any]], bool]
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 
 
+def _scope_path_is_canonical(path: str) -> bool:
+    """Reject URI path aliases whose normalization can change issuer scope."""
+
+    decoded_path = unquote(path)
+    return "\\" not in decoded_path and all(
+        segment not in {".", ".."} for segment in decoded_path.split("/")
+    )
+
+
 def _same_origin_jwks(issuer_uri: str, jwks_url: str) -> bool:
     """Require HTTPS JWKS under the configured issuer origin and path."""
 
@@ -86,8 +95,13 @@ def _same_origin_jwks(issuer_uri: str, jwks_url: str) -> bool:
         or jwks.fragment
     ):
         return False
-    issuer_path = issuer.path.rstrip("/")
-    return bool(issuer_path) and jwks.path.startswith(f"{issuer_path}/")
+    if not _scope_path_is_canonical(issuer.path) or not _scope_path_is_canonical(
+        jwks.path
+    ):
+        return False
+    issuer_path = unquote(issuer.path).rstrip("/")
+    jwks_path = unquote(jwks.path)
+    return bool(issuer_path) and jwks_path.startswith(f"{issuer_path}/")
 
 
 def build_keyverse_authorization_config(
