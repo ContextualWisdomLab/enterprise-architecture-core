@@ -26,6 +26,11 @@ INSERT INTO architecture_core.architecture_object (
     ),
     (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196f130-3333-7333-8333-333333333333',
+        '0195d145-64e8-7f4f-8a23-a0cc784cb802'
+    ),
+    (
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0196f120-2222-7222-8222-222222222222',
         '0195d145-64e8-7f4f-8a23-a0cc784cb802'
     );
@@ -49,12 +54,19 @@ INSERT INTO architecture_core.application_record (
     architecture_object_id,
     application_code,
     application_category_code
-) VALUES (
-    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-    '0196f120-2222-7222-8222-222222222222',
-    'inventory_planning',
-    'saas_application'
-);
+) VALUES
+    (
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196f130-3333-7333-8333-333333333333',
+        'impact_inventory_planning',
+        'saas_application'
+    ),
+    (
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196f120-2222-7222-8222-222222222222',
+        'inventory_planning_proposal',
+        'saas_application'
+    );
 
 INSERT INTO architecture_core.architecture_relation (
     tenant_record_id,
@@ -82,7 +94,7 @@ INSERT INTO architecture_core.architecture_relation (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0196f102-1111-7111-8111-111111111111',
         '0195d145-64e8-7f4f-8a23-a0cc784cb812',
-        '0195d145-64e8-7f4f-8a23-a0cc784cb902',
+        '0196f130-3333-7333-8333-333333333333',
         '0195d145-64e8-7f4f-8a23-a0cc784cb903',
         '2026-01-01T00:00:00Z',
         '2026-08-01T00:00:00Z',
@@ -93,7 +105,7 @@ INSERT INTO architecture_core.architecture_relation (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0196f103-1111-7111-8111-111111111111',
         '0195d145-64e8-7f4f-8a23-a0cc784cb811',
-        '0195d145-64e8-7f4f-8a23-a0cc784cb902',
+        '0196f130-3333-7333-8333-333333333333',
         '0195d145-64e8-7f4f-8a23-a0cc784cb901',
         '2026-07-01T00:00:00Z',
         '2026-09-01T00:00:00Z',
@@ -185,12 +197,12 @@ BEGIN
         '2026-08-15T00:00:00Z',
         180
     )
-   WHERE application_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
+   WHERE application_object_id = '0196f130-3333-7333-8333-333333333333';
 
   IF impacted_row.technology_component_id IS DISTINCT FROM
       '0195d145-64e8-7f4f-8a23-a0cc784cb903'::uuid
      OR impacted_row.application_object_id IS DISTINCT FROM
-      '0195d145-64e8-7f4f-8a23-a0cc784cb902'::uuid THEN
+      '0196f130-3333-7333-8333-333333333333'::uuid THEN
     RAISE EXCEPTION 'technology-to-application impact path is incomplete';
   END IF;
   IF impacted_row.capability_object_id IS NOT NULL
@@ -220,7 +232,7 @@ BEGIN
         '2026-09-15T00:00:00Z',
         180
     )
-   WHERE application_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
+   WHERE application_object_id = '0196f130-3333-7333-8333-333333333333';
 
   IF impacted_row.capability_object_id IS DISTINCT FROM
       '0195d145-64e8-7f4f-8a23-a0cc784cb901'::uuid
@@ -282,7 +294,7 @@ BEGIN
         '2026-09-15T00:00:00Z',
         180
     )
-   WHERE application_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
+   WHERE application_object_id = '0196f130-3333-7333-8333-333333333333';
 
   IF impacted_row.impact_status_code <> 'lifecycle_change_soon'
      OR impacted_row.lifecycle_change_at IS DISTINCT FROM
@@ -305,7 +317,7 @@ BEGIN
         '2027-01-15T00:00:00Z',
         180
     )
-   WHERE application_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb902';
+   WHERE application_object_id = '0196f130-3333-7333-8333-333333333333';
 
   IF impacted_row.lifecycle_phase_code <> 'end_of_life'
      OR impacted_row.impact_status_code <> 'end_of_life'
