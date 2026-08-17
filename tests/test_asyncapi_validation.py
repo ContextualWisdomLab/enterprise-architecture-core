@@ -12,9 +12,9 @@ _SHARED_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
 
 
 def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
-    """The checked-in contract defines two publisher operations."""
+    """The checked-in contract defines every implemented publisher operation."""
 
-    assert validate_asyncapi_document(asyncapi_document) == 2
+    assert validate_asyncapi_document(asyncapi_document) == 3
 
 
 def test_asyncapi_rejects_wrong_version(asyncapi_document) -> None:
@@ -74,7 +74,7 @@ def test_asyncapi_rejects_non_object_operation(asyncapi_document) -> None:
 
 
 def test_asyncapi_initial_operations_are_publish_only(asyncapi_document) -> None:
-    """The initial contract exposes publisher operations only."""
+    """The implemented contract exposes publisher operations only."""
 
     asyncapi_document["operations"]["publishObjectChanged"]["action"] = "receive"
     with pytest.raises(ContractValidationError, match="must publish"):
@@ -124,6 +124,11 @@ def test_asyncapi_messages_reuse_shared_context_graph_envelope(
         "schema"
     ]["allOf"][1]["properties"]["type"] == {
         "const": "org.contextualwisdomlab.ea.lifecycle.changed.v1"
+    }
+    assert asyncapi_document["components"]["messages"]["TransformationApproved"][
+        "payload"
+    ]["schema"]["allOf"][1]["properties"]["type"] == {
+        "const": "org.contextualwisdomlab.ea.transformation.approved.v1"
     }
 
 
