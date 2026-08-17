@@ -1,8 +1,8 @@
 """Documentation baseline tests."""
 
+import re
 from datetime import date
 from pathlib import Path
-import re
 
 _REQUIRED_DOCUMENTS = (
     "README.md",
