@@ -4,6 +4,17 @@
 
 ### Added
 
+- Normalized versioned portfolio assessment for framework/version, scale/value,
+  dimension, cycle, and object assessment facts with UUIDv7 identifiers,
+  composite tenant foreign keys, forced RLS, valid/system time, truth origin,
+  and provenance-aware assessment history.
+- Database semantic guards that reject a score from the wrong dimension scale
+  or a cycle from another framework, require evidence for authoritative and
+  observed assessments, prevent overlapping current authoritative assessment
+  intervals, and allow inferred alternatives to remain reviewable without
+  promotion.
+- Real PostgreSQL portfolio-assessment acceptance plus upgrade rehearsal from
+  migrations 0001-0009 through migration 0010.
 - Installable `enterprise-architecture-core` process with process-only
   `GET /health` and fail-closed dependency-aware `GET /ready` on
   `0.0.0.0:$PORT`.
@@ -40,7 +51,7 @@
   typed relations, evidence insert/update tenant integrity, event chronology,
   payload shape, projection identity, and outbox rollback.
 - Clean-install, idempotent replay, checksum-drift, failed-migration atomicity,
-  and previous-boundary upgrade rehearsal through migration 0009.
+  and previous-boundary upgrade rehearsal through migration 0010.
 - OpenAPI and AsyncAPI contract baselines.
 - Keyverse OIDC, tenant-isolation, provenance, and append-preserving history
   requirements.
