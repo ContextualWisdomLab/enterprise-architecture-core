@@ -122,12 +122,29 @@ For an authoritative/observed path with complete evidence, `recommended_action_c
 
 The caller chooses a planning horizon between 1 and 3650 days. An unknown technology version or out-of-range horizon fails closed. The function is read-only and never creates or approves scenarios, initiatives, or transformations, and it never promotes inferred/proposed evidence into authority.
 
-This slice intentionally stops at EA-owned capability impact. Physical schema/design evidence remains owned by pg-erd-cloud; catalog assets, data products, dashboards/models/AI projections and governed lineage remain owned by Semantic Data Portal; inferred lineage remains owned by LineageWeave. Those products can later enrich this impact path through their published contracts/events without direct cross-service application-table SQL or duplicated authority.
+The technology projector intentionally ends at EA-owned application/capability impact. Foreign evidence is joined through the separate receipt-bound projection below instead of by querying another product's tables or copying its source-of-truth payload.
+
+## Cross-domain application impact projection
+
+Migrations 0016 and 0017 extend the buyer decision path with normalized, receipt-bound foreign references while preserving each product's authority:
+
+- `external_context_reference` stores an immutable local reference to a foreign canonical object. It records only tenant, local UUIDv7 reference identity, canonical URI, owning product code, object-kind code, and recording time.
+- `application_context_projection` records one bitemporal, truth-labelled relation from an EA `application_record` to an external reference plus the exact processed `projection_receipt` that supplied that relation.
+- `project_application_context_impact(uuid,timestamptz,timestamptz)` returns the foreign references visible for one application at explicit valid-time and system-recording cutoffs together with source event identity, payload digest, truth status, evidence state, and a deterministic next action.
+
+The current authority/kind vocabulary is deliberately narrow. `pg_erd_cloud` owns `database_schema` references and its direct projections are accepted only as `observed` physical-schema evidence. `semantic_data_portal` owns `data_product`, `dashboard`, `model`, and `ai_agent` references. A `lineage_weave` receipt may propose/infer a link to an existing canonical reference but may never mark that relation authoritative or observed. This keeps foreign object ownership separate from the product that supplied a relationship proposal.
+
+Projection insertion fails closed unless the receipt is already `processed`, its `processed_at` is no later than the local projection `recorded_at`, the referenced EA object is an application, and the source product obeys its responsibility boundary. Canonical foreign URIs must encode the same tenant, owner, and kind as the reference row. Composite tenant foreign keys and forced RLS protect both tables.
+
+Projection meaning is append-preserving. External references reject update/delete; application projections reject hard delete and semantic in-place edits, allow only one-time supersession, and prevent overlapping active authoritative/observed facts. Migration 0017 also makes the receipt/application/reference/relation tuple unique so replaying the same processed event cannot create duplicate inferred/proposed rows.
+
+Historical reads filter both projection system time and receipt process time. Inferred/proposed truth is returned as `requires_truth_review` with `review_truth_origin`; complete owner evidence yields object-specific next actions such as `review_schema_dependency`, `review_data_product_impact`, `review_dashboard_impact`, `review_model_impact`, or `review_ai_agent_impact`. The function is read-only: it does not create initiatives, scenarios, transformation history, foreign catalog state, schema snapshots, or lineage graphs.
 
 ## Integration
 
 - `outbox_event` provides atomic publication and object-shaped JSON payloads.
 - `projection_receipt` makes inbound event replay idempotent and validates authority URI plus UUIDv7 event identity.
+- `external_context_reference` and `application_context_projection` reuse processed receipts to expose foreign impact evidence without importing foreign source-of-truth payloads.
 - `evidence_record` stores opaque, tenant-consistent evidence references and byte digests.
 - `identity_link` stores Keyverse subject links, not credentials.
 
