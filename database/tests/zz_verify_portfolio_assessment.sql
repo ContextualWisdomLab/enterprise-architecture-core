@@ -1,8 +1,8 @@
 \set ON_ERROR_STOP on
 
--- Buyer acceptance for versioned portfolio assessment. This file is intentionally
--- added before migration 0010 so the first branch commit is RED: the required
--- normalized assessment relations do not yet exist.
+-- Buyer acceptance for versioned portfolio assessment. The first branch commit
+-- added this acceptance before migration 0010, producing a real hosted RED run
+-- before the implementation existed.
 
 DO $$
 DECLARE
@@ -341,6 +341,112 @@ INSERT INTO architecture_core.object_assessment (
     '2026-09-01T00:00:00Z',
     'inferred'
 );
+
+-- Once an assessment meaning has been used, mutating any of its normalized
+-- determinants would retrospectively rewrite historical decisions. Corrections
+-- must supersede rows and create new definition/assessment facts instead.
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.assessment_framework
+       SET framework_version_label = 'rewritten'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND assessment_framework_id = '0196a001-1111-7111-8111-111111111111';
+    RAISE EXCEPTION 'assessment framework meaning was mutable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.assessment_scale
+       SET assessment_framework_id = '0196a001-1111-7111-8111-111111111113'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND assessment_scale_id = '0196a002-1111-7111-8111-111111111111';
+    RAISE EXCEPTION 'assessment scale meaning was mutable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.assessment_scale_value
+       SET score_value = 4
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND scale_value_id = '0196a003-1111-7111-8111-111111111111';
+    RAISE EXCEPTION 'assessment scale value meaning was mutable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.assessment_dimension
+       SET assessment_scale_id = '0196a002-1111-7111-8111-111111111112'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND assessment_dimension_id = '0196a004-1111-7111-8111-111111111111';
+    RAISE EXCEPTION 'assessment dimension meaning was mutable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.assessment_cycle
+       SET assessment_framework_id = '0196a001-1111-7111-8111-111111111113'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND assessment_cycle_id = '0196a005-1111-7111-8111-111111111111';
+    RAISE EXCEPTION 'assessment cycle meaning was mutable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.object_assessment
+       SET assessor_note = 'rewritten after decision'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND object_assessment_id = '0196a007-1111-7111-8111-111111111114';
+    RAISE EXCEPTION 'historical object assessment was mutable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
+
+UPDATE architecture_core.object_assessment
+   SET superseded_at = clock_timestamp()
+ WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+   AND object_assessment_id = '0196a007-1111-7111-8111-111111111114';
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE architecture_core.object_assessment
+       SET superseded_at = superseded_at + interval '1 second'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND object_assessment_id = '0196a007-1111-7111-8111-111111111114';
+    RAISE EXCEPTION 'assessment supersession timestamp was rewritable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
 
 SET ROLE ea_runtime;
 SET app.tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711';
