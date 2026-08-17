@@ -717,6 +717,7 @@ def build_target_state_approval_writer(
             not isinstance(payload, Mapping)
             or payload.get("transformation_state_code") != "approved"
             or payload.get("next_action") != "schedule_transformation"
+            or payload.get("decision_request_id") != str(request.decision_request_id)
             or not isinstance(payload.get("replayed"), bool)
         ):
             raise PlannerExecutionError(
