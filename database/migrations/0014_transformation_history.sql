@@ -264,6 +264,20 @@ BEGIN
       MESSAGE = 'transformation cannot use an inactive remediation initiative';
   END IF;
 
+  IF NEW.truth_status_code IN ('authoritative', 'observed')
+     AND scenario_truth_status_code NOT IN ('authoritative', 'observed') THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'governed transformation cannot promote scenario truth';
+  END IF;
+
+  IF NEW.truth_status_code IN ('authoritative', 'observed')
+     AND initiative_truth_status_code NOT IN ('authoritative', 'observed') THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'governed transformation cannot promote initiative truth';
+  END IF;
+
   IF scenario_valid_from IS NOT NULL
      AND NOT (
         tstzrange(NEW.valid_from, NEW.valid_to, '[)')
@@ -362,6 +376,15 @@ BEGIN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
       MESSAGE = 'history cannot be appended to an inactive transformation';
+  END IF;
+
+  IF NEW.transformation_state_code IN (
+        'approved', 'started', 'completed', 'cancelled'
+     )
+     AND transformation_truth_status_code <> 'authoritative' THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'governed execution state requires authoritative transformation';
   END IF;
 
   IF transformation_valid_from IS NOT NULL
