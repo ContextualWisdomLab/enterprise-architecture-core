@@ -1,4 +1,4 @@
-"""Regression tests for canonical UUIDv7 technology identities at the planner boundary."""
+"""Canonical UUIDv7 regression tests for the planner boundary."""
 
 from __future__ import annotations
 
