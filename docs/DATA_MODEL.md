@@ -88,7 +88,7 @@ Relation deltas reuse the authoritative relation-type guard; a proposed target-s
 
 An immutable baseline must exist before either delta type is appended. Baseline time cannot exceed the scenario target time, a delta cannot begin after that target, cross-tenant targets are rejected through composite foreign keys, and rejected/superseded deltas do not participate in the current projection. All scenario relations use forced RLS. Scenario history cannot be hard-deleted; baseline meaning is fully immutable, while scenario and delta records support only one-time supersession before replacement/continuation is appended.
 
-This milestone projects object and relation presence for a deterministic target-state graph. Cross-domain event projection, impact traversal, and buyer-facing scenario comparison UI remain later bounded slices; the scenario model is not an arbitrary meta-model editor, workflow engine, or substitute for another product's authoritative store.
+This milestone projects object and relation presence for a deterministic target-state graph. Cross-domain event projection and buyer-facing scenario comparison UI remain later bounded slices; the scenario model is not an arbitrary meta-model editor, workflow engine, or substitute for another product's authoritative store.
 
 ## Transformation execution history
 
@@ -105,6 +105,20 @@ History begins with `proposed` sequence 1. The database permits only `proposed -
 Real-world and system time remain distinct. A future-effective approval may be recorded before its `effective_at`; there is deliberately no `recorded_at >= effective_at` constraint. Sequence history itself stays deterministic: sequence numbers are contiguous and neither effective nor recording order may move backward within one transformation stream. The projector independently applies the requested valid-time and recorded-time cutoffs.
 
 Transformation meaning is immutable after insertion except for one-time supersession, while history rows reject update and delete operations. Forced RLS and composite tenant foreign keys preserve tenant isolation. `decision_actor_ref` is an auditable identity reference, not a replacement for Keyverse authorization. Project tasks, staffing, sprint state, deployment telemetry, and external execution-system state remain outside this model.
+
+## Technology change impact projection
+
+Migration 0015 adds the first buyer-facing Technology Change Impact & Target-State Planner query without introducing another write model:
+
+- `project_technology_change_impact(uuid,timestamptz,timestamptz,integer)`: starts from one tenant-owned `technology_version`, resolves its owning technology component through `has_version`, finds affected applications through `uses_technology`, then finds supported business capabilities through `supports_capability`.
+
+Every traversed relation is evaluated independently at the requested valid-time and recorded-time cutoffs. A relation must already have been recorded, must still be visible at the requested system time, must contain the requested real-world time, and cannot have `superseded` or `rejected` truth origin. The lifecycle phase is selected under the same two-time rule. This lets an audit query reproduce what the system actually knew at an earlier cutoff even when capability evidence was backfilled later.
+
+The projection returns the IDs and business codes needed to explain the path, support-end date and lifecycle phase, relation truth statuses, relation/lifecycle evidence IDs, and three deterministic decision fields. `impact_status_code` classifies current support/lifecycle risk; `evidence_state_code` makes incomplete capability or support evidence explicit; `recommended_action_code` tells the caller whether to monitor, plan a target state, start remediation, or complete missing evidence. Evidence gaps take precedence over a remediation recommendation so incomplete architecture knowledge cannot masquerade as a precise decision.
+
+The caller chooses a planning horizon between 1 and 3650 days. An unknown technology version or out-of-range horizon fails closed. The function is read-only and never creates or approves scenarios, initiatives, or transformations, and it never promotes inferred/proposed evidence into authority.
+
+This slice intentionally stops at EA-owned capability impact. Physical schema/design evidence remains owned by pg-erd-cloud; catalog assets, data products, dashboards/models/AI projections and governed lineage remain owned by Semantic Data Portal; inferred lineage remains owned by LineageWeave. Those products can later enrich this impact path through their published contracts/events without direct cross-service application-table SQL or duplicated authority.
 
 ## Integration
 
