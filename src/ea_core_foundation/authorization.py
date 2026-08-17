@@ -392,6 +392,8 @@ def verify_keyverse_bearer(
         raise AuthorizationError("JWT header requires a signing key id")
     if header.get("typ") not in {None, "JWT", "at+jwt"}:
         raise AuthorizationError("JWT type is not an accepted access-token type")
+    if "crit" in header:
+        raise AuthorizationError("JWT uses unsupported critical header extensions")
     jwk = _select_signing_key(
         jwks_loader(config.jwks_url, config.issuer_uri),
         key_id,
