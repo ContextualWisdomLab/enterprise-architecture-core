@@ -247,7 +247,9 @@ def test_approval_request_requires_uuidv7_evidence_reason_and_aware_time() -> No
 
 def test_approval_writer_binds_verified_actor_without_exposing_private_values(
 ) -> None:
-    """The runtime writer derives the actor while keeping credentials and rationale off argv."""
+    """The runtime writer derives the actor while keeping credentials and rationale
+    off argv.
+    """
 
     calls: list[tuple[list[str], dict[str, Any]]] = []
 
