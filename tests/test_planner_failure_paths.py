@@ -146,7 +146,9 @@ def test_plan_reader_rejects_command_and_response_failures() -> None:
     def timeout_failure(*args: Any, **kwargs: Any) -> Any:
         raise subprocess.TimeoutExpired("psql", 10)
 
-    def nonzero(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    def nonzero(
+        command: list[str], **kwargs: Any
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(command, 2, "", "db error")
 
     def invalid_json(
@@ -154,10 +156,14 @@ def test_plan_reader_rejects_command_and_response_failures() -> None:
     ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(command, 0, "not-json", "")
 
-    def non_list(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    def non_list(
+        command: list[str], **kwargs: Any
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(command, 0, '{"row":1}', "")
 
-    def bad_member(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    def bad_member(
+        command: list[str], **kwargs: Any
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(command, 0, '["row"]', "")
 
     cases.extend(
