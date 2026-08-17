@@ -27,8 +27,22 @@ The planner read boundary has executable acceptance rather than a documentation-
 - real PostgreSQL acceptance proves `ea_runtime` can execute that purpose-bound wrapper but cannot execute the underlying projector or read application tables directly;
 - OpenAPI validation binds the exact implemented planner path, Keyverse security, parameter schemas and response/error shapes to executable runtime behavior.
 
+## Governed target-state approval
+
+The mutation boundary is tested independently from read authorization and never treats planner advice as authority by itself:
+
+- approval-role tests prove `EA_APPROVAL_ROLES` is a separate allow-list and that a read role cannot silently inherit mutation authority;
+- strict HTTP/body parsing covers content type/length bounds, duplicate JSON members, unknown/spoofed actor fields, UUIDv7 decision/evidence/transformation identifiers, offset-aware effective time and bounded human decision reason;
+- service tests derive the decision actor from the verified Keyverse issuer/subject and prove the DSN/password remains out of argv while only `approve_target_state(...)` is called;
+- PostgreSQL acceptance proves the transformation must be authoritative and currently proposed, evidence is tenant-bound, effective time cannot move backward, exact decision-request replay is idempotent, conflicting replay is rejected, and failed validation rolls back;
+- authoritative transformation history and `org.contextualwisdomlab.ea.transformation.approved.v1` outbox evidence must commit atomically; replay fails if history exists without its event;
+- the runtime receipt is bound to the exact decision request so a successful database call cannot acknowledge another idempotency key;
+- OpenAPI validation requires the exact POST command, strict request/receipt schemas, stable 200/201/400/401/403/503 responses, and separate approval-role configuration;
+- AsyncAPI validation requires the transformation-approved publisher to reuse the shared Context Graph CloudEvent envelope;
+- libpq connection-environment coverage pins the documented `PGSSLSNI` mapping for the PostgreSQL `sslsni` parameter.
+
 ## Remaining future requirements
 
-Before corresponding future features merge, add executable evidence for command/outbox atomicity under concurrent application transactions, bounded graph traversal/injection handling, OpenLineage ingestion replay storms, mutating command actor/purpose/human-review/audit semantics, and accessible exact-value/export behavior for UI surfaces.
+Before corresponding future features merge, add executable evidence for broader command/outbox concurrency races, bounded graph traversal/injection handling, OpenLineage ingestion replay storms, additional transformation commands, and accessible exact-value/export behavior for UI surfaces.
 
 No source-text assertion substitutes for a real PostgreSQL, HTTP, cryptographic, package or integration boundary when that executable boundary exists.
