@@ -47,6 +47,10 @@ _IMPLEMENTED_RUNTIME_PATHS = {
     "/health": "getHealth",
     "/ready": "getReady",
 }
+_TARGET_STATE_RUNTIME_PATH = (
+    "/v1/technology-target-state-plans/{technology_version_id}"
+)
+_TARGET_STATE_OPERATION_ID = "getTechnologyTargetStatePlan"
 _REQUIRED_CONNECTOR_NAMES = {
     "keyverse_oidc",
     "context_graph_contracts",
@@ -256,6 +260,16 @@ def validate_openapi_document(document: Mapping[str, Any]) -> int:
         "role",
     ]:
         raise ContractValidationError("Keyverse verification checks are incomplete")
+    required_configuration = oidc_contract.get("requiredConfiguration")
+    if required_configuration != [
+        "EA_OIDC_ISSUER",
+        "EA_OIDC_AUDIENCE",
+        "EA_OIDC_JWKS_URL",
+        "EA_TENANT_CLAIM",
+        "EA_ROLE_CLAIM",
+        "EA_READ_ROLES",
+    ]:
+        raise ContractValidationError("Keyverse runtime configuration is incomplete")
     return len(operation_ids)
 
 
@@ -293,14 +307,9 @@ def _require_json_schema_ref(
         )
 
 
-def validate_openapi_runtime_surface(document: Mapping[str, Any]) -> None:
-    """Require the implemented health and ready operations to stay truthful."""
+def _validate_probe_operations(paths: Mapping[str, Any]) -> None:
+    """Require health/readiness probes to stay exact and unauthenticated."""
 
-    paths = _require_mapping(document.get("paths"), "paths")
-    if set(paths) != set(_IMPLEMENTED_RUNTIME_PATHS):
-        raise ContractValidationError(
-            "OpenAPI must advertise only implemented /health and /ready"
-        )
     for path_name, operation_id in _IMPLEMENTED_RUNTIME_PATHS.items():
         path_item = _require_mapping(paths.get(path_name), f"path {path_name}")
         operation = _require_mapping(path_item.get("get"), f"{path_name} get")
@@ -314,13 +323,146 @@ def validate_openapi_runtime_surface(document: Mapping[str, Any]) -> None:
         _require_json_schema_ref(operation, path_name, "200", schema_name)
         if path_name == "/ready":
             _require_json_schema_ref(operation, path_name, "503", schema_name)
+
+
+def _parameter_index(operation: Mapping[str, Any]) -> Mapping[tuple[str, str], Any]:
+    """Return the exact unique OpenAPI parameter set for one operation."""
+
+    parameters = operation.get("parameters")
+    if not isinstance(parameters, Sequence) or isinstance(parameters, (str, bytes)):
+        raise ContractValidationError("planner parameters must be an array")
+    indexed: dict[tuple[str, str], Any] = {}
+    for parameter_value in parameters:
+        parameter = _require_mapping(parameter_value, "planner parameter")
+        name = parameter.get("name")
+        location = parameter.get("in")
+        if not isinstance(name, str) or not isinstance(location, str):
+            raise ContractValidationError("planner parameter identity is incomplete")
+        identity = (name, location)
+        if identity in indexed:
+            raise ContractValidationError(
+                f"duplicate planner parameter: {name} in {location}"
+            )
+        indexed[identity] = parameter
+    return indexed
+
+
+def _require_parameter(
+    parameters: Mapping[tuple[str, str], Any],
+    identity: tuple[str, str],
+    *,
+    required: bool,
+    schema: Mapping[str, Any],
+) -> None:
+    """Require one planner parameter to match its executable parser contract."""
+
+    parameter = _require_mapping(parameters.get(identity), "planner parameter")
+    if parameter.get("required") is not required:
+        raise ContractValidationError(
+            f"planner parameter {identity[0]} has incorrect required state"
+        )
+    if _require_mapping(parameter.get("schema"), "planner parameter schema") != schema:
+        raise ContractValidationError(
+            f"planner parameter {identity[0]} has incorrect schema"
+        )
+
+
+def _validate_target_state_operation(paths: Mapping[str, Any]) -> None:
+    """Bind the authenticated planner OpenAPI operation to executable behavior."""
+
+    path_item = _require_mapping(
+        paths.get(_TARGET_STATE_RUNTIME_PATH),
+        f"path {_TARGET_STATE_RUNTIME_PATH}",
+    )
+    operation = _require_mapping(
+        path_item.get("get"),
+        f"{_TARGET_STATE_RUNTIME_PATH} get",
+    )
+    if operation.get("operationId") != _TARGET_STATE_OPERATION_ID:
+        raise ContractValidationError(
+            "target-state planner operationId must be getTechnologyTargetStatePlan"
+        )
+    if operation.get("security") != [{"keyverseBearer": []}]:
+        raise ContractValidationError(
+            "target-state planner must require Keyverse bearer authorization"
+        )
+    parameters = _parameter_index(operation)
+    expected_identities = {
+        ("technology_version_id", "path"),
+        ("valid_at", "query"),
+        ("recorded_at", "query"),
+        ("planning_horizon_days", "query"),
+    }
+    if set(parameters) != expected_identities:
+        raise ContractValidationError(
+            "target-state planner parameters must match executable request parsing"
+        )
+    _require_parameter(
+        parameters,
+        ("technology_version_id", "path"),
+        required=True,
+        schema={"type": "string", "format": "uuid"},
+    )
+    for timestamp_name in ("valid_at", "recorded_at"):
+        _require_parameter(
+            parameters,
+            (timestamp_name, "query"),
+            required=True,
+            schema={"type": "string", "format": "date-time"},
+        )
+    _require_parameter(
+        parameters,
+        ("planning_horizon_days", "query"),
+        required=False,
+        schema={
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650,
+            "default": 180,
+        },
+    )
+    _require_json_schema_ref(
+        operation,
+        _TARGET_STATE_RUNTIME_PATH,
+        "200",
+        "TargetStatePlanResponse",
+    )
+    for status_code in ("400", "401", "403", "503"):
+        _require_json_schema_ref(
+            operation,
+            _TARGET_STATE_RUNTIME_PATH,
+            status_code,
+            "ErrorStatus",
+        )
+
+
+def validate_openapi_runtime_surface(document: Mapping[str, Any]) -> None:
+    """Require every advertised runtime operation to be executable and exact."""
+
+    paths = _require_mapping(document.get("paths"), "paths")
+    expected_paths = {*_IMPLEMENTED_RUNTIME_PATHS, _TARGET_STATE_RUNTIME_PATH}
+    if set(paths) != expected_paths:
+        raise ContractValidationError(
+            "OpenAPI must advertise only implemented health, ready, and planner paths"
+        )
+    _validate_probe_operations(paths)
+    _validate_target_state_operation(paths)
     schemas = _require_mapping(
         _require_mapping(document.get("components"), "components").get("schemas"),
         "schemas",
     )
-    for schema_name in ("HealthStatus", "ReadyStatus"):
-        if schema_name not in schemas:
-            raise ContractValidationError(f"missing OpenAPI schema {schema_name}")
+    required_schemas = {
+        "HealthStatus",
+        "ReadyStatus",
+        "TargetStatePlanResponse",
+        "TargetStateDecision",
+        "ErrorStatus",
+    }
+    missing_schemas = required_schemas.difference(schemas)
+    if missing_schemas:
+        raise ContractValidationError(
+            f"missing OpenAPI schemas: {sorted(missing_schemas)!r}"
+        )
 
 
 def validate_connector_catalog(document: Mapping[str, Any]) -> int:
@@ -358,7 +500,7 @@ def validate_connector_catalog(document: Mapping[str, Any]) -> int:
     missing_connectors = _REQUIRED_CONNECTOR_NAMES.difference(seen_names)
     if missing_connectors:
         raise ContractValidationError(
-            f"connector catalog is missing required connectors: "
+            "connector catalog is missing required connectors: "
             f"{sorted(missing_connectors)!r}"
         )
     return len(seen_names)
