@@ -9,7 +9,6 @@ import subprocess
 import tempfile
 import textwrap
 import time
-import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -32,7 +31,7 @@ class AuthorizationError(ValueError):
         http_status: int = 401,
         next_action: str = "Obtain a current Keyverse access token and retry.",
     ) -> None:
-        """Record the safe client-facing rejection metadata."""
+        """Record safe client-facing rejection metadata."""
 
         super().__init__(message)
         self.error_code = error_code
@@ -70,15 +69,19 @@ CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 def _same_origin_jwks(issuer_uri: str, jwks_url: str) -> bool:
     """Require HTTPS JWKS under the configured issuer origin and path."""
 
-    issuer = urlparse(issuer_uri)
-    jwks = urlparse(jwks_url)
+    try:
+        issuer = urlparse(issuer_uri)
+        jwks = urlparse(jwks_url)
+        same_port = issuer.port == jwks.port
+    except ValueError:
+        return False
     if (
         issuer.scheme != "https"
         or jwks.scheme != "https"
         or issuer.username is not None
         or jwks.username is not None
         or issuer.hostname != jwks.hostname
-        or issuer.port != jwks.port
+        or not same_port
         or jwks.query
         or jwks.fragment
     ):
@@ -154,16 +157,15 @@ def _decode_base64url(value: str, field_name: str) -> bytes:
 def _decode_json_object(segment: str, field_name: str) -> Mapping[str, Any]:
     """Decode one strict JWT JSON object."""
 
+    raw_value = _decode_base64url(segment, field_name)
     try:
-        decoded = _decode_base64url(segment, field_name).decode("utf-8")
+        decoded = raw_value.decode("utf-8")
         value = json.loads(
             decoded,
             object_pairs_hook=_reject_duplicate_members,
             parse_constant=_reject_json_constant,
         )
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
-        if isinstance(error, AuthorizationError):
-            raise
         raise AuthorizationError(f"{field_name} is not valid JSON") from error
     if not isinstance(value, Mapping):
         raise AuthorizationError(f"{field_name} must be a JSON object")
@@ -202,7 +204,7 @@ def load_keyverse_jwks(jwks_url: str, issuer_uri: str) -> Mapping[str, Any]:
     try:
         with opener.open(request, timeout=3) as response:
             payload = response.read(_MAX_JWKS_BYTES + 1)
-    except (OSError, urllib.error.URLError) as error:
+    except OSError as error:
         raise AuthorizationError("Keyverse signing keys are unavailable") from error
     if len(payload) > _MAX_JWKS_BYTES:
         raise AuthorizationError("Keyverse JWKS exceeds the bounded response size")
@@ -336,7 +338,8 @@ def _audience_contains(audience_claim: Any, expected_audience: str) -> bool:
     if isinstance(audience_claim, str):
         return audience_claim == expected_audience
     if isinstance(audience_claim, Sequence) and not isinstance(
-        audience_claim, (str, bytes)
+        audience_claim,
+        (str, bytes),
     ):
         return all(isinstance(value, str) for value in audience_claim) and (
             expected_audience in audience_claim
@@ -358,7 +361,9 @@ def verify_keyverse_bearer(
         raise AuthorizationError(
             "Keyverse bearer authorization is required",
             error_code="authorization_required",
-            next_action="Authenticate with Keyverse and send one Bearer access token.",
+            next_action=(
+                "Authenticate with Keyverse and send one Bearer access token."
+            ),
         )
     token = authorization_header.removeprefix("Bearer ")
     segments = token.split(".")
@@ -387,15 +392,22 @@ def verify_keyverse_bearer(
         raise AuthorizationError("JWT audience does not include this service")
     expiry = claims.get("exp")
     current_epoch = int(time.time()) if now_epoch is None else now_epoch
-    if not isinstance(expiry, int) or isinstance(expiry, bool) or current_epoch >= expiry:
+    expiry_invalid = (
+        not isinstance(expiry, int)
+        or isinstance(expiry, bool)
+        or current_epoch >= expiry
+    )
+    if expiry_invalid:
         raise AuthorizationError("JWT is expired or lacks an integer expiration")
     not_before = claims.get("nbf")
-    if not_before is not None and (
-        not isinstance(not_before, int)
-        or isinstance(not_before, bool)
-        or current_epoch < not_before
-    ):
-        raise AuthorizationError("JWT is not yet valid")
+    if not_before is not None:
+        nbf_invalid = (
+            not isinstance(not_before, int)
+            or isinstance(not_before, bool)
+            or current_epoch < not_before
+        )
+        if nbf_invalid:
+            raise AuthorizationError("JWT is not yet valid")
     subject = claims.get("sub")
     if not isinstance(subject, str) or not subject:
         raise AuthorizationError("JWT subject is required")
