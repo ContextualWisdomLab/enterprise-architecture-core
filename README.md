@@ -6,9 +6,11 @@ It records business capabilities, applications, interfaces, technology component
 
 ## What a buyer can decide
 
-The current development stack includes a **Technology Change Impact & Target-State Planner** plus a separately authorized human approval command. Given a technology version plus explicit real-world and system-recording cutoffs, the planner joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
+The current development stack includes a **Technology Change Impact & Target-State Planner** plus separately authorized approval and scheduling commands. Given a technology version plus explicit real-world and system-recording cutoffs, the planner joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
 
 When the planner returns `approve_target_state`, an authorized human can submit the exact proposed transformation, UUIDv7 decision request, effective time, reason, and evidence reference. EA Core derives the actor from the verified Keyverse identity, appends authoritative transformation history, and emits the privacy-minimized transformation approval outbox event atomically. Exact retries are idempotent; conflicting reuse of a decision request fails closed.
+
+After approval, a separately authorized scheduler can bind that transformation to one existing authoritative milestone of the same remediation initiative. The milestone remains the source of target-date truth; EA Core records only the governed schedule binding, business/system time, verified actor/reason/evidence, and the privacy-minimized `org.contextualwisdomlab.ea.transformation.scheduled.v1` transactional outbox event. Scheduling does not invent project/task execution state.
 
 `semantic-data-portal` remains the Data/AI Context system of record; `pg-erd-cloud` remains physical schema/design evidence; LineageWeave evidence remains inferred/proposed unless governed elsewhere. EA Core stores canonical references and receipt evidence rather than copying those products or querying their application tables.
 
@@ -31,8 +33,8 @@ The planner endpoint is:
 
 ```text
 GET /v1/technology-target-state-plans/{technology_version_id}
-    ?valid_at=<RFC3339 timestamp>
-    &recorded_at=<RFC3339 timestamp>
+    ?valid_at=<CWL timestamp>
+    &recorded_at=<CWL timestamp>
     &planning_horizon_days=<1..3650>
 ```
 
@@ -44,15 +46,30 @@ Content-Type: application/json
 
 {
   "decision_request_id": "<UUIDv7>",
-  "effective_at": "<RFC3339 timestamp>",
+  "effective_at": "<CWL timestamp>",
   "decision_reason_text": "<human decision reason>",
   "evidence_record_id": "<UUIDv7>"
 }
 ```
 
-Both surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`; configure `EA_APPROVAL_ROLES` separately for the mutation boundary. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
+The governed scheduling endpoint is:
 
-The `ea_runtime` login has no direct application-table authority. It receives only the purpose-bound `read_technology_target_state_plan(...)` read wrapper and `approve_target_state(...)` command wrapper after service-side verification. No caller-supplied actor field is accepted by the approval API, and neither surface grants direct access to foreign product stores.
+```text
+POST /v1/architecture-transformations/{architecture_transformation_id}/schedule
+Content-Type: application/json
+
+{
+  "decision_request_id": "<UUIDv7>",
+  "initiative_milestone_id": "<UUIDv7>",
+  "effective_at": "<CWL timestamp>",
+  "decision_reason_text": "<human scheduling reason>",
+  "evidence_record_id": "<UUIDv7>"
+}
+```
+
+All three surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`; configure `EA_APPROVAL_ROLES` and `EA_SCHEDULE_ROLES` separately for their mutation boundaries. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
+
+The `ea_runtime` login has no direct application-table authority. It receives only the purpose-bound `read_technology_target_state_plan(...)`, `approve_target_state(...)`, and `schedule_transformation(...)` wrappers after service-side verification. Callers cannot supply a decision actor, and no surface grants direct access to foreign product stores.
 
 ## Validation
 
@@ -63,4 +80,4 @@ uv run --extra dev python -m coverage report
 uv run --extra dev python scripts/validate_repository.py
 ```
 
-CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, planner/approval behavior, OpenAPI/AsyncAPI contracts, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.
+CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, planner/approval/scheduling behavior, OpenAPI/AsyncAPI contracts, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.

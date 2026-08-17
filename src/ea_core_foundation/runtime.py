@@ -97,7 +97,7 @@ class TargetStateScheduleRequest:
         decision_reason_text: str,
         evidence_record_id: str,
     ) -> TargetStateScheduleRequest:
-        """Validate one schedule command before verified authority reaches PostgreSQL."""
+        """Validate a schedule command before verified authority reaches PostgreSQL."""
 
         transformation_id = _parse_uuid7(
             architecture_transformation_id,

@@ -14,7 +14,7 @@ _SHARED_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
 def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
     """The checked-in contract defines every implemented publisher operation."""
 
-    assert validate_asyncapi_document(asyncapi_document) == 3
+    assert validate_asyncapi_document(asyncapi_document) == 4
 
 
 def test_asyncapi_rejects_wrong_version(asyncapi_document) -> None:
@@ -115,21 +115,21 @@ def test_asyncapi_messages_reuse_shared_context_graph_envelope(
         assert payload["schemaFormat"] == _SHARED_SCHEMA_FORMAT, message_name
         assert payload["schema"]["allOf"][0] == {"$ref": _SHARED_ENVELOPE_SCHEMA}
 
-    assert asyncapi_document["components"]["messages"]["ArchitectureObjectChanged"][
-        "payload"
-    ]["schema"]["allOf"][1]["properties"]["type"] == {
-        "const": "org.contextualwisdomlab.ea.object.changed.v1"
+    event_types = {
+        "ArchitectureObjectChanged": "org.contextualwisdomlab.ea.object.changed.v1",
+        "LifecycleChanged": "org.contextualwisdomlab.ea.lifecycle.changed.v1",
+        "TransformationApproved": (
+            "org.contextualwisdomlab.ea.transformation.approved.v1"
+        ),
+        "TransformationScheduled": (
+            "org.contextualwisdomlab.ea.transformation.scheduled.v1"
+        ),
     }
-    assert asyncapi_document["components"]["messages"]["LifecycleChanged"]["payload"][
-        "schema"
-    ]["allOf"][1]["properties"]["type"] == {
-        "const": "org.contextualwisdomlab.ea.lifecycle.changed.v1"
-    }
-    assert asyncapi_document["components"]["messages"]["TransformationApproved"][
-        "payload"
-    ]["schema"]["allOf"][1]["properties"]["type"] == {
-        "const": "org.contextualwisdomlab.ea.transformation.approved.v1"
-    }
+    for message_name, event_type in event_types.items():
+        message = asyncapi_document["components"]["messages"][message_name]
+        assert message["payload"]["schema"]["allOf"][1]["properties"]["type"] == {
+            "const": event_type
+        }
 
 
 def test_asyncapi_rejects_local_duplicate_envelope(asyncapi_document) -> None:
