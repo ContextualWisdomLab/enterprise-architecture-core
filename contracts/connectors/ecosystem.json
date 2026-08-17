@@ -1,0 +1,62 @@
+{
+  "catalog_version": "1",
+  "exchange_rule": "Services exchange OpenAPI, AsyncAPI/CloudEvents, and canonical references. Direct cross-service SQL is prohibited.",
+  "connectors": [
+    {
+      "connector_name": "keyverse_oidc",
+      "owner_repository": "keyverse",
+      "direction_code": "inbound_identity",
+      "exchange_kind": "openid_connect",
+      "ea_core_owns": false,
+      "next_action": "Set EA_OIDC_ISSUER, EA_OIDC_AUDIENCE, and EA_OIDC_JWKS_URL to the Keyverse deployment before exposing domain commands."
+    },
+    {
+      "connector_name": "context_graph_contracts",
+      "owner_repository": "context-graph-contracts",
+      "direction_code": "shared_envelope",
+      "exchange_kind": "cloudevents_json",
+      "ea_core_owns": false,
+      "next_action": "Consume the pinned CloudEvent envelope, canonical asset URI, and provenance schemas instead of publishing a local envelope copy."
+    },
+    {
+      "connector_name": "semantic_data_portal",
+      "owner_repository": "semantic-data-portal",
+      "direction_code": "outbound_reference",
+      "exchange_kind": "canonical_asset_uri",
+      "ea_core_owns": false,
+      "next_action": "Link Data/AI context objects by canonical URI only. Do not copy glossary, lineage, or certification facts into this store."
+    },
+    {
+      "connector_name": "pg_erd_cloud",
+      "owner_repository": "pg-erd-cloud",
+      "direction_code": "inbound_evidence",
+      "exchange_kind": "observed_schema_reference",
+      "ea_core_owns": false,
+      "next_action": "Accept observed physical-schema evidence as reviewable provenance references. Keep snapshots in pg-erd-cloud."
+    },
+    {
+      "connector_name": "lineage_weave",
+      "owner_repository": "LineageWeave",
+      "direction_code": "inbound_proposal",
+      "exchange_kind": "inferred_relation_proposal",
+      "ea_core_owns": false,
+      "next_action": "Store inferred relations as proposed or inferred truth only. Require an explicit reviewed command before they become authoritative."
+    },
+    {
+      "connector_name": "naruon_workspace",
+      "owner_repository": "naruon",
+      "direction_code": "outbound_event",
+      "exchange_kind": "cloudevents_json",
+      "ea_core_owns": false,
+      "next_action": "Publish architecture and lifecycle change events for workspace context. Do not open a SQL path from naruon into this database."
+    },
+    {
+      "connector_name": "github_governance",
+      "owner_repository": ".github",
+      "direction_code": "inbound_policy",
+      "exchange_kind": "repository_governance",
+      "ea_core_owns": false,
+      "next_action": "Keep CI, review, and release policy aligned with the organization .github repository rather than inventing a local governance fork."
+    }
+  ]
+}
