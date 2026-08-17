@@ -1,11 +1,11 @@
 BEGIN;
 
 CREATE FUNCTION architecture_core.read_technology_target_state_plan(
-    requested_tenant_record_id uuid,
-    requested_technology_version_id uuid,
-    assessment_valid_at timestamptz,
-    assessment_recorded_at timestamptz,
-    planning_horizon_days integer DEFAULT 180
+  requested_tenant_record_id uuid,
+  requested_technology_version_id uuid,
+  assessment_valid_at timestamptz,
+  assessment_recorded_at timestamptz,
+  planning_horizon_days integer DEFAULT 180
 )
 RETURNS TABLE (
   technology_version_id uuid,
