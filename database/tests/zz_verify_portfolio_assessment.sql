@@ -116,14 +116,12 @@ INSERT INTO architecture_core.assessment_scale_value (
 INSERT INTO architecture_core.assessment_dimension (
     tenant_record_id,
     assessment_dimension_id,
-    assessment_framework_id,
     assessment_scale_id,
     dimension_code,
     dimension_title
 ) VALUES (
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
     '0196a004-1111-7111-8111-111111111111',
-    '0196a001-1111-7111-8111-111111111111',
     '0196a002-1111-7111-8111-111111111111',
     'support_risk',
     'Vendor support risk'
