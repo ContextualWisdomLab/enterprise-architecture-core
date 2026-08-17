@@ -19,7 +19,7 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     assert report.constraint_count == 228
     assert report.openapi_operation_count == 2
     assert report.asyncapi_operation_count == 2
-    assert report.adr_count >= 13
+    assert report.adr_count >= 14
     assert report.connector_count == 7
 
 

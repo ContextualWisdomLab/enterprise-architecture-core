@@ -36,6 +36,8 @@ PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Datab
 
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Environment variables*. https://www.postgresql.org/docs/18/libpq-envars.html
 
+PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Range types*. https://www.postgresql.org/docs/18/rangetypes.html
+
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: The password file*. https://www.postgresql.org/docs/18/libpq-pgpass.html
 
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Row security policies*. https://www.postgresql.org/docs/18/ddl-rowsecurity.html
