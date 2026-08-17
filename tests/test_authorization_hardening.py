@@ -179,7 +179,11 @@ class _FakeResponse:
 class _FakeOpener:
     """Return or fail one deterministic JWKS response."""
 
-    def __init__(self, payload: bytes | None = None, error: Exception | None = None) -> None:
+    def __init__(
+        self,
+        payload: bytes | None = None,
+        error: Exception | None = None,
+    ) -> None:
         self.payload = payload
         self.error = error
 
@@ -251,7 +255,8 @@ def test_der_and_rsa_key_builders_fail_closed_on_invalid_keys() -> None:
         with pytest.raises(authorization.AuthorizationError, match=message):
             authorization._rsa_public_key_pem(jwk)
 
-    pem = authorization._rsa_public_key_pem(_jwks_loader(_JWKS_URL, _ISSUER)["keys"][0])
+    jwk = _jwks_loader(_JWKS_URL, _ISSUER)["keys"][0]
+    pem = authorization._rsa_public_key_pem(jwk)
     assert pem.startswith(b"-----BEGIN PUBLIC KEY-----")
 
 
@@ -266,18 +271,28 @@ def test_signature_runner_failures_are_non_passing() -> None:
     def timeout_failure(*args: Any, **kwargs: Any) -> Any:
         raise subprocess.TimeoutExpired("openssl", 3)
 
-    def rejected(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    def rejected(
+        command: list[str], **kwargs: Any
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(command, 1, "", "bad signature")
 
-    def accepted(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    def accepted(
+        command: list[str], **kwargs: Any
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(command, 0, "Verified OK", "")
 
-    assert not authorization.verify_rs256_signature(b"a.b", b"sig", jwk, runner=os_failure)
+    assert not authorization.verify_rs256_signature(
+        b"a.b", b"sig", jwk, runner=os_failure
+    )
     assert not authorization.verify_rs256_signature(
         b"a.b", b"sig", jwk, runner=timeout_failure
     )
-    assert not authorization.verify_rs256_signature(b"a.b", b"sig", jwk, runner=rejected)
-    assert authorization.verify_rs256_signature(b"a.b", b"sig", jwk, runner=accepted)
+    assert not authorization.verify_rs256_signature(
+        b"a.b", b"sig", jwk, runner=rejected
+    )
+    assert authorization.verify_rs256_signature(
+        b"a.b", b"sig", jwk, runner=accepted
+    )
 
 
 def test_signing_key_selection_and_audience_shapes_are_exact() -> None:
