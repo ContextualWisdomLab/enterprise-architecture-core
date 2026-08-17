@@ -1,4 +1,4 @@
-"""Regression tests for canonical UUIDv7 command identity at the EA write boundary."""
+"""Canonical UUIDv7 regressions for the EA approval boundary."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def _approval_payload(
 def test_approval_path_rejects_noncanonical_uuidv7_text(
     noncanonical_id: str,
 ) -> None:
-    """Equivalent UUID spellings cannot bypass the canonical command identity contract."""
+    """Equivalent spellings cannot bypass canonical command identity."""
 
     with pytest.raises(PlannerRequestError, match="canonical UUIDv7"):
         parse_target_state_approval_request(
@@ -61,7 +61,7 @@ def test_approval_path_rejects_noncanonical_uuidv7_text(
 def test_decision_request_rejects_noncanonical_uuidv7_text(
     noncanonical_id: str,
 ) -> None:
-    """Idempotency keys use one portable textual identity before reaching PostgreSQL."""
+    """Idempotency keys use one portable text identity before PostgreSQL."""
 
     with pytest.raises(PlannerRequestError, match="canonical UUIDv7"):
         TargetStateApprovalRequest.from_values(
@@ -84,7 +84,7 @@ def test_decision_request_rejects_noncanonical_uuidv7_text(
 def test_evidence_reference_rejects_noncanonical_uuidv7_text(
     noncanonical_id: str,
 ) -> None:
-    """Approval evidence references cannot have multiple accepted wire spellings."""
+    """Approval evidence cannot have multiple accepted wire spellings."""
 
     with pytest.raises(PlannerRequestError, match="canonical UUIDv7"):
         TargetStateApprovalRequest.from_values(
