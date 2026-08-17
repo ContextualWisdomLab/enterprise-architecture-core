@@ -22,7 +22,7 @@ Enterprise Architecture Core owns:
 - application and application interface;
 - technology component, version, provider, and lifecycle;
 - enterprise architecture relationship;
-- portfolio assessment;
+- versioned portfolio assessment;
 - objective, initiative, scenario, and transformation decision.
 
 It does not own datasets, columns, data contracts, physical schema snapshots,
@@ -30,16 +30,23 @@ inferred narrative lineage, credentials, or project execution status.
 
 ## Write and read models
 
-The canonical write model is normalized PostgreSQL. Commands update business
-facts and insert outbox events atomically. Consumers build graph, search, or
-analytics projections from the events. A projection can be deleted and rebuilt
-without changing authoritative history.
+The canonical write model is normalized PostgreSQL. Inventory objects do not
+carry duplicated portfolio scores: framework/version, scale/value, dimension,
+cycle, and object-assessment meaning are normalized and joined at the
+transactional boundary. Commands update business facts and insert outbox events
+atomically. Consumers build graph, search, matrix, or analytics projections from
+the events. A projection can be deleted and rebuilt without changing
+authoritative history.
 
-## Temporal semantics
+## Temporal and truth semantics
 
-Object revisions, relationships, identity links, and lifecycle intervals carry
-real-world validity and system recording intervals. Queries may therefore ask
-both what was valid at a date and what the system knew at a historical cutoff.
+Object revisions, relationships, identity links, lifecycle intervals,
+assessment frameworks/cycles, and object assessments carry real-world validity
+and system recording semantics. Queries may therefore ask both what was valid
+at a date and what the system knew at a historical cutoff. Assessment truth
+uses the same explicit origin vocabulary as architecture assertions:
+authoritative or observed scores require evidence, while inferred/proposed
+scores remain reviewable without silently becoming authoritative.
 
 ## Process surface
 
