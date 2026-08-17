@@ -49,6 +49,7 @@ def test_planner_accepts_cwl_timestamp_profile_values(
         "2027-02-01T00:00:00+0000",
         "2027-02-01T00:00:00+00:00:30",
         "2027-02-01T00:00:60Z",
+        "2027-02-30T00:00:00Z",
     ],
 )
 def test_planner_rejects_values_outside_cwl_timestamp_profile(
