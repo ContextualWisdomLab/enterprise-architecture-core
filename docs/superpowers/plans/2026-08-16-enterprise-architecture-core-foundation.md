@@ -8,34 +8,38 @@
 **Architecture:** PostgreSQL owns normalized facts; OpenAPI and AsyncAPI define
 service contracts; Python validation makes repository invariants executable.
 
-**Tech Stack:** PostgreSQL 18, Python 3.11-3.13, JSON contracts, pytest,
+**Tech Stack:** PostgreSQL 18, Python 3.11-3.14, JSON contracts, pytest,
 coverage.py, uv.
 
 ### Task 1: Product boundary and decisions
 
 - [x] Document owning and non-owning responsibilities.
-- [x] Record ten accepted ADRs.
+- [x] Record accepted architecture decisions and keep the ADR index current.
 - [x] Add APA 7th references and standard traceability.
 
 ### Task 2: Normalized database contract
 
 - [x] Add capability, application, interface, technology, lifecycle, evidence,
   identity-link, outbox, and receipt tables.
-- [ ] Add assessment, objective, initiative, and scenario tables in later
-  independently reviewed milestones.
+- [x] Add normalized framework, scale, dimension, cycle, and object-assessment
+  tables in the independently reviewed portfolio-assessment milestone.
+- [ ] Add objective, initiative, and scenario tables in later independently
+  reviewed milestones.
 - [x] Enforce two-word snake-case object names.
 - [x] Preserve valid and system time.
 
 ### Task 3: API and event baseline
 
-- [x] Add OpenAPI 3.1.1 command surface.
+- [x] Add truthful OpenAPI 3.2.0 health/readiness process surface.
 - [x] Add Keyverse OIDC verification contract.
-- [x] Add AsyncAPI 3.0.0 CloudEvents publishers.
+- [x] Add AsyncAPI 3.1.0 CloudEvents publishers.
 
 ### Task 4: Executable quality gate
 
 - [x] Add deterministic repository validation.
 - [x] Add positive and negative unit tests.
-- [x] Run compile, tests, and 100% statement/branch coverage locally.
-- [ ] Complete hosted Ruff, PostgreSQL 18.4 migration, lock-resolution, and
-  package validation before marking the PR ready for review.
+- [x] Run compile, tests, and 100% statement/branch coverage on the foundation
+  implementation.
+- [ ] Re-prove hosted Ruff, Python 3.11-3.14 coverage, PostgreSQL 18.4 clean
+  install and upgrade, runtime RLS, package, SBOM, and provenance evidence on
+  the exact portfolio-assessment integration head before review completion.
