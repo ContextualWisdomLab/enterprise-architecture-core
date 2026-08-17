@@ -32,6 +32,16 @@ LANGUAGE plpgsql
 STABLE
 AS $$
 BEGIN
+  IF requested_technology_version_id IS NULL
+     OR assessment_valid_at IS NULL
+     OR assessment_recorded_at IS NULL
+     OR planning_horizon_days IS NULL THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE =
+        'technology version, valid/system cutoffs, and planning horizon are required';
+  END IF;
+
   IF planning_horizon_days < 1 OR planning_horizon_days > 3650 THEN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
@@ -224,6 +234,13 @@ BEGIN
           THEN 'requires_truth_review'
         WHEN lifecycle_context.lifecycle_phase_code IS NULL
           OR lifecycle_context.evidence_record_id IS NULL
+          OR (
+            future_lifecycle_context.lifecycle_change_at IS NOT NULL
+            AND future_lifecycle_context.lifecycle_change_at <=
+                assessment_valid_at
+                + (planning_horizon_days * interval '1 day')
+            AND future_lifecycle_context.evidence_record_id IS NULL
+          )
           THEN 'missing_lifecycle_evidence'
         ELSE 'complete'
       END::text AS evidence_state_code,
@@ -296,6 +313,6 @@ COMMENT ON FUNCTION architecture_core.project_technology_change_impact(
     timestamptz,
     integer
 ) IS
-'Projects a tenant-scoped, bitemporal technology-version impact path through EA-owned component, application, capability, and lifecycle facts. It classifies risk only from lifecycle evidence visible at the requested valid/system cutoffs, preserves relation and decision provenance, routes inferred/proposed paths to explicit truth review instead of actionable authority, surfaces missing mapping/lifecycle evidence, and returns deterministic next-action codes without mutating authoritative facts.';
+'Projects a tenant-scoped, bitemporal technology-version impact path through EA-owned component, application, capability, and lifecycle facts. It rejects ambiguous missing cutoffs and horizons, classifies risk only from lifecycle evidence visible at the requested valid/system cutoffs, preserves relation and decision provenance, routes inferred/proposed paths to explicit truth review instead of actionable authority, surfaces missing mapping/lifecycle evidence including risk-driving transitions, and returns deterministic next-action codes without mutating authoritative facts.';
 
 COMMIT;
