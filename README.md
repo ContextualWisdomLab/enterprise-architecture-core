@@ -4,9 +4,10 @@
 transformation decision plane for the ContextualWisdomLab ecosystem.
 
 It records business capabilities, applications, interfaces, technology
-components, lifecycle intervals, evidence, and transactional events. It is not
-a data catalog, physical database designer, project-management tool, or graph
-projection service.
+components, lifecycle intervals, evidence, portfolio assessments, architecture
+objectives/initiatives, target-state scenarios, and transactional events. It is
+not a data catalog, physical database designer, project-management tool, or
+runtime graph-projection service.
 
 ## Initial bounded context
 
@@ -25,20 +26,37 @@ evidence producer.
 
 ## Repository status
 
-This repository establishes the reviewed product boundary, 3NF schema,
-OpenAPI/AsyncAPI contracts, Keyverse OIDC boundary, lifecycle and outbox model,
-security baseline, and accepted architecture decisions. The database foundation
-also enforces UUIDv7 identity, canonical URI consistency, governed relation
-endpoint types, non-overlapping active intervals, tenant RLS as defense in
-depth, and transactional outbox rollback through executable PostgreSQL
-acceptance. The documented `ea_runtime` login intentionally has no direct
-application-table privilege because caller-set PostgreSQL custom settings are
-not authorization evidence. Runtime domain commands and queries remain a
-separate implementation milestone and must bind verified Keyverse claims before
-receiving purpose-bound database authority.
+The current development stack establishes the reviewed product boundary, 3NF
+schema, OpenAPI/AsyncAPI contracts, Keyverse OIDC boundary, lifecycle and outbox
+model, normalized portfolio assessment, versioned architecture objectives and
+remediation initiatives, and immutable-baseline target-state scenarios. Scenario
+projection can now compare object and typed-relation presence without mutating
+authoritative architecture facts; requested-present relations whose projected
+source or target is absent are retained as evidence but cannot appear active.
+
+The database foundation enforces UUIDv7 identity, canonical URI consistency,
+governed relation endpoint types, non-overlapping active intervals, tenant RLS
+as defense in depth, provenance requirements for authoritative/observed facts,
+and transactional outbox rollback through executable PostgreSQL acceptance.
+The documented `ea_runtime` login intentionally has no direct application-table
+privilege because caller-set PostgreSQL custom settings are not authorization
+evidence. Runtime domain commands and queries remain a separate implementation
+milestone and must bind verified Keyverse claims before receiving purpose-bound
+database authority.
 
 The installable distribution is `enterprise-architecture-core`. Start the
 process, call `GET /health`, then call `GET /ready` before sending traffic.
+
+## Target-state scenario evidence
+
+A scenario binds one immutable real-world/system-recording baseline and ordered,
+append-preserving object/relation deltas. `project_scenario_objects(uuid)` gives
+the final object-presence view. `project_scenario_relations(uuid)` reconstructs
+baseline authoritative relations, overlays the latest active relation intent,
+and composes it with final object presence so the target state has no silently
+dangling active edge. These projectors are decision-plane evidence; they do not
+write another product's store or promote inferred/proposed truth to
+authoritative truth.
 
 ## Run the process surface
 
