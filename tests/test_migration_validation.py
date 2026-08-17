@@ -12,7 +12,7 @@ from ea_core_foundation import (
 
 
 def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> None:
-    """The checked-in migration satisfies naming and temporal requirements."""
+    """The checked-in migrations satisfy naming and temporal requirements."""
 
     migration_paths = tuple(
         sorted((repository_root / "database/migrations").glob("*.sql"))
@@ -23,10 +23,10 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
         for migration_path in migration_paths
     )
     counts = validate_migration_sql(migration_text)
-    assert counts[0] == 20
-    assert counts[1] == 125
+    assert counts[0] == 26
+    assert counts[1] == 176
     assert counts[2] == 7
-    assert counts[3] == 129
+    assert counts[3] == 180
 
 
 def test_migration_inventory_requires_at_least_one_file() -> None:
