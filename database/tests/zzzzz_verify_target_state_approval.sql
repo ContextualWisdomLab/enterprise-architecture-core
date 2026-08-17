@@ -103,6 +103,44 @@ BEGIN
 END;
 $$;
 
+-- Missing evidence must fail while the transformation is still proposed so the
+-- foreign-key boundary, not a later state precondition, is what this regression
+-- actually exercises. The subtransaction must roll back both history and outbox.
+DO $$
+DECLARE
+  failed_history_count integer;
+  failed_event_count integer;
+BEGIN
+  BEGIN
+    PERFORM *
+      FROM architecture_core.approve_target_state(
+          '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+          '0196e010-1111-7111-8111-111111111191',
+          '0196e030-1111-7111-8111-111111111192',
+          '2027-01-16T00:00:00Z',
+          'keyverse:https://id.example/realms/cwl#architecture-board-user-123',
+          'A failed approval must not partially commit history or outbox state.',
+          '0196efff-ffff-7fff-8fff-ffffffffffff'
+      );
+    RAISE EXCEPTION 'approval with missing evidence was accepted';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  SELECT count(*) INTO failed_history_count
+    FROM architecture_core.transformation_history_record
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND decision_request_id = '0196e030-1111-7111-8111-111111111192';
+  SELECT count(*) INTO failed_event_count
+    FROM architecture_core.outbox_event
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND decision_request_id = '0196e030-1111-7111-8111-111111111192';
+  IF failed_history_count <> 0 OR failed_event_count <> 0 THEN
+    RAISE EXCEPTION 'failed approval partially committed history/event';
+  END IF;
+END;
+$$;
+
 CREATE TEMP TABLE approval_receipt AS
 SELECT *
   FROM architecture_core.approve_target_state(
@@ -123,7 +161,7 @@ DECLARE
   state_code text;
   replayed_flag boolean;
 BEGIN
-  SELECT transformation_state_code, replayed
+  SELECT transformation_state_code, approval_replayed
     INTO state_code, replayed_flag
     FROM approval_receipt;
   IF state_code <> 'approved' OR replayed_flag THEN
@@ -193,7 +231,7 @@ DECLARE
   event_count integer;
   replayed_flag boolean;
 BEGIN
-  SELECT replayed INTO replayed_flag FROM approval_receipt;
+  SELECT approval_replayed INTO replayed_flag FROM approval_receipt;
   IF NOT replayed_flag THEN
     RAISE EXCEPTION 'exact decision replay was not identified as idempotent';
   END IF;
@@ -229,40 +267,5 @@ BEGIN
   EXCEPTION WHEN unique_violation THEN
     NULL;
   END;
-END;
-$$;
-
-DO $$
-DECLARE
-  failed_history_count integer;
-  failed_event_count integer;
-BEGIN
-  BEGIN
-    PERFORM *
-      FROM architecture_core.approve_target_state(
-          '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-          '0196e010-1111-7111-8111-111111111191',
-          '0196e030-1111-7111-8111-111111111192',
-          '2027-01-16T00:00:00Z',
-          'keyverse:https://id.example/realms/cwl#architecture-board-user-123',
-          'A failed approval must not partially commit history or outbox state.',
-          '0196efff-ffff-7fff-8fff-ffffffffffff'
-      );
-    RAISE EXCEPTION 'approval with missing evidence was accepted';
-  EXCEPTION WHEN foreign_key_violation THEN
-    NULL;
-  END;
-
-  SELECT count(*) INTO failed_history_count
-    FROM architecture_core.transformation_history_record
-   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-     AND decision_request_id = '0196e030-1111-7111-8111-111111111192';
-  SELECT count(*) INTO failed_event_count
-    FROM architecture_core.outbox_event
-   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-     AND decision_request_id = '0196e030-1111-7111-8111-111111111192';
-  IF failed_history_count <> 0 OR failed_event_count <> 0 THEN
-    RAISE EXCEPTION 'failed approval partially committed history/event';
-  END IF;
 END;
 $$;
