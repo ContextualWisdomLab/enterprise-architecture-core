@@ -10,12 +10,13 @@
 | Information-security management | ISO/IEC 27001:2022 and SOC 2 Trust Services Criteria | purpose-bound access, tenant isolation, evidence, and operability controls |
 | Privacy information management | ISO/IEC 27701:2019 | accountability identifiers remain visible to authorized reviewers; raw personal attributes stay in Keyverse |
 | Message API description | AsyncAPI 3.1.0 | `contracts/asyncapi.json` and repository validator |
-| Provenance references | W3C PROV-O plus Context Graph provenance schema | `evidence_record`, canonical reference/digest constraints, same-tenant evidence-URI guard, authoritative/observed evidence constraints in migration 0008, PostgreSQL hostile-input acceptance |
+| Provenance references | W3C PROV-O plus Context Graph provenance schema | `evidence_record`, canonical reference/digest constraints, same-tenant evidence-URI guard, authoritative/observed evidence constraints in migrations 0008 and 0010, PostgreSQL hostile-input acceptance |
 | External subject identity | OpenID Connect Core 1.0 (`iss`, `sub`) plus Keyverse boundary | issuer-qualified `identity_link`, validity exclusion, issuer acceptance tests |
 | Data-lineage interoperability | OpenLineage | external projection boundary; ingestion is planned and explicitly not shipped by this foundation |
-| Bitemporal facts | Product audit requirement plus PostgreSQL temporal/range semantics | revision, relation, lifecycle, and identity valid/system intervals |
-| Concurrent interval integrity | PostgreSQL 18 exclusion constraints | migration 0005 and PostgreSQL overlap acceptance |
-| Tenant data isolation | PostgreSQL 18 row-level security | forced policies and non-superuser runtime acceptance; documented as defense-in-depth, not caller-authentication |
+| Bitemporal facts | Product audit requirement plus PostgreSQL temporal/range semantics | revision, relation, lifecycle, identity, framework, cycle, and object-assessment valid/system intervals; ADRs 0004 and 0013 |
+| Versioned portfolio assessment meaning | 3NF write-model decision plus architecture auditability requirement | ADRs 0002 and 0013, migration 0010, real PostgreSQL scale/framework/evidence acceptance |
+| Concurrent interval integrity | PostgreSQL 18 exclusion constraints | migrations 0005 and 0010 plus PostgreSQL authoritative-overlap acceptance |
+| Tenant data isolation | PostgreSQL 18 row-level security | forced policies and non-superuser runtime/assessment acceptance; documented as defense-in-depth, not caller-authentication |
 | Database readiness connection policy | PostgreSQL 18 libpq connection parameters and environment variables | DSN-to-libpq translation preserves supported TLS, channel-binding, host-selection and session-target parameters; unknown or duplicate parameters fail closed; password remains outside argv |
 | Exact-head package SBOM | SPDX 3.0.1; Anchore Syft 1.51.0 | `supply-chain.yml` builds reviewed wheel/sdist, requests `spdx-json@3.0`, validates SPDX 3.0.1 JSON-LD creation/package semantics, computes SHA-256 checksums, and uploads exact-head evidence |
 | Protected-main package provenance | SLSA 1.2; GitHub artifact-attestation guidance | protected-main-only attestation job downloads exact-head package evidence and uses immutably pinned `actions/attest` to create SLSA build-provenance and SPDX SBOM attestations; PR heads never inherit that signed provenance claim |
