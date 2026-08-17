@@ -38,4 +38,5 @@
 
 ### Fixed
 
+- Reject every JWS `crit` protected-header form at the Keyverse bearer boundary because EA Core implements no critical JWS extensions, preventing signed tokens with unsupported extension semantics from being accepted as ordinary JWTs.
 - Fail closed on literal and percent-encoded URI dot-segment aliases in configured Keyverse JWKS paths before the issuer-scope confinement check, preventing path normalization from escaping or ambiguously rewriting the trusted issuer hierarchy.
