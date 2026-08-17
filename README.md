@@ -77,7 +77,7 @@ Naruon / gyeot           -> optional composition hubs
 | --- | --- |
 | Architecture-description boundary (ISO/IEC/IEEE 42010:2022) | [docs/adr/0001-architecture-description-boundary.md](docs/adr/0001-architecture-description-boundary.md) |
 | Target-state, capability, and transformation records (TOGAF Standard) | [docs/adr/0002-target-state-capability-transformation.md](docs/adr/0002-target-state-capability-transformation.md) |
-| Viewpoint language (ArchiMate 3.x) | [docs/adr/0003-archimate-viewpoint-language.md](docs/adr/0003-archimate-viewpoint-language.md) |
+| Viewpoint language (ArchiMate 4) | [docs/adr/0003-archimate-viewpoint-language.md](docs/adr/0003-archimate-viewpoint-language.md) |
 | CWL MSA and composition-hub rule | [docs/adr/0004-cwl-msa-composition-hubs.md](docs/adr/0004-cwl-msa-composition-hubs.md) |
 | ADR index | [docs/adr/README.md](docs/adr/README.md) |
 | Verified standards bibliography (APA 7th) | [docs/REFERENCES.md](docs/REFERENCES.md) |
