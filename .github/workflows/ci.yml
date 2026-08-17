@@ -195,6 +195,10 @@ jobs:
             --set ON_ERROR_STOP=1 \
             --command "SELECT to_regprocedure('architecture_core.project_technology_change_impact(uuid,timestamp with time zone,timestamp with time zone,integer)') IS NOT NULL;" \
             | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname = 'application_context_projection_receipt_fact_unique';" \
+            | grep --fixed-strings 'application_context_projection_receipt_fact_unique'
       - name: Prove failed migration rolls back schema and ledger atomically
         env:
           PGHOST: 127.0.0.1
@@ -235,7 +239,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core' AND table_type = 'BASE TABLE';"
           )"
-          test "$table_count" -eq 36
+          test "$table_count" -eq 38
           reference_view_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
               --tuples-only --no-align \
@@ -247,7 +251,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$ledger_count" -eq 15
+          test "$ledger_count" -eq 17
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
