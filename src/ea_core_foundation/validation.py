@@ -510,7 +510,8 @@ def validate_openapi_runtime_surface(document: Mapping[str, Any]) -> None:
     }
     if set(paths) != expected_paths:
         raise ContractValidationError(
-            "OpenAPI must advertise only implemented health, ready, planner, and approval paths"
+            "OpenAPI must advertise only implemented health, ready, planner, "
+            "and approval paths"
         )
     _validate_probe_operations(paths)
     _validate_target_state_operation(paths)
