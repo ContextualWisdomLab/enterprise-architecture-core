@@ -68,7 +68,7 @@ Strategy meaning is immutable after insertion. Semantic correction uses one-time
 
 ## Scenarios and target-state projection
 
-Migration 0012 implements ADR 0008 with three normalized tenant-owned relations and one deterministic database projector:
+Migration 0012 implements the immutable object baseline of ADR 0008 with three normalized tenant-owned relations and one deterministic database projector:
 
 - `architecture_scenario`: the versioned scenario decision, including one `target_valid_at` instant and explicit truth/evidence.
 - `scenario_baseline`: the single immutable pair of `baseline_valid_at` and `baseline_recorded_at` cutoffs for a scenario.
@@ -77,11 +77,18 @@ Migration 0012 implements ADR 0008 with three normalized tenant-owned relations 
 
 Baseline membership is reconstructed from authoritative `object_revision` facts that were valid at `baseline_valid_at`, recorded no later than `baseline_recorded_at`, and not yet superseded at that system-time cutoff. This preserves the distinction between real-world validity and system-recording history: later backfills or later supersession do not silently rewrite an existing baseline.
 
-Scenario deltas never mutate authoritative architecture objects or revisions. A delta can only state whether an existing tenant-owned architecture object is present or absent in the scenario target state. The same scenario sequence number cannot be reused. If an object has multiple active deltas, the highest sequence number wins at `target_valid_at`; corrections are appended rather than rewriting earlier decisions. The projection returns the resulting presence, whether it came from the baseline or a scenario delta, the applied sequence number, and the corresponding truth status.
+Scenario object deltas never mutate authoritative architecture objects or revisions. A delta can only state whether an existing tenant-owned architecture object is present or absent in the scenario target state. The same object-delta sequence number cannot be reused. If an object has multiple active deltas, the highest sequence number wins at `target_valid_at`; corrections are appended rather than rewriting earlier decisions. The projection returns the resulting presence, whether it came from the baseline or a scenario delta, the applied sequence number, and the corresponding truth status.
 
-An immutable baseline must exist before a delta is appended. Baseline time cannot exceed the scenario target time, a delta cannot begin after that target, cross-tenant targets are rejected through composite foreign keys, and rejected/superseded deltas do not participate in the current projection. All three relations use forced RLS. Scenario history cannot be hard-deleted; baseline meaning is fully immutable, while scenario and delta records support only one-time supersession before replacement/continuation is appended.
+Migration 0013 extends the same scenario without copying the authoritative graph:
 
-This milestone intentionally limits scenario mutation to object presence. Relation deltas, approved transformation execution/history, cross-domain event projection, and buyer-facing scenario comparison UI remain later slices; the scenario model is not an arbitrary meta-model editor or workflow engine.
+- `scenario_relation_delta`: append-only ordered relation-presence intent identified by relation type plus tenant-bound source/target objects, with target-effective interval, truth origin, and evidence.
+- `project_scenario_relations(uuid)`: reconstructs authoritative relations at the immutable baseline cutoffs, overlays the latest active relation delta per typed endpoint tuple, and joins the final object projection so a target-state relation cannot remain active when either endpoint is absent.
+
+Relation deltas reuse the authoritative relation-type guard; a proposed target-state edge must therefore respect the same source/target object taxonomy as shipped architecture truth. Authoritative and observed relation deltas require evidence, semantic fields are immutable, sequence numbers are positive and non-reusable within the relation-delta stream, and history is corrected only by later deltas or one-time supersession. The relation projector exposes requested presence, baseline/delta origin, applied sequence, truth status, baseline and delta evidence identities, and `endpoint_integrity_code`. A requested-present relation with a missing target-state source or target is returned as not present with `source_absent`, `target_absent`, or `both_absent`; the projector never invents or promotes an endpoint merely to satisfy an edge.
+
+An immutable baseline must exist before either delta type is appended. Baseline time cannot exceed the scenario target time, a delta cannot begin after that target, cross-tenant targets are rejected through composite foreign keys, and rejected/superseded deltas do not participate in the current projection. All scenario relations use forced RLS. Scenario history cannot be hard-deleted; baseline meaning is fully immutable, while scenario and delta records support only one-time supersession before replacement/continuation is appended.
+
+This milestone projects object and relation presence for a deterministic target-state graph. Approved transformation execution/history, cross-domain event projection, impact traversal, and buyer-facing scenario comparison UI remain later bounded slices; the scenario model is not an arbitrary meta-model editor, workflow engine, or substitute for another product's authoritative store.
 
 ## Integration
 
