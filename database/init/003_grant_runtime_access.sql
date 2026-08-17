@@ -25,3 +25,15 @@ ON FUNCTION architecture_core.read_technology_target_state_plan(
     integer
 )
 TO ea_runtime;
+
+GRANT EXECUTE
+ON FUNCTION architecture_core.approve_target_state(
+    uuid,
+    uuid,
+    uuid,
+    timestamptz,
+    text,
+    text,
+    uuid
+)
+TO ea_runtime;
