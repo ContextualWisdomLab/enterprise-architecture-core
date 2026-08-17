@@ -30,11 +30,12 @@ BEGIN
       MESSAGE = 'terminal projection receipt evidence is immutable';
   END IF;
 
-  IF OLD.processing_status_code = 'processing'
+  IF OLD.processing_status_code <> 'received'
      AND NEW.processing_status_code = 'received' THEN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
-      MESSAGE = 'projection receipt processing state cannot move backward';
+      MESSAGE =
+        'projection receipt cannot return to received after processing begins';
   END IF;
 
   RETURN NEW;
