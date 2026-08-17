@@ -7,6 +7,24 @@ ALTER TABLE architecture_core.projection_receipt
         '^urn:cwl:(?=[^:]{2,63}:)[a-z][a-z0-9]+(?:_[a-z0-9]+)*:(?=[^:]{2,63}$)[a-z][a-z0-9]+(?:_[a-z0-9]+)*$'
     );
 
+DO $$
+BEGIN
+  IF EXISTS (
+      SELECT 1
+        FROM architecture_core.projection_receipt AS projection_receipt
+        JOIN architecture_core.tenant_record AS tenant_record
+          ON tenant_record.tenant_record_id = projection_receipt.tenant_record_id
+       WHERE split_part(projection_receipt.event_source_uri, ':', 3)
+             IS DISTINCT FROM tenant_record.tenant_code
+  ) THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE =
+        'existing projection receipt source tenant does not match row tenant';
+  END IF;
+END;
+$$;
+
 CREATE FUNCTION architecture_core.validate_projection_receipt_source_uri()
 RETURNS trigger
 LANGUAGE plpgsql
