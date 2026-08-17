@@ -1,0 +1,25 @@
+services:
+  architecture_database:
+    image: postgres:18.4@sha256:3a82e1f56c8f0f5616a11103ac3d47e632c3938698946a7ad26da0df1334744a
+    environment:
+      POSTGRES_DB: ea_core
+      POSTGRES_USER: ea_owner
+      POSTGRES_PASSWORD: ${EA_OWNER_PASSWORD:?EA_OWNER_PASSWORD is required}
+      EA_RUNTIME_PASSWORD: ${EA_RUNTIME_PASSWORD:?EA_RUNTIME_PASSWORD is required}
+    ports:
+      - "127.0.0.1:54328:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ea_owner -d ea_core"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - architecture_database_data:/var/lib/postgresql
+      - ./database/init/001_create_runtime_role.sh:/docker-entrypoint-initdb.d/001_create_runtime_role.sh:ro
+      - ./database/init/002_apply_foundation_migrations.sh:/docker-entrypoint-initdb.d/002_apply_foundation_migrations.sh:ro
+      - ./database/init/003_grant_runtime_access.sql:/docker-entrypoint-initdb.d/003_grant_runtime_access.sql:ro
+      - ./database/migrations:/opt/ea-core/migrations:ro
+      - ./database/scripts:/opt/ea-core/scripts:ro
+
+volumes:
+  architecture_database_data:

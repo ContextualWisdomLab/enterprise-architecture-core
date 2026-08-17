@@ -1,0 +1,340 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.32"
+          enable-cache: false
+      - run: uv lock --check
+      - run: uv sync --locked --extra dev --python "${{ matrix.python-version }}"
+      - run: >-
+          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
+          python -m compileall -q src scripts
+      - run: >-
+          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
+          python -m ruff check . --output-format=github
+      - run: >-
+          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
+          python -m coverage run -m pytest -q
+      - run: >-
+          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
+          python -m coverage report
+      - run: >-
+          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
+          python scripts/validate_repository.py
+
+  postgres-migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18.4@sha256:3a82e1f56c8f0f5616a11103ac3d47e632c3938698946a7ad26da0df1334744a
+        env:
+          POSTGRES_DB: ea_core
+          POSTGRES_USER: ea_app
+          POSTGRES_PASSWORD: ea_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ea_app -d ea_core"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Apply foundation migrations
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: ea_app
+          PGPASSWORD: ea_test_password
+          PGDATABASE: ea_core
+        run: bash database/scripts/apply_migrations.sh database/migrations
+      - name: Rehearse idempotent upgrade and checksum drift rejection
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: ea_app
+          PGPASSWORD: ea_test_password
+          PGDATABASE: ea_core
+        run: |
+          set -euo pipefail
+          bash database/scripts/apply_migrations.sh database/migrations
+          drift_directory="$(mktemp -d)"
+          trap 'rm -rf "$drift_directory"' EXIT
+          cp database/migrations/*.sql "$drift_directory/"
+          printf '\n-- checksum drift acceptance probe\n' \
+            >> "$drift_directory/0001_identity_objects.sql"
+          if bash database/scripts/apply_migrations.sh "$drift_directory"; then
+            echo "checksum drift was unexpectedly accepted" >&2
+            exit 1
+          fi
+      - name: Rehearse upgrade from the previous migration boundary
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: ea_app
+          PGPASSWORD: ea_test_password
+        run: |
+          set -euo pipefail
+          probe_database="ea_core_upgrade_probe"
+          prior_directory="$(mktemp -d)"
+          cleanup() {
+            rm -rf "$prior_directory"
+            psql --dbname postgres --set ON_ERROR_STOP=1 \
+              --command "DROP DATABASE IF EXISTS ${probe_database};"
+          }
+          trap cleanup EXIT
+          psql --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE DATABASE ${probe_database};"
+          mapfile -t migration_paths < <(
+            find database/migrations -maxdepth 1 -type f \
+              -name '[0-9][0-9][0-9][0-9]_*.sql' -print | sort
+          )
+          if [ "${#migration_paths[@]}" -lt 2 ]; then
+            echo "upgrade rehearsal requires at least two migrations" >&2
+            exit 1
+          fi
+          latest_index=$((${#migration_paths[@]} - 1))
+          for ((index = 0; index < latest_index; index++)); do
+            cp "${migration_paths[$index]}" "$prior_directory/"
+          done
+          PGDATABASE="$probe_database" \
+            bash database/scripts/apply_migrations.sh "$prior_directory"
+          prior_ledger_count="$(
+            PGDATABASE="$probe_database" psql --tuples-only --no-align \
+              --set ON_ERROR_STOP=1 \
+              --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
+          )"
+          test "$prior_ledger_count" -eq "$latest_index"
+          PGDATABASE="$probe_database" \
+            bash database/scripts/apply_migrations.sh database/migrations
+          upgraded_ledger_count="$(
+            PGDATABASE="$probe_database" psql --tuples-only --no-align \
+              --set ON_ERROR_STOP=1 \
+              --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
+          )"
+          test "$upgraded_ledger_count" -eq "${#migration_paths[@]}"
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname IN ('object_revision_evidence_required', 'architecture_relation_evidence_required') ORDER BY conname;" \
+            | grep --fixed-strings 'architecture_relation_evidence_required'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname IN ('object_revision_evidence_required', 'architecture_relation_evidence_required') ORDER BY conname;" \
+            | grep --fixed-strings 'object_revision_evidence_required'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname IN ('outbox_event_publish_chronology', 'projection_receipt_process_chronology') ORDER BY conname;" \
+            | grep --fixed-strings 'outbox_event_publish_chronology'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT conname FROM pg_constraint WHERE conname IN ('outbox_event_publish_chronology', 'projection_receipt_process_chronology') ORDER BY conname;" \
+            | grep --fixed-strings 'projection_receipt_process_chronology'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.object_assessment') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.strategy_objective') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.architecture_scenario') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.scenario_relation_delta') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regprocedure('architecture_core.project_scenario_relations(uuid)') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.architecture_transformation') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.transformation_history_record') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regprocedure('architecture_core.project_transformation_state(uuid,timestamp with time zone,timestamp with time zone)') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regprocedure('architecture_core.project_technology_change_impact(uuid,timestamp with time zone,timestamp with time zone,integer)') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+      - name: Prove failed migration rolls back schema and ledger atomically
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: ea_app
+          PGPASSWORD: ea_test_password
+        run: |
+          set -euo pipefail
+          probe_database="ea_core_atomicity_probe"
+          probe_directory="$(mktemp -d)"
+          cleanup() {
+            rm -rf "$probe_directory"
+            psql --dbname postgres --set ON_ERROR_STOP=1 \
+              --command "DROP DATABASE IF EXISTS ${probe_database};"
+          }
+          trap cleanup EXIT
+          psql --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE DATABASE ${probe_database};"
+          cp database/migrations/0001_identity_objects.sql "$probe_directory/"
+          sed -i '$i SELECT 1 / 0;' "$probe_directory/0001_identity_objects.sql"
+          if PGDATABASE="$probe_database" \
+             bash database/scripts/apply_migrations.sh "$probe_directory"; then
+            echo "failing migration unexpectedly committed" >&2
+            exit 1
+          fi
+          schema_absent="$(
+            PGDATABASE="$probe_database" psql --tuples-only --no-align \
+              --set ON_ERROR_STOP=1 \
+              --command "SELECT to_regnamespace('architecture_core') IS NULL;"
+          )"
+          test "$schema_absent" = "t"
+      - name: Verify required tables, views, and migration ledger
+        env:
+          PGPASSWORD: ea_test_password
+        run: |
+          table_count="$(
+            psql --host 127.0.0.1 --username ea_app --dbname ea_core \
+              --tuples-only --no-align \
+              --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core' AND table_type = 'BASE TABLE';"
+          )"
+          test "$table_count" -eq 36
+          reference_view_count="$(
+            psql --host 127.0.0.1 --username ea_app --dbname ea_core \
+              --tuples-only --no-align \
+              --command "SELECT count(*) FROM information_schema.views WHERE table_schema = 'architecture_core' AND table_name = 'architecture_object_reference';"
+          )"
+          test "$reference_view_count" -eq 1
+          ledger_count="$(
+            psql --host 127.0.0.1 --username ea_app --dbname ea_core \
+              --tuples-only --no-align \
+              --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
+          )"
+          test "$ledger_count" -eq 15
+      - name: Exercise database invariants
+        env:
+          PGPASSWORD: ea_test_password
+        run: |
+          set -euo pipefail
+          for acceptance_path in database/tests/*.sql; do
+            psql --host 127.0.0.1 --username ea_app --dbname ea_core \
+              --set ON_ERROR_STOP=1 --file "$acceptance_path"
+          done
+
+  compose-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Start documented database profile
+        env:
+          EA_OWNER_PASSWORD: ea_owner_test_password
+          EA_RUNTIME_PASSWORD: ea_runtime_test_password
+        run: |
+          set -euo pipefail
+          if ! docker compose up --detach --wait; then
+            docker compose ps --all
+            docker compose logs --no-color
+            exit 1
+          fi
+      - name: Prepare tenant fixtures through owner connection
+        env:
+          PGPASSWORD: ea_owner_test_password
+        run: >-
+          psql --host 127.0.0.1 --port 54328 --username ea_owner --dbname ea_core
+          --set ON_ERROR_STOP=1
+          --file database/acceptance/runtime/prepare_runtime_fixture.sql
+      - name: Verify exact application DSN role and row-level security
+        run: |
+          set -euo pipefail
+          runtime_dsn="$(grep '^EA_DATABASE_DSN=' .env.example | cut -d= -f2-)"
+          runtime_dsn="${runtime_dsn/change-me-runtime/ea_runtime_test_password}"
+          psql "$runtime_dsn" \
+            --set ON_ERROR_STOP=1 \
+            --file database/acceptance/runtime/verify_runtime_role.sql
+      - name: Stop documented database profile
+        if: always()
+        env:
+          EA_OWNER_PASSWORD: ea_owner_test_password
+          EA_RUNTIME_PASSWORD: ea_runtime_test_password
+        run: docker compose down --volumes --remove-orphans
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.32"
+          enable-cache: false
+      - run: uv lock --check
+      - name: Capture reviewed dependency lock
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: uv-lock-${{ github.event.pull_request.head.sha || github.sha }}
+          path: uv.lock
+          if-no-files-found: error
+          retention-days: 1
+      - run: uv sync --locked --extra dev --python 3.14
+      - run: uv build --wheel --sdist --out-dir dist
+      - run: uv venv .package-smoke --python 3.14
+      - run: >-
+          uv pip install --python .package-smoke/bin/python
+          --no-index --find-links dist enterprise-architecture-core
+      - name: Smoke-test installed package
+        run: |
+          .package-smoke/bin/python - <<'PY'
+          from importlib.metadata import version
+          from importlib.util import find_spec
+
+          import ea_core_foundation
+
+          assert version("enterprise-architecture-core") == "0.1.0"
+          assert ea_core_foundation.__version__ == "0.1.0"
+          assert find_spec("jsonschema") is None
+          PY
