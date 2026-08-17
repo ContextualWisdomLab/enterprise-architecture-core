@@ -3,7 +3,7 @@
   "info": {
     "title": "Enterprise Architecture Core API",
     "version": "0.1.0",
-    "description": "Implemented process surface. Call GET /health to confirm the process is up, then GET /ready before sending tenant traffic. Typed domain commands remain a later milestone."
+    "description": "Implemented process and read-only decision surface. Call GET /health, then GET /ready. Authenticated architecture readers can query the bitemporal Technology Change Impact & Target-State Planner without direct table or foreign-product SQL access."
   },
   "servers": [{"url": "https://ea-core.example.invalid"}],
   "security": [{"keyverseBearer": []}],
@@ -51,6 +51,87 @@
           }
         }
       }
+    },
+    "/v1/technology-target-state-plans/{technology_version_id}": {
+      "get": {
+        "operationId": "getTechnologyTargetStatePlan",
+        "summary": "Decide the next action for a technology lifecycle change",
+        "description": "Returns tenant-scoped, bitemporal EA decision evidence joining technology lifecycle impact, affected applications and capabilities, receipt-bound foreign context evidence, remediation initiative, target scenario, transformation state, and deterministic next action. The API is read-only and never promotes inferred foreign evidence to authoritative EA truth.",
+        "security": [{"keyverseBearer": []}],
+        "parameters": [
+          {
+            "name": "technology_version_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "format": "uuid"}
+          },
+          {
+            "name": "valid_at",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string", "format": "date-time"}
+          },
+          {
+            "name": "recorded_at",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string", "format": "date-time"}
+          },
+          {
+            "name": "planning_horizon_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650,
+              "default": 180
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Decision evidence is available. Next action is carried in next_action and each decision row.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/TargetStatePlanResponse"}
+              }
+            }
+          },
+          "400": {
+            "description": "The bitemporal request is malformed or incomplete.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorStatus"}
+              }
+            }
+          },
+          "401": {
+            "description": "A current cryptographically valid Keyverse bearer is required.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorStatus"}
+              }
+            }
+          },
+          "403": {
+            "description": "The verified identity lacks an approved EA read role.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorStatus"}
+              }
+            }
+          },
+          "503": {
+            "description": "Authorization configuration or the purpose-bound EA query port is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorStatus"}
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -71,10 +152,7 @@
             "type": "string",
             "const": "enterprise-architecture-core"
           },
-          "status_code": {
-            "type": "string",
-            "const": "alive"
-          }
+          "status_code": {"type": "string", "const": "alive"}
         }
       },
       "ReadyStatus": {
@@ -91,12 +169,89 @@
             "type": "string",
             "const": "enterprise-architecture-core"
           },
-          "status_code": {
-            "type": "string",
-            "enum": ["ready", "not_ready"]
-          },
+          "status_code": {"type": "string", "enum": ["ready", "not_ready"]},
           "contract_ready": {"type": "boolean"},
           "database_ready": {"type": "boolean"}
+        }
+      },
+      "TargetStatePlanResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "technology_version_id",
+          "valid_at",
+          "recorded_at",
+          "planning_horizon_days",
+          "decision_count",
+          "decisions",
+          "next_action"
+        ],
+        "properties": {
+          "technology_version_id": {"type": "string", "format": "uuid"},
+          "valid_at": {"type": "string", "format": "date-time"},
+          "recorded_at": {"type": "string", "format": "date-time"},
+          "planning_horizon_days": {"type": "integer", "minimum": 1, "maximum": 3650},
+          "decision_count": {"type": "integer", "minimum": 0},
+          "decisions": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/TargetStateDecision"}
+          },
+          "next_action": {"type": "string", "minLength": 1}
+        }
+      },
+      "TargetStateDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "technology_version_id",
+          "application_object_id",
+          "capability_object_id",
+          "application_code",
+          "capability_code",
+          "impact_status_code",
+          "impact_evidence_state_code",
+          "external_context_reference_id",
+          "external_object_kind_code",
+          "external_truth_status_code",
+          "external_evidence_state_code",
+          "remediation_initiative_id",
+          "remediation_initiative_code",
+          "architecture_scenario_id",
+          "scenario_code",
+          "architecture_transformation_id",
+          "transformation_state_code",
+          "decision_readiness_code",
+          "recommended_action_code"
+        ],
+        "properties": {
+          "technology_version_id": {"type": "string", "format": "uuid"},
+          "application_object_id": {"type": "string", "format": "uuid"},
+          "capability_object_id": {"type": ["string", "null"], "format": "uuid"},
+          "application_code": {"type": "string"},
+          "capability_code": {"type": ["string", "null"]},
+          "impact_status_code": {"type": "string"},
+          "impact_evidence_state_code": {"type": "string"},
+          "external_context_reference_id": {"type": ["string", "null"], "format": "uuid"},
+          "external_object_kind_code": {"type": ["string", "null"]},
+          "external_truth_status_code": {"type": ["string", "null"]},
+          "external_evidence_state_code": {"type": ["string", "null"]},
+          "remediation_initiative_id": {"type": ["string", "null"], "format": "uuid"},
+          "remediation_initiative_code": {"type": ["string", "null"]},
+          "architecture_scenario_id": {"type": ["string", "null"], "format": "uuid"},
+          "scenario_code": {"type": ["string", "null"]},
+          "architecture_transformation_id": {"type": ["string", "null"], "format": "uuid"},
+          "transformation_state_code": {"type": ["string", "null"]},
+          "decision_readiness_code": {"type": "string"},
+          "recommended_action_code": {"type": "string"}
+        }
+      },
+      "ErrorStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error_code", "next_action"],
+        "properties": {
+          "error_code": {"type": "string", "minLength": 1},
+          "next_action": {"type": "string", "minLength": 1}
         }
       }
     }
@@ -107,7 +262,8 @@
       "EA_OIDC_AUDIENCE",
       "EA_OIDC_JWKS_URL",
       "EA_TENANT_CLAIM",
-      "EA_ROLE_CLAIM"
+      "EA_ROLE_CLAIM",
+      "EA_READ_ROLES"
     ],
     "requiredChecks": [
       "signature",
