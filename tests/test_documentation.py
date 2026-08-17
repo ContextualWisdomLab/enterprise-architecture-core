@@ -1,6 +1,8 @@
 """Documentation baseline tests."""
 
+from datetime import date
 from pathlib import Path
+import re
 
 _REQUIRED_DOCUMENTS = (
     "README.md",
@@ -24,6 +26,7 @@ _REQUIRED_DOCUMENTS = (
     "docs/STORYBOOK_INVENTORY.md",
     "docs/GOALS.md",
 )
+_DATE_LINE_PATTERN = re.compile(r"^- \*\*Date:\*\* (\d{4}-\d{2}-\d{2})$", re.MULTILINE)
 
 
 def test_required_documents_exist_without_placeholders(repository_root: Path) -> None:
@@ -39,13 +42,15 @@ def test_required_documents_exist_without_placeholders(repository_root: Path) ->
 
 
 def test_all_adrs_are_accepted_and_dated(repository_root: Path) -> None:
-    """Every initial architecture decision is explicit and reviewable."""
+    """Every architecture decision is accepted and carries a valid ISO date."""
 
     adr_paths = sorted((repository_root / "docs/adr").glob("*.md"))
     assert len(adr_paths) >= 10
     for adr_path in adr_paths:
         adr_text = adr_path.read_text(encoding="utf-8")
         assert "- **Status:** Accepted" in adr_text
-        assert "- **Date:** 2026-08-16" in adr_text
+        date_match = _DATE_LINE_PATTERN.search(adr_text)
+        assert date_match is not None, adr_path.name
+        date.fromisoformat(date_match.group(1))
         assert "## Decision" in adr_text
         assert "## Consequence" in adr_text
