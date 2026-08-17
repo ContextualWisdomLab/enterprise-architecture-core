@@ -101,6 +101,15 @@ assessments for the same object, dimension, and cycle. Composite tenant foreign
 keys plus forced RLS preserve tenant isolation across the entire assessment
 chain.
 
+Assessment meaning is append-preserving. Scale, scale-value, and dimension rows
+cannot be updated after insertion. Framework, cycle, and object-assessment
+meaning likewise cannot be edited in place; those records may only acquire a
+`superseded_at` value once, after which that timestamp is immutable. A correction
+therefore supersedes the recorded fact and appends a replacement. This keeps the
+original framework definition, score semantics, evidence link, and assessor
+record queryable at the historical system-time cutoff instead of silently
+rewriting prior portfolio decisions.
+
 Framework version and scale semantics are therefore stable determinants of a
 score. The write model does not copy framework identity onto dimensions or
 objects merely for query convenience; projections may denormalize those facts
