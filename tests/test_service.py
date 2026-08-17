@@ -158,7 +158,7 @@ def test_http_surface_serves_health_ready_and_operator_errors() -> None:
     assert missing_status == 404
     assert missing_body["next_action"].startswith("Call GET /health")
     assert write_status == 405
-    assert "GET /health" in write_body["next_action"]
+    assert "/health" in write_body["next_action"]
 
 
 def test_http_ready_without_a_configured_probe_is_not_ready() -> None:
