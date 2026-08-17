@@ -23,10 +23,10 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
         for migration_path in migration_paths
     )
     counts = validate_migration_sql(migration_text)
-    assert counts[0] == 33
-    assert counts[1] == 259
-    assert counts[2] == 8
-    assert counts[3] == 258
+    assert counts[0] == 36
+    assert counts[1] == 344
+    assert counts[2] == 10
+    assert counts[3] == 299
 
 
 def test_migration_inventory_requires_at_least_one_file() -> None:
@@ -140,7 +140,6 @@ def test_migration_requires_tenant_bound_composite_keys(
     weakened = migration_text.replace(
         "FOREIGN KEY (tenant_record_id, source_object_id)",
         "FOREIGN KEY (source_object_id)",
-        1,
     )
     with pytest.raises(ContractValidationError, match="tenant-bound composite keys"):
         validate_migration_sql(weakened)
