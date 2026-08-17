@@ -66,9 +66,63 @@ Authoritative and observed strategy facts require evidence. Current authoritativ
 
 Strategy meaning is immutable after insertion. Semantic correction uses one-time `superseded_at` plus a newly appended fact, preserving historical system-time queries. Forced RLS and composite tenant foreign keys protect all four relations. These milestones describe architecture decision targets only; project tasks, staffing, sprint state, and delivery telemetry remain external execution-system responsibilities.
 
-## Scenarios and transformation
+## Scenarios and target-state projection
 
-ADR 0008 defines future target state as an immutable baseline plus ordered deltas. `architecture_scenario`, ordered scenario-change facts, projector logic, approved transformation execution, and transformation history remain planned and are not claimed as implemented by the strategy-execution milestone. Draft scenarios must never mutate current authoritative state.
+Migration 0012 implements the immutable object baseline of ADR 0008 with three normalized tenant-owned relations and one deterministic database projector:
+
+- `architecture_scenario`: the versioned scenario decision, including one `target_valid_at` instant and explicit truth/evidence.
+- `scenario_baseline`: the single immutable pair of `baseline_valid_at` and `baseline_recorded_at` cutoffs for a scenario.
+- `scenario_object_delta`: append-only ordered object-presence changes with target-effective intervals, truth/evidence, and positive sequence numbers.
+- `project_scenario_objects(uuid)`: a tenant-bound projection that overlays the latest active delta per object on the authoritative object-revision baseline.
+
+Baseline membership is reconstructed from authoritative `object_revision` facts that were valid at `baseline_valid_at`, recorded no later than `baseline_recorded_at`, and not yet superseded at that system-time cutoff. This preserves the distinction between real-world validity and system-recording history: later backfills or later supersession do not silently rewrite an existing baseline.
+
+Scenario object deltas never mutate authoritative architecture objects or revisions. A delta can only state whether an existing tenant-owned architecture object is present or absent in the scenario target state. The same object-delta sequence number cannot be reused. If an object has multiple active deltas, the highest sequence number wins at `target_valid_at`; corrections are appended rather than rewriting earlier decisions. The projection returns the resulting presence, whether it came from the baseline or a scenario delta, the applied sequence number, and the corresponding truth status.
+
+Migration 0013 extends the same scenario without copying the authoritative graph:
+
+- `scenario_relation_delta`: append-only ordered relation-presence intent identified by relation type plus tenant-bound source/target objects, with target-effective interval, truth origin, and evidence.
+- `project_scenario_relations(uuid)`: reconstructs authoritative relations at the immutable baseline cutoffs, overlays the latest active relation delta per typed endpoint tuple, and joins the final object projection so a target-state relation cannot remain active when either endpoint is absent.
+
+Relation deltas reuse the authoritative relation-type guard; a proposed target-state edge must therefore respect the same source/target object taxonomy as shipped architecture truth. Authoritative and observed relation deltas require evidence, semantic fields are immutable, sequence numbers are positive and non-reusable within the relation-delta stream, and history is corrected only by later deltas or one-time supersession. The relation projector exposes requested presence, baseline/delta origin, applied sequence, truth status, baseline and delta evidence identities, and `endpoint_integrity_code`. A requested-present relation with a missing target-state source or target is returned as not present with `source_absent`, `target_absent`, or `both_absent`; the projector never invents or promotes an endpoint merely to satisfy an edge.
+
+An immutable baseline must exist before either delta type is appended. Baseline time cannot exceed the scenario target time, a delta cannot begin after that target, cross-tenant targets are rejected through composite foreign keys, and rejected/superseded deltas do not participate in the current projection. All scenario relations use forced RLS. Scenario history cannot be hard-deleted; baseline meaning is fully immutable, while scenario and delta records support only one-time supersession before replacement/continuation is appended.
+
+This milestone projects object and relation presence for a deterministic target-state graph. Cross-domain event projection and buyer-facing scenario comparison UI remain later bounded slices; the scenario model is not an arbitrary meta-model editor, workflow engine, or substitute for another product's authoritative store.
+
+## Transformation execution history
+
+Migration 0014 binds an immutable target-state decision to governed execution history without turning the Enterprise Architecture Decision Plane into a project-management system:
+
+- `architecture_transformation`: one tenant-bound link from an `architecture_scenario` with an immutable baseline to a `remediation_initiative`, plus transformation identity, valid interval, system recording/supersession interval, truth status, and evidence.
+- `transformation_history_record`: append-only ordered state history with `effective_at`, independent `recorded_at`, actor reference, decision reason, truth status, and evidence.
+- `project_transformation_state(uuid,timestamptz,timestamptz)`: tenant-bound projection of the latest transformation state visible at both a real-world valid-time cutoff and a system-recording cutoff.
+
+A transformation cannot target an inactive scenario or initiative, its valid interval must be contained in both parent intervals, the scenario target instant must lie inside the transformation interval, and the scenario must already have its immutable baseline. Current authoritative transformations with the same code cannot overlap.
+
+History begins with `proposed` sequence 1. The database permits only `proposed -> approved|rejected`, `approved -> started|cancelled`, and `started -> completed|cancelled`. Approval, cancellation, and rejection require authoritative truth; started and completed states require authoritative or observed truth. Authoritative and observed facts require evidence, so proposed or inferred automation output cannot silently become an approved architecture decision.
+
+Real-world and system time remain distinct. A future-effective approval may be recorded before its `effective_at`; there is deliberately no `recorded_at >= effective_at` constraint. Sequence history itself stays deterministic: sequence numbers are contiguous and neither effective nor recording order may move backward within one transformation stream. The projector independently applies the requested valid-time and recorded-time cutoffs.
+
+Transformation meaning is immutable after insertion except for one-time supersession, while history rows reject update and delete operations. Forced RLS and composite tenant foreign keys preserve tenant isolation. `decision_actor_ref` is an auditable identity reference, not a replacement for Keyverse authorization. Project tasks, staffing, sprint state, deployment telemetry, and external execution-system state remain outside this model.
+
+## Technology change impact projection
+
+Migration 0015 adds the first buyer-facing Technology Change Impact & Target-State Planner query without introducing another write model:
+
+- `project_technology_change_impact(uuid,timestamptz,timestamptz,integer)`: starts from one tenant-owned `technology_version`, resolves its owning technology component through `has_version`, finds affected applications through `uses_technology`, then finds supported business capabilities through `supports_capability`.
+
+Every traversed relation is evaluated independently at the requested valid-time and recorded-time cutoffs. A relation must already have been recorded, must still be visible at the requested system time, must contain the requested real-world time, and cannot have `superseded` or `rejected` truth origin. The current lifecycle interval and earliest future risk-bearing `phase_out`, `end_of_life`, or `retired` interval are selected under the same system-recording cutoff. This lets an audit query reproduce what the system actually knew at an earlier cutoff even when capability or lifecycle evidence was backfilled later.
+
+The projection deliberately does **not** use `technology_version.support_end_date` to classify historical risk. That pre-existing inventory attribute has no valid/system history; a later edit would otherwise rewrite an earlier audit result. Lifecycle risk is therefore derived only from `lifecycle_interval` facts, which carry both real-world validity and system recording/supersession time. The function returns `lifecycle_change_at` for the next recorded risk-bearing transition and returns the evidence identifier that actually caused the lifecycle decision.
+
+The projection returns the IDs and business codes needed to explain the path, current lifecycle phase and next risk transition, relation truth/evidence identities, lifecycle decision evidence, and three deterministic decision fields. `impact_status_code` is `supported`, `lifecycle_change_soon`, `phase_out`, or `end_of_life`. `evidence_state_code` is `complete`, `missing_capability_mapping`, `missing_lifecycle_evidence`, or `requires_truth_review`. Any traversed `has_version`, `uses_technology`, or `supports_capability` relation whose truth status is `inferred` or `proposed` routes the row to `requires_truth_review`; `recommended_action_code` becomes `review_truth_origin` rather than a remediation or target-state action. The original relation truth statuses remain in the projection, so no inferred/proposed fact is silently promoted.
+
+For an authoritative/observed path with complete evidence, `recommended_action_code` tells the caller whether to monitor, plan a target state, or start remediation. Evidence gaps and truth-review requirements take precedence so incomplete or non-authoritative architecture knowledge cannot masquerade as a precise decision.
+
+The caller chooses a planning horizon between 1 and 3650 days. An unknown technology version or out-of-range horizon fails closed. The function is read-only and never creates or approves scenarios, initiatives, or transformations, and it never promotes inferred/proposed evidence into authority.
+
+This slice intentionally stops at EA-owned capability impact. Physical schema/design evidence remains owned by pg-erd-cloud; catalog assets, data products, dashboards/models/AI projections and governed lineage remain owned by Semantic Data Portal; inferred lineage remains owned by LineageWeave. Those products can later enrich this impact path through their published contracts/events without direct cross-service application-table SQL or duplicated authority.
 
 ## Integration
 
