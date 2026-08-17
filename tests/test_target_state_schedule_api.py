@@ -1,4 +1,4 @@
-"""Buyer acceptance for binding an approved transformation to its remediation milestone."""
+"""Buyer acceptance for approved transformation milestone scheduling."""
 
 from __future__ import annotations
 
@@ -9,7 +9,10 @@ from uuid import UUID
 
 import pytest
 
-from ea_core_foundation.authorization import AuthorizationContext, KeyverseAuthorizationConfig
+from ea_core_foundation.authorization import (
+    AuthorizationContext,
+    KeyverseAuthorizationConfig,
+)
 from ea_core_foundation.runtime import (
     TargetStateScheduleRequest,
     build_schedule_authorization_config,
@@ -58,7 +61,9 @@ def _payload(**changes: object) -> dict[str, object]:
         "decision_request_id": _DECISION_REQUEST_ID,
         "initiative_milestone_id": _MILESTONE_ID,
         "effective_at": "2027-01-16T00:00:00Z",
-        "decision_reason_text": "Bind the approved target state to the migration milestone.",
+        "decision_reason_text": (
+            "Bind the approved target state to the migration milestone."
+        ),
         "evidence_record_id": _EVIDENCE_ID,
     }
     payload.update(changes)
@@ -161,7 +166,9 @@ def test_schedule_writer_uses_verified_actor_and_returns_actionable_receipt() ->
             0,
             stdout=json.dumps(
                 {
-                    "transformation_schedule_record_id": "0196e080-1111-7111-8111-111111111191",
+                    "transformation_schedule_record_id": (
+                        "0196e080-1111-7111-8111-111111111191"
+                    ),
                     "architecture_transformation_id": _TRANSFORMATION_ID,
                     "initiative_milestone_id": _MILESTONE_ID,
                     "decision_request_id": _DECISION_REQUEST_ID,
@@ -187,8 +194,12 @@ def test_schedule_writer_uses_verified_actor_and_returns_actionable_receipt() ->
     assert all("secret" not in value for value in command)
     assert "transformation-planner-123" not in " ".join(command)
     assert "migration milestone" not in " ".join(command)
-    assert kwargs["env"]["EA_SCHEDULE_ACTOR_REF"].endswith("#transformation-planner-123")
-    assert kwargs["env"]["EA_SCHEDULE_REASON_TEXT"].startswith("Bind the approved")
+    assert kwargs["env"]["EA_SCHEDULE_ACTOR_REF"].endswith(
+        "#transformation-planner-123"
+    )
+    assert kwargs["env"]["EA_SCHEDULE_REASON_TEXT"].startswith(
+        "Bind the approved"
+    )
 
 
 @pytest.mark.parametrize("dsn", [None, "https://not-postgres.example/ea_core"])

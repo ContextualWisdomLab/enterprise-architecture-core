@@ -104,7 +104,10 @@ class TargetStateScheduleRequest:
             "architecture transformation id",
         )
         request_id = _parse_uuid7(decision_request_id, "decision request id")
-        milestone_id = _parse_uuid7(initiative_milestone_id, "initiative milestone id")
+        milestone_id = _parse_uuid7(
+            initiative_milestone_id,
+            "initiative milestone id",
+        )
         evidence_id = _parse_uuid7(evidence_record_id, "evidence record id")
         effective_time = _parse_timestamp(effective_at, "effective_at")
         reason = decision_reason_text.strip()
@@ -264,7 +267,9 @@ def build_target_state_schedule_writer(
                 "target-state schedule returned invalid JSON"
             ) from error
         if not isinstance(payload, Mapping):
-            raise PlannerExecutionError("target-state schedule returned invalid schedule receipt")
+            raise PlannerExecutionError(
+                "target-state schedule returned invalid schedule receipt"
+            )
         try:
             _parse_uuid7(
                 cast(str, payload.get("transformation_schedule_record_id")),
