@@ -143,8 +143,6 @@ CREATE TABLE architecture_core.transformation_history_record (
             transformation_state_code NOT IN ('started', 'completed')
             OR truth_status_code IN ('authoritative', 'observed')
         ),
-    CONSTRAINT transformation_history_record_recording_chronology
-        CHECK (recorded_at >= effective_at),
     CONSTRAINT transformation_history_record_sequence_unique
         UNIQUE (
             tenant_record_id,
