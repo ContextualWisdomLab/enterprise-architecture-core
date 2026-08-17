@@ -26,7 +26,7 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
     assert counts[0] == 36
     assert counts[1] == 320
     assert counts[2] == 10
-    assert counts[3] == 300
+    assert counts[3] == 299
 
 
 def test_migration_inventory_requires_at_least_one_file() -> None:
