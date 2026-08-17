@@ -37,6 +37,8 @@ _TARGET_STATE_PATH_PREFIX = "/v1/technology-target-state-plans/"
 _TARGET_STATE_APPROVAL_PATH_PREFIX = "/v1/architecture-transformations/"
 _TARGET_STATE_APPROVAL_PATH_SUFFIX = "/approval"
 _MAX_APPROVAL_BODY_BYTES = 16_384
+_APPROVAL_ACTOR_ENV = "EA_APPROVAL_ACTOR_REF"
+_APPROVAL_REASON_ENV = "EA_APPROVAL_REASON_TEXT"
 _LIBPQ_QUERY_ENVIRONMENT = {
     "host": "PGHOST",
     "hostaddr": "PGHOSTADDR",
@@ -690,6 +692,9 @@ def build_target_state_approval_writer(
         actor_ref = f"keyverse:{context.issuer_uri}#{context.subject_id}"
         if len(actor_ref) > 2048:
             raise PlannerExecutionError("verified actor reference is too long")
+        approval_environment = dict(connection_environment)
+        approval_environment[_APPROVAL_ACTOR_ENV] = actor_ref
+        approval_environment[_APPROVAL_REASON_ENV] = request.decision_reason_text
         command = [
             "psql",
             "--no-psqlrc",
@@ -706,11 +711,11 @@ def build_target_state_approval_writer(
             "--set",
             f"effective_at={request.effective_at.isoformat()}",
             "--set",
-            f"decision_actor_ref={actor_ref}",
-            "--set",
-            f"decision_reason_text={request.decision_reason_text}",
-            "--set",
             f"evidence_record_id={request.evidence_record_id}",
+            "--command",
+            r"\getenv decision_actor_ref EA_APPROVAL_ACTOR_REF",
+            "--command",
+            r"\getenv decision_reason_text EA_APPROVAL_REASON_TEXT",
             "--command",
             _TARGET_STATE_APPROVAL_SQL,
         ]
@@ -721,7 +726,7 @@ def build_target_state_approval_writer(
                 text=True,
                 timeout=10,
                 check=False,
-                env=connection_environment,
+                env=approval_environment,
             )
         except (OSError, subprocess.TimeoutExpired) as error:
             raise PlannerExecutionError(
