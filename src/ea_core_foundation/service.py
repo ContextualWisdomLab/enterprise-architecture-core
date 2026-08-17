@@ -297,9 +297,11 @@ def _parse_uuid7(value: str, field_name: str) -> UUID:
     try:
         parsed = UUID(value)
     except (TypeError, ValueError, AttributeError) as error:
-        raise PlannerRequestError(f"{field_name} must be a UUIDv7") from error
-    if parsed.version != 7:
-        raise PlannerRequestError(f"{field_name} must be a UUIDv7")
+        raise PlannerRequestError(
+            f"{field_name} must be a canonical UUIDv7"
+        ) from error
+    if parsed.version != 7 or str(parsed) != value:
+        raise PlannerRequestError(f"{field_name} must be a canonical UUIDv7")
     return parsed
 
 
