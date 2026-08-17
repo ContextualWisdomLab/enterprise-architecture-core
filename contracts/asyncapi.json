@@ -12,6 +12,10 @@
     "lifecycleEvents": {
       "address": "org.contextualwisdomlab.ea.lifecycle.changed.v1",
       "messages": {"LifecycleChanged": {"$ref": "#/components/messages/LifecycleChanged"}}
+    },
+    "transformationApprovalEvents": {
+      "address": "org.contextualwisdomlab.ea.transformation.approved.v1",
+      "messages": {"TransformationApproved": {"$ref": "#/components/messages/TransformationApproved"}}
     }
   },
   "operations": {
@@ -24,6 +28,11 @@
       "action": "send",
       "channel": {"$ref": "#/channels/lifecycleEvents"},
       "messages": [{"$ref": "#/channels/lifecycleEvents/messages/LifecycleChanged"}]
+    },
+    "publishTransformationApproved": {
+      "action": "send",
+      "channel": {"$ref": "#/channels/transformationApprovalEvents"},
+      "messages": [{"$ref": "#/channels/transformationApprovalEvents/messages/TransformationApproved"}]
     }
   },
   "components": {
@@ -56,6 +65,23 @@
                 "type": "object",
                 "properties": {
                   "type": {"const": "org.contextualwisdomlab.ea.lifecycle.changed.v1"}
+                }
+              }
+            ]
+          }
+        }
+      },
+      "TransformationApproved": {
+        "contentType": "application/cloudevents+json",
+        "payload": {
+          "schemaFormat": "application/schema+json;version=draft-2020-12",
+          "schema": {
+            "allOf": [
+              {"$ref": "https://schemas.contextualwisdomlab.org/context/cloudevent-envelope.v1.schema.json"},
+              {
+                "type": "object",
+                "properties": {
+                  "type": {"const": "org.contextualwisdomlab.ea.transformation.approved.v1"}
                 }
               }
             ]
