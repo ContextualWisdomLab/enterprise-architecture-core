@@ -225,7 +225,7 @@ INSERT INTO architecture_core.transformation_history_record (
     2,
     'approved',
     '2026-10-01T00:00:00Z',
-    '2026-10-02T00:00:00Z',
+    '2026-09-20T00:00:00Z',
     'urn:cwl:actor:architecture-board',
     'The reviewed target state and remediation initiative are approved.',
     'authoritative',
@@ -324,7 +324,7 @@ BEGIN
     FROM architecture_core.project_transformation_state(
       '0196e010-1111-7111-8111-111111111111',
       '2027-02-01T00:00:00Z',
-      '2026-10-01T12:00:00Z'
+      '2026-09-15T00:00:00Z'
     );
   IF state_at_recording_cutoff IS DISTINCT FROM 'proposed' THEN
     RAISE EXCEPTION 'system-time projection returned %', state_at_recording_cutoff;
