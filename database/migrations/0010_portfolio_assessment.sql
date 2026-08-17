@@ -282,6 +282,115 @@ ON architecture_core.object_assessment
 FOR EACH ROW
 EXECUTE FUNCTION architecture_core.validate_object_assessment_semantics();
 
+CREATE FUNCTION architecture_core.reject_assessment_meaning_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION USING
+    ERRCODE = '23514',
+    MESSAGE = 'versioned assessment meaning is immutable; supersede and append a new fact';
+END;
+$$;
+
+CREATE FUNCTION architecture_core.validate_assessment_supersession()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF OLD.superseded_at IS NOT NULL
+     AND NEW.superseded_at IS DISTINCT FROM OLD.superseded_at THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'assessment supersession time is immutable once recorded';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER assessment_framework_immutable_guard
+BEFORE UPDATE OF
+    tenant_record_id,
+    assessment_framework_id,
+    framework_code,
+    framework_title,
+    framework_version_label,
+    valid_from,
+    valid_to,
+    recorded_at
+ON architecture_core.assessment_framework
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.reject_assessment_meaning_mutation();
+
+CREATE TRIGGER assessment_framework_supersession_guard
+BEFORE UPDATE OF superseded_at
+ON architecture_core.assessment_framework
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.validate_assessment_supersession();
+
+CREATE TRIGGER assessment_scale_immutable_guard
+BEFORE UPDATE
+ON architecture_core.assessment_scale
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.reject_assessment_meaning_mutation();
+
+CREATE TRIGGER assessment_scale_value_immutable_guard
+BEFORE UPDATE
+ON architecture_core.assessment_scale_value
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.reject_assessment_meaning_mutation();
+
+CREATE TRIGGER assessment_dimension_immutable_guard
+BEFORE UPDATE
+ON architecture_core.assessment_dimension
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.reject_assessment_meaning_mutation();
+
+CREATE TRIGGER assessment_cycle_immutable_guard
+BEFORE UPDATE OF
+    tenant_record_id,
+    assessment_cycle_id,
+    assessment_framework_id,
+    cycle_code,
+    cycle_title,
+    valid_from,
+    valid_to,
+    recorded_at
+ON architecture_core.assessment_cycle
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.reject_assessment_meaning_mutation();
+
+CREATE TRIGGER assessment_cycle_supersession_guard
+BEFORE UPDATE OF superseded_at
+ON architecture_core.assessment_cycle
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.validate_assessment_supersession();
+
+CREATE TRIGGER object_assessment_immutable_guard
+BEFORE UPDATE OF
+    tenant_record_id,
+    object_assessment_id,
+    architecture_object_id,
+    assessment_dimension_id,
+    assessment_cycle_id,
+    scale_value_id,
+    valid_from,
+    valid_to,
+    recorded_at,
+    truth_status_code,
+    evidence_record_id,
+    assessor_note
+ON architecture_core.object_assessment
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.reject_assessment_meaning_mutation();
+
+CREATE TRIGGER object_assessment_supersession_guard
+BEFORE UPDATE OF superseded_at
+ON architecture_core.object_assessment
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.validate_assessment_supersession();
+
 ALTER TABLE architecture_core.assessment_framework ENABLE ROW LEVEL SECURITY;
 ALTER TABLE architecture_core.assessment_framework FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation_policy ON architecture_core.assessment_framework
