@@ -110,16 +110,26 @@ FROM architecture_core.read_technology_target_state_plan(
 ) AS plan;
 """.strip()
 _TARGET_STATE_APPROVAL_SQL = """
-SELECT row_to_json(approval)::text
-FROM architecture_core.approve_target_state(
-    :'tenant_record_id'::uuid,
-    :'architecture_transformation_id'::uuid,
-    :'decision_request_id'::uuid,
-    :'effective_at'::timestamptz,
-    :'decision_actor_ref'::text,
-    :'decision_reason_text'::text,
-    :'evidence_record_id'::uuid
-) AS approval;
+SELECT row_to_json(approval_receipt)::text
+FROM (
+    SELECT
+        approval.transformation_history_record_id,
+        approval.transformation_state_code,
+        approval.outbox_event_id,
+        approval.decision_request_id,
+        approval.approval_recorded_at,
+        approval.approval_replayed AS replayed,
+        approval.next_action
+    FROM architecture_core.approve_target_state(
+        :'tenant_record_id'::uuid,
+        :'architecture_transformation_id'::uuid,
+        :'decision_request_id'::uuid,
+        :'effective_at'::timestamptz,
+        :'decision_actor_ref'::text,
+        :'decision_reason_text'::text,
+        :'evidence_record_id'::uuid
+    ) AS approval
+) AS approval_receipt;
 """.strip()
 
 ReadinessProbe = Callable[[], bool]
@@ -284,7 +294,7 @@ def _parse_uuid7(value: str, field_name: str) -> UUID:
 
     try:
         parsed = UUID(value)
-    except (ValueError, AttributeError) as error:
+    except (TypeError, ValueError, AttributeError) as error:
         raise PlannerRequestError(f"{field_name} must be a UUIDv7") from error
     if parsed.version != 7:
         raise PlannerRequestError(f"{field_name} must be a UUIDv7")
