@@ -34,7 +34,9 @@ _DECISION_REQUEST_ID = "0196e030-1111-7111-8111-111111111191"
 _EVIDENCE_ID = "0195d145-64e8-7f4f-8a23-a0cc784cbf10"
 
 
-def _config(roles: frozenset[str] = frozenset({"ea_architecture_approver"})) -> KeyverseAuthorizationConfig:
+def _config(
+    roles: frozenset[str] = frozenset({"ea_architecture_approver"}),
+) -> KeyverseAuthorizationConfig:
     """Return a closed Keyverse relying-party profile for approval tests."""
 
     return KeyverseAuthorizationConfig(
@@ -47,7 +49,9 @@ def _config(roles: frozenset[str] = frozenset({"ea_architecture_approver"})) -> 
     )
 
 
-def _authorization_context(subject: str = "architecture-board-user-123") -> AuthorizationContext:
+def _authorization_context(
+    subject: str = "architecture-board-user-123",
+) -> AuthorizationContext:
     """Return one already-verified identity context for database-port tests."""
 
     return AuthorizationContext(
@@ -123,7 +127,8 @@ def _approval_payload(**changes: object) -> dict[str, object]:
         "decision_request_id": _DECISION_REQUEST_ID,
         "effective_at": "2027-01-15T00:00:00Z",
         "decision_reason_text": (
-            "Architecture board approved the reviewed target state and remediation evidence."
+            "Architecture board approved the reviewed target state "
+            "and remediation evidence."
         ),
         "evidence_record_id": _EVIDENCE_ID,
     }
