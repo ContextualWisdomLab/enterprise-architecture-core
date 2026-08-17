@@ -1,8 +1,9 @@
 # ADR 0015: Bitemporal transformation execution history
 
-- Status: Accepted on this feature branch; not protected-main shipped truth until the owning PR integrates.
-- Date: 2026-08-17
-- Depends on: ADR 0004 (bitemporal history), ADR 0007 (evidence/truth status), ADR 0008 (delta scenarios), ADR 0014 (versioned strategy execution).
+- **Status:** Accepted
+- **Date:** 2026-08-17
+- **Shipping state:** Accepted on this feature branch; not protected-main shipped truth until the owning PR integrates.
+- **Depends on:** ADR 0004 (bitemporal history), ADR 0007 (evidence/truth status), ADR 0008 (delta scenarios), ADR 0014 (versioned strategy execution).
 
 ## Context
 
@@ -19,6 +20,8 @@ Migration `0014_transformation_history.sql` introduces two normalized tenant-own
 
 Allowed state transitions are deliberately narrow: `proposed -> approved|rejected`, `approved -> started|cancelled`, and `started -> completed|cancelled`. Terminal states do not transition. Approval, cancellation, and rejection require authoritative truth. Started and completed states require authoritative or observed truth. Authoritative and observed facts require evidence.
 
+A governed transformation cannot promote a proposed or inferred parent scenario or remediation initiative. An `approved`, `started`, `completed`, or `cancelled` history state additionally requires the transformation itself to be authoritative. This keeps authority changes explicit at each layer instead of allowing a later record to elevate a weaker source fact.
+
 The database does not require `recorded_at >= effective_at`. System recording time and real-world effective time are independent dimensions. Within one transformation stream, sequence numbers are contiguous, effective times do not move backward, and recording times do not move backward, preserving deterministic replay while still allowing a decision to be recorded before its future effective date.
 
 `project_transformation_state(transformation_id, valid_at, recorded_at)` returns the state visible at both requested cutoffs. It is tenant-bound through `current_tenant_id()` and does not promote inferred or proposed evidence into authoritative state.
@@ -33,10 +36,10 @@ This model is an Enterprise Architecture decision/history surface, not a project
 
 - Buyers can reconstruct an approved target-state transformation and its later execution state without losing earlier decisions.
 - Audit queries can distinguish a future-effective decision already known to the system from a decision not yet recorded at an earlier system-time cutoff.
-- Proposed or inferred automation output cannot silently become an authoritative approval.
+- Proposed or inferred automation output cannot silently become an authoritative scenario, transformation, or approval.
 - RLS and composite tenant foreign keys preserve tenant isolation.
 - The next vertical slice can project cross-domain evidence and impact paths onto this governed transformation identity instead of inventing a second execution model.
 
 ## Verification
 
-`database/tests/zz_verify_transformation_history.sql` exercises evidence requirements, authority promotion rejection, invalid transition rejection, future-effective/system-time independence, valid-time and system-time projection, append-only history, and runtime tenant isolation against real PostgreSQL. The CI upgrade rehearsal installs the previous migration boundary and then applies the current migration so this model must work on both clean install and upgrade paths.
+`database/tests/zz_verify_transformation_history.sql` exercises evidence requirements, authority promotion rejection, invalid transition rejection, future-effective/system-time independence, valid-time and system-time projection, append-only history, and runtime tenant isolation against real PostgreSQL. `database/tests/zz_verify_transformation_authority_boundary.sql` proves that proposed parent facts and proposed transformation identities cannot be promoted by later authoritative-looking rows. The CI upgrade rehearsal installs the previous migration boundary and then applies the current migration so this model must work on both clean install and upgrade paths.
