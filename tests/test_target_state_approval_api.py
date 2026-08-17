@@ -245,11 +245,9 @@ def test_approval_request_requires_uuidv7_evidence_reason_and_aware_time() -> No
         )
 
 
-def test_approval_writer_binds_verified_actor_without_exposing_database_secret(
+def test_approval_writer_binds_verified_actor_without_exposing_private_values(
 ) -> None:
-    """The runtime writer uses the narrow DB port and derives actor from verified
-    identity.
-    """
+    """The runtime writer derives the actor while keeping credentials and rationale off argv."""
 
     calls: list[tuple[list[str], dict[str, Any]]] = []
 
@@ -282,7 +280,14 @@ def test_approval_writer_binds_verified_actor_without_exposing_database_secret(
     assert kwargs["env"]["PGPASSWORD"] == "secret"
     command_text = " ".join(command)
     assert "approve_target_state" in command_text
-    assert "architecture-board-user-123" in command_text
+    assert "architecture-board-user-123" not in command_text
+    assert "reviewed target state" not in command_text
+    assert kwargs["env"]["EA_APPROVAL_ACTOR_REF"].endswith(
+        "#architecture-board-user-123"
+    )
+    assert kwargs["env"]["EA_APPROVAL_REASON_TEXT"] == (
+        "Architecture board approved the reviewed target state."
+    )
 
 
 @pytest.mark.parametrize("dsn", [None, "http://not-postgres.example/db"])
