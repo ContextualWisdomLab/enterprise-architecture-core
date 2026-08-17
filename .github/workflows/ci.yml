@@ -116,6 +116,7 @@ jobs:
           psql --dbname postgres --set ON_ERROR_STOP=1 \
             --command "CREATE DATABASE ${probe_database};"
           cp database/migrations/000{1..9}_*.sql "$prior_directory/"
+          cp database/migrations/0010_*.sql "$prior_directory/"
           PGDATABASE="$probe_database" \
             bash database/scripts/apply_migrations.sh "$prior_directory"
           prior_ledger_count="$(
@@ -123,7 +124,7 @@ jobs:
               --set ON_ERROR_STOP=1 \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$prior_ledger_count" -eq 9
+          test "$prior_ledger_count" -eq 10
           PGDATABASE="$probe_database" \
             bash database/scripts/apply_migrations.sh database/migrations
           upgraded_ledger_count="$(
@@ -131,7 +132,7 @@ jobs:
               --set ON_ERROR_STOP=1 \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$upgraded_ledger_count" -eq 10
+          test "$upgraded_ledger_count" -eq 11
           PGDATABASE="$probe_database" psql --tuples-only --no-align \
             --set ON_ERROR_STOP=1 \
             --command "SELECT conname FROM pg_constraint WHERE conname IN ('object_revision_evidence_required', 'architecture_relation_evidence_required') ORDER BY conname;" \
@@ -151,6 +152,10 @@ jobs:
           PGDATABASE="$probe_database" psql --tuples-only --no-align \
             --set ON_ERROR_STOP=1 \
             --command "SELECT to_regclass('architecture_core.object_assessment') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.strategy_objective') IS NOT NULL;" \
             | grep --fixed-strings 't'
       - name: Prove failed migration rolls back schema and ledger atomically
         env:
@@ -192,7 +197,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core' AND table_type = 'BASE TABLE';"
           )"
-          test "$table_count" -eq 26
+          test "$table_count" -eq 30
           reference_view_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
               --tuples-only --no-align \
@@ -204,7 +209,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM architecture_core.schema_migration_record;"
           )"
-          test "$ledger_count" -eq 10
+          test "$ledger_count" -eq 11
       - name: Exercise database invariants
         env:
           PGPASSWORD: ea_test_password
