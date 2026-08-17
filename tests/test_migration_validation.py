@@ -23,10 +23,10 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
         for migration_path in migration_paths
     )
     counts = validate_migration_sql(migration_text)
-    assert counts[0] == 30
-    assert counts[1] == 223
-    assert counts[2] == 7
-    assert counts[3] == 228
+    assert counts[0] == 33
+    assert counts[1] == 259
+    assert counts[2] == 8
+    assert counts[3] == 258
 
 
 def test_migration_inventory_requires_at_least_one_file() -> None:
