@@ -348,7 +348,7 @@ def _postgres_environment(
     dsn: str,
     base_environment: Mapping[str, str] | None,
 ) -> dict[str, str] | None:
-    """Translate one PostgreSQL URI to equivalent supported libpq environment values."""
+    """Translate one PostgreSQL URI to an isolated libpq subprocess environment."""
 
     try:
         parsed = urlparse(dsn)
@@ -370,7 +370,12 @@ def _postgres_environment(
             return None
         query_parameters[name] = value
 
-    environment = dict(os.environ if base_environment is None else base_environment)
+    inherited_environment = os.environ if base_environment is None else base_environment
+    environment = {
+        name: value
+        for name, value in inherited_environment.items()
+        if not name.startswith("PG")
+    }
     if authority_host is not None:
         environment["PGHOST"] = authority_host
     if authority_port is not None:
