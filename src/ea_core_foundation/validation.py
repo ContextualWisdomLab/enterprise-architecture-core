@@ -33,7 +33,17 @@ _TARGET_STATE_START_MESSAGE_NAME = "TransformationStarted"
 _TARGET_STATE_START_CHANNEL_NAME = "transformationStartEvents"
 _TARGET_STATE_START_OPERATION_NAME = "publishTransformationStarted"
 _TARGET_STATE_START_EVENT_TYPE = "org.contextualwisdomlab.ea.transformation.started.v1"
-_EXECUTION_ROLE_CONFIGURATION = frozenset({"EA_SCHEDULE_ROLES", "EA_START_ROLES"})
+_TARGET_STATE_COMPLETE_RUNTIME_PATH = (
+    "/v1/architecture-transformations/{architecture_transformation_id}/complete"
+)
+_TARGET_STATE_COMPLETE_OPERATION_ID = "completeTechnologyTargetState"
+_TARGET_STATE_COMPLETE_MESSAGE_NAME = "TransformationCompleted"
+_TARGET_STATE_COMPLETE_CHANNEL_NAME = "transformationCompleteEvents"
+_TARGET_STATE_COMPLETE_OPERATION_NAME = "publishTransformationCompleted"
+_TARGET_STATE_COMPLETE_EVENT_TYPE = "org.contextualwisdomlab.ea.transformation.completed.v1"
+_EXECUTION_ROLE_CONFIGURATION = frozenset(
+    {"EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES"}
+)
 
 
 def _without_execution_roles(document: dict[str, Any]) -> dict[str, Any]:
@@ -135,25 +145,47 @@ def _validate_execution_operation(
 
 
 def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
-    """Require planner, approval, schedule, and start surfaces to match runtime code."""
+    """Require planner and all governed execution surfaces to match runtime code."""
 
     paths = core._require_mapping(document.get("paths"), "paths")
-    _validate_execution_operation(
-        paths,
-        runtime_path=_TARGET_STATE_SCHEDULE_RUNTIME_PATH,
-        operation_id=_TARGET_STATE_SCHEDULE_OPERATION_ID,
-        command_name="schedule",
-        request_schema="TargetStateScheduleRequest",
-        receipt_schema="TargetStateScheduleReceipt",
+    execution_operations = (
+        (
+            _TARGET_STATE_SCHEDULE_RUNTIME_PATH,
+            _TARGET_STATE_SCHEDULE_OPERATION_ID,
+            "schedule",
+            "TargetStateScheduleRequest",
+            "TargetStateScheduleReceipt",
+        ),
+        (
+            _TARGET_STATE_START_RUNTIME_PATH,
+            _TARGET_STATE_START_OPERATION_ID,
+            "start",
+            "TargetStateStartRequest",
+            "TargetStateStartReceipt",
+        ),
+        (
+            _TARGET_STATE_COMPLETE_RUNTIME_PATH,
+            _TARGET_STATE_COMPLETE_OPERATION_ID,
+            "complete",
+            "TargetStateCompleteRequest",
+            "TargetStateCompleteReceipt",
+        ),
     )
-    _validate_execution_operation(
-        paths,
-        runtime_path=_TARGET_STATE_START_RUNTIME_PATH,
-        operation_id=_TARGET_STATE_START_OPERATION_ID,
-        command_name="start",
-        request_schema="TargetStateStartRequest",
-        receipt_schema="TargetStateStartReceipt",
-    )
+    for (
+        runtime_path,
+        operation_id,
+        command_name,
+        request_schema,
+        receipt_schema,
+    ) in execution_operations:
+        _validate_execution_operation(
+            paths,
+            runtime_path=runtime_path,
+            operation_id=operation_id,
+            command_name=command_name,
+            request_schema=request_schema,
+            receipt_schema=receipt_schema,
+        )
     schemas = core._require_mapping(
         core._require_mapping(document.get("components"), "components").get("schemas"),
         "schemas",
@@ -163,6 +195,8 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
         "TargetStateScheduleReceipt",
         "TargetStateStartRequest",
         "TargetStateStartReceipt",
+        "TargetStateCompleteRequest",
+        "TargetStateCompleteReceipt",
     }
     missing_schemas = required_execution_schemas.difference(schemas)
     if missing_schemas:
@@ -170,10 +204,7 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
             f"missing OpenAPI schemas: {sorted(missing_schemas)!r}"
         )
     changed = deepcopy(document)
-    for runtime_path in (
-        _TARGET_STATE_SCHEDULE_RUNTIME_PATH,
-        _TARGET_STATE_START_RUNTIME_PATH,
-    ):
+    for runtime_path, *_ in execution_operations:
         changed["paths"].pop(runtime_path)
     for schema_name in required_execution_schemas:
         changed["components"]["schemas"].pop(schema_name)
@@ -205,19 +236,32 @@ def _without_execution_asyncapi(document: dict[str, Any]) -> dict[str, Any]:
 
     changed = deepcopy(document)
     channels = changed.get("channels")
-    if isinstance(channels, dict):
-        channels.pop(_TARGET_STATE_SCHEDULE_CHANNEL_NAME, None)
-        channels.pop(_TARGET_STATE_START_CHANNEL_NAME, None)
     operations = changed.get("operations")
-    if isinstance(operations, dict):
-        operations.pop(_TARGET_STATE_SCHEDULE_OPERATION_NAME, None)
-        operations.pop(_TARGET_STATE_START_OPERATION_NAME, None)
     components = changed.get("components")
-    if isinstance(components, dict):
-        messages = components.get("messages")
+    messages = components.get("messages") if isinstance(components, dict) else None
+    for channel_name, operation_name, message_name in (
+        (
+            _TARGET_STATE_SCHEDULE_CHANNEL_NAME,
+            _TARGET_STATE_SCHEDULE_OPERATION_NAME,
+            _TARGET_STATE_SCHEDULE_MESSAGE_NAME,
+        ),
+        (
+            _TARGET_STATE_START_CHANNEL_NAME,
+            _TARGET_STATE_START_OPERATION_NAME,
+            _TARGET_STATE_START_MESSAGE_NAME,
+        ),
+        (
+            _TARGET_STATE_COMPLETE_CHANNEL_NAME,
+            _TARGET_STATE_COMPLETE_OPERATION_NAME,
+            _TARGET_STATE_COMPLETE_MESSAGE_NAME,
+        ),
+    ):
+        if isinstance(channels, dict):
+            channels.pop(channel_name, None)
+        if isinstance(operations, dict):
+            operations.pop(operation_name, None)
         if isinstance(messages, dict):
-            messages.pop(_TARGET_STATE_SCHEDULE_MESSAGE_NAME, None)
-            messages.pop(_TARGET_STATE_START_MESSAGE_NAME, None)
+            messages.pop(message_name, None)
     return changed
 
 
@@ -268,28 +312,43 @@ def _validate_execution_event(
 
 
 def validate_asyncapi_document(document: dict[str, Any]) -> int:
-    """Validate existing publishers plus schedule and start execution events."""
+    """Validate existing publishers plus schedule/start/complete execution events."""
 
     legacy_operation_count = core.validate_asyncapi_document(
         _without_execution_asyncapi(document)
     )
-    _validate_execution_event(
-        document,
-        channel_name=_TARGET_STATE_SCHEDULE_CHANNEL_NAME,
-        operation_name=_TARGET_STATE_SCHEDULE_OPERATION_NAME,
-        message_name=_TARGET_STATE_SCHEDULE_MESSAGE_NAME,
-        event_type=_TARGET_STATE_SCHEDULE_EVENT_TYPE,
-        command_name="schedule",
-    )
-    _validate_execution_event(
-        document,
-        channel_name=_TARGET_STATE_START_CHANNEL_NAME,
-        operation_name=_TARGET_STATE_START_OPERATION_NAME,
-        message_name=_TARGET_STATE_START_MESSAGE_NAME,
-        event_type=_TARGET_STATE_START_EVENT_TYPE,
-        command_name="start",
-    )
-    return legacy_operation_count + 2
+    for channel_name, operation_name, message_name, event_type, command_name in (
+        (
+            _TARGET_STATE_SCHEDULE_CHANNEL_NAME,
+            _TARGET_STATE_SCHEDULE_OPERATION_NAME,
+            _TARGET_STATE_SCHEDULE_MESSAGE_NAME,
+            _TARGET_STATE_SCHEDULE_EVENT_TYPE,
+            "schedule",
+        ),
+        (
+            _TARGET_STATE_START_CHANNEL_NAME,
+            _TARGET_STATE_START_OPERATION_NAME,
+            _TARGET_STATE_START_MESSAGE_NAME,
+            _TARGET_STATE_START_EVENT_TYPE,
+            "start",
+        ),
+        (
+            _TARGET_STATE_COMPLETE_CHANNEL_NAME,
+            _TARGET_STATE_COMPLETE_OPERATION_NAME,
+            _TARGET_STATE_COMPLETE_MESSAGE_NAME,
+            _TARGET_STATE_COMPLETE_EVENT_TYPE,
+            "complete",
+        ),
+    ):
+        _validate_execution_event(
+            document,
+            channel_name=channel_name,
+            operation_name=operation_name,
+            message_name=message_name,
+            event_type=event_type,
+            command_name=command_name,
+        )
+    return legacy_operation_count + 3
 
 
 def validate_repository(repository_root: Path) -> RepositoryReport:
