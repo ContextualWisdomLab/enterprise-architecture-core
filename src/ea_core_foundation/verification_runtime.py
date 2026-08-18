@@ -19,8 +19,8 @@ from .complete import (
     build_complete_authorization_config,
     build_target_state_complete_writer,
 )
+from .completion_runtime import CompletionServiceHandler
 from .completion_runtime import (
-    CompletionServiceHandler,
     create_runtime_server as create_completion_runtime_server,
 )
 from .runtime import (

@@ -133,7 +133,10 @@ def _validate_execution_operation(
 ) -> None:
     """Bind one governed execution OpenAPI operation to executable behavior."""
 
-    path_item = core._require_mapping(paths.get(runtime_path), f"path {runtime_path}")
+    path_item = core._require_mapping(
+        paths.get(runtime_path),
+        f"path {runtime_path}",
+    )
     operation = core._require_mapping(path_item.get("post"), f"{runtime_path} post")
     if operation.get("operationId") != operation_id:
         raise ContractValidationError(
@@ -146,7 +149,8 @@ def _validate_execution_operation(
     parameters = core._parameter_index(operation)
     if set(parameters) != {("architecture_transformation_id", "path")}:
         raise ContractValidationError(
-            f"target-state {command_name} parameters must match executable request parsing"
+            f"target-state {command_name} parameters must match "
+            "executable request parsing"
         )
     core._require_parameter(
         parameters,
@@ -354,7 +358,8 @@ def _validate_execution_event(
     message = core._require_mapping(messages.get(message_name), message_name)
     if message != _expected_event_message(event_type):
         raise ContractValidationError(
-            f"transformation {command_name} event must reuse the shared Context Graph envelope"
+            f"transformation {command_name} event must reuse "
+            "the shared Context Graph envelope"
         )
 
 

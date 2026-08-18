@@ -41,7 +41,10 @@ def test_verification_runtime_validation_rejects_operation_or_auth_drift(
 
     changed = deepcopy(openapi_document)
     changed["paths"][_VERIFY_PATH]["post"]["security"] = []
-    with pytest.raises(ContractValidationError, match="verification must require Keyverse"):
+    with pytest.raises(
+        ContractValidationError,
+        match="verification must require Keyverse",
+    ):
         validate_openapi_runtime_surface(changed)
 
 
