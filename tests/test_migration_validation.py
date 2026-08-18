@@ -29,6 +29,33 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
     assert counts[3] == 337
 
 
+def test_migration_column_count_ignores_function_signatures(
+    repository_root: Path,
+) -> None:
+    """Schema inventory counts table columns, not typed function parameters."""
+
+    migration_text = "\n".join(
+        migration_path.read_text(encoding="utf-8")
+        for migration_path in sorted(
+            (repository_root / "database/migrations").glob("*.sql")
+        )
+    )
+    baseline_counts = validate_migration_sql(migration_text)
+    function_sql = """
+CREATE FUNCTION architecture_core.example_projection(
+    requested_record_id uuid
+)
+RETURNS TABLE (
+    result_record_id uuid
+)
+LANGUAGE sql
+AS $$ SELECT requested_record_id $$;
+"""
+    extended_counts = validate_migration_sql(f"{migration_text}\n{function_sql}")
+
+    assert extended_counts[1] == baseline_counts[1]
+
+
 def test_migration_inventory_requires_at_least_one_file() -> None:
     """An empty migration directory cannot be treated as a valid sequence."""
 
