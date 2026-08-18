@@ -1,8 +1,8 @@
 \set ON_ERROR_STOP on
 
 -- Buyer acceptance for replacing a terminal gap-detected target state.
--- Replanning must preserve the predecessor's immutable history, create a distinct
--- governed replacement, and commit history/replan/outbox evidence atomically.
+-- Replanning preserves immutable predecessor history, creates a distinct governed
+-- replacement, and commits history/replan/outbox evidence atomically.
 
 DO $$
 BEGIN
@@ -20,9 +20,9 @@ SELECT set_config(
     false
 );
 
--- Monitoring has already established fresh verified evidence. Model a later
--- human verification that detects a material gap and therefore closes the old
--- execution path without rewriting any earlier history.
+-- Earlier acceptance tests leave this transformation in a freshly verified
+-- state. Record later evidence that detects a material gap; this is the only
+-- terminal predecessor state from which replanning is permitted.
 INSERT INTO architecture_core.evidence_record (
     tenant_record_id,
     evidence_record_id,
@@ -37,14 +37,14 @@ INSERT INTO architecture_core.evidence_record (
     'verification://target-state/gap-1'
 );
 
-PERFORM *
+SELECT *
   FROM architecture_core.record_target_state_verification(
       '0195d145-64e8-7f4f-8a23-a0cc784cb711',
       '0196e010-1111-7111-8111-111111111191',
       '0196e210-1111-7111-8111-111111111191',
       '2027-05-05T00:00:00Z',
       'keyverse:https://id.example/realms/cwl#target-state-verifier-123',
-      'New production evidence shows the approved database target still has a material gap.',
+      'New production evidence shows the approved database target has a material gap.',
       '0196e200-1111-7111-8111-111111111191',
       'gap_detected'
   );
@@ -63,8 +63,8 @@ INSERT INTO architecture_core.evidence_record (
     'decision://target-state/replan-1'
 );
 
--- A surrounding transaction rollback must undo every mutation produced by the
--- command, including predecessor supersession and the transactional outbox row.
+-- A caller transaction rollback must undo predecessor supersession, the
+-- replacement, immutable replan evidence, initial history, and the outbox row.
 DO $$
 DECLARE
   replacement_count integer;
@@ -138,6 +138,8 @@ SELECT *
       '0196e220-1111-7111-8111-111111111191'
   );
 
+CREATE TEMP TABLE first_replan_receipt AS TABLE replan_receipt;
+
 DO $$
 DECLARE
   replayed_flag boolean;
@@ -196,8 +198,11 @@ BEGIN
      AND event_type_code = 'org.contextualwisdomlab.ea.transformation.replanned.v1'
      AND publish_status_code = 'pending';
 
-  IF replacement_count <> 1 OR history_count <> 1 OR replan_count <> 1 OR event_count <> 1 THEN
-    RAISE EXCEPTION 'replan did not atomically create exactly one replacement evidence chain';
+  IF replacement_count <> 1
+     OR history_count <> 1
+     OR replan_count <> 1
+     OR event_count <> 1 THEN
+    RAISE EXCEPTION 'replan did not atomically create one replacement evidence chain';
   END IF;
 
   SELECT EXISTS (
@@ -216,8 +221,8 @@ BEGIN
 END;
 $$;
 
--- Exact delivery replay must return the original immutable evidence identities
--- without duplicating the replacement, history, relationship, or outbox row.
+-- Exact delivery replay returns the same immutable evidence identities without
+-- duplicating the replacement, history, relationship, or outbox row.
 DROP TABLE replan_receipt;
 CREATE TEMP TABLE replan_receipt AS
 SELECT *
@@ -240,14 +245,25 @@ SELECT *
 DO $$
 DECLARE
   replayed_flag boolean;
+  identities_changed boolean;
   replacement_count integer;
   history_count integer;
   replan_count integer;
   event_count integer;
 BEGIN
   SELECT replan_replayed INTO replayed_flag FROM replan_receipt;
-  IF NOT replayed_flag THEN
-    RAISE EXCEPTION 'exact target-state replan replay was not idempotent';
+  SELECT EXISTS (
+      SELECT 1
+        FROM replan_receipt AS replayed
+        CROSS JOIN first_replan_receipt AS first_receipt
+       WHERE replayed.transformation_replan_record_id IS DISTINCT FROM
+             first_receipt.transformation_replan_record_id
+          OR replayed.transformation_history_record_id IS DISTINCT FROM
+             first_receipt.transformation_history_record_id
+          OR replayed.outbox_event_id IS DISTINCT FROM first_receipt.outbox_event_id
+  ) INTO identities_changed;
+  IF NOT replayed_flag OR identities_changed THEN
+    RAISE EXCEPTION 'exact target-state replan replay changed immutable evidence';
   END IF;
 
   SELECT count(*) INTO replacement_count
@@ -263,13 +279,16 @@ BEGIN
     FROM architecture_core.outbox_event
    WHERE decision_request_id = '0196e260-1111-7111-8111-111111111191';
 
-  IF replacement_count <> 1 OR history_count <> 1 OR replan_count <> 1 OR event_count <> 1 THEN
+  IF replacement_count <> 1
+     OR history_count <> 1
+     OR replan_count <> 1
+     OR event_count <> 1 THEN
     RAISE EXCEPTION 'replan replay duplicated immutable evidence';
   END IF;
 END;
 $$;
 
--- Reusing the same decision id with different meaning must fail closed.
+-- Reusing the decision id with different meaning fails closed.
 DO $$
 DECLARE
   conflict_rejected boolean := false;
@@ -319,8 +338,8 @@ BEGIN
 END;
 $$;
 
--- A transformation that is not gap-detected cannot be used as a replan
--- predecessor, and the rejected command must not create replacement evidence.
+-- A proposed replacement is not gap-detected and cannot itself be silently
+-- replaced. The rejected command must leave no second-generation row behind.
 DO $$
 DECLARE
   wrong_state_rejected boolean := false;
@@ -337,7 +356,7 @@ BEGIN
           '0196e001-1111-7111-8111-111111111111',
           'database_target_state_v3',
           'Invalid premature replan',
-          'A proposed target must not be silently replaced as though it had a detected gap.',
+          'A proposed target must not be treated as though it had a detected gap.',
           '2027-05-07T00:00:00Z',
           'keyverse:https://id.example/realms/cwl#target-state-replanner-123',
           'This request must fail because the predecessor is only proposed.',
