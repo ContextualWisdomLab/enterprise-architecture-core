@@ -1,4 +1,4 @@
-"""Runtime and fault-path acceptance for target-state transformation scheduling."""
+"""Runtime and fault-path acceptance for target-state scheduling."""
 
 from __future__ import annotations
 
@@ -9,18 +9,26 @@ import threading
 from http.client import HTTPConnection
 from types import SimpleNamespace
 from typing import Any
+from uuid import UUID
 
 import pytest
 
 import ea_core_foundation.runtime as runtime_module
-from ea_core_foundation.authorization import AuthorizationContext, KeyverseAuthorizationConfig
+from ea_core_foundation.authorization import (
+    AuthorizationContext,
+    KeyverseAuthorizationConfig,
+)
 from ea_core_foundation.runtime import (
     TargetStateScheduleRequest,
     build_target_state_schedule_writer,
     create_runtime_server,
     parse_target_state_schedule_request,
 )
-from ea_core_foundation.service import BindAddress, PlannerExecutionError, PlannerRequestError
+from ea_core_foundation.service import (
+    BindAddress,
+    PlannerExecutionError,
+    PlannerRequestError,
+)
 
 _TENANT_ID = "018f47b2-905a-7b16-bfd4-7e4f53f10e91"
 _TRANSFORMATION_ID = "0196e010-1111-7111-8111-111111111191"
@@ -28,12 +36,13 @@ _MILESTONE_ID = "0196e060-1111-7111-8111-111111111191"
 _DECISION_REQUEST_ID = "0196e070-1111-7111-8111-111111111191"
 _EVIDENCE_ID = "0195d145-64e8-7f4f-8a23-a0cc784cbf10"
 _SCHEDULE_RECORD_ID = "0196e080-1111-7111-8111-111111111191"
+_SCHEDULE_PATH = f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/schedule"
 
 
 def _config(
     roles: frozenset[str] = frozenset({"ea_transformation_scheduler"}),
 ) -> KeyverseAuthorizationConfig:
-    """Return one closed Keyverse relying-party profile for scheduling."""
+    """Return a closed Keyverse relying-party profile for scheduling."""
     return KeyverseAuthorizationConfig(
         issuer_uri="https://id.example/realms/cwl",
         audience="enterprise-architecture-core",
@@ -46,8 +55,6 @@ def _config(
 
 def _context(subject: str = "transformation-planner-123") -> AuthorizationContext:
     """Return one already-verified scheduler identity."""
-    from uuid import UUID
-
     return AuthorizationContext(
         tenant_record_id=UUID(_TENANT_ID),
         role_code="ea_transformation_scheduler",
@@ -74,7 +81,9 @@ def _payload(**changes: object) -> dict[str, object]:
         "decision_request_id": _DECISION_REQUEST_ID,
         "initiative_milestone_id": _MILESTONE_ID,
         "effective_at": "2027-01-16T00:00:00Z",
-        "decision_reason_text": "Bind the approved target state to the migration milestone.",
+        "decision_reason_text": (
+            "Bind the approved target state to the migration milestone."
+        ),
         "evidence_record_id": _EVIDENCE_ID,
     }
     payload.update(changes)
@@ -95,6 +104,23 @@ def _valid_receipt(**changes: object) -> dict[str, object]:
     }
     receipt.update(changes)
     return receipt
+
+
+def _runner_for(receipt: object) -> Any:
+    """Return a subprocess runner that emits one JSON value."""
+
+    def runner(
+        command: list[str],
+        **kwargs: Any,
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=json.dumps(receipt),
+            stderr="",
+        )
+
+    return runner
 
 
 def _b64url(value: bytes) -> str:
@@ -123,7 +149,7 @@ def _token(role: str = "ea_transformation_scheduler") -> str:
 
 
 def _jwks_loader(url: str, issuer: str) -> dict[str, Any]:
-    """Return one signing key while asserting the configured Keyverse boundary."""
+    """Return one signing key while asserting the Keyverse boundary."""
     assert url == _config().jwks_url
     assert issuer == _config().issuer_uri
     return {
@@ -146,21 +172,19 @@ def _post(
     payload: object,
     *,
     authorization: str | None,
-    path: str | None = None,
+    path: str = _SCHEDULE_PATH,
 ) -> tuple[int, dict[str, Any]]:
     """Issue one schedule HTTP request and return its JSON response."""
     connection = HTTPConnection(host, port, timeout=2)
     body = json.dumps(payload).encode("utf-8")
-    headers = {"Content-Type": "application/json", "Content-Length": str(len(body))}
+    headers = {
+        "Content-Type": "application/json",
+        "Content-Length": str(len(body)),
+    }
     if authorization is not None:
         headers["Authorization"] = authorization
     try:
-        connection.request(
-            "POST",
-            path or f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/schedule",
-            body=body,
-            headers=headers,
-        )
+        connection.request("POST", path, body=body, headers=headers)
         response = connection.getresponse()
         return response.status, json.loads(response.read().decode("utf-8"))
     finally:
@@ -187,37 +211,34 @@ def _stop_server(server: Any, thread: threading.Thread) -> None:
     ("path", "payload"),
     [
         (f"/wrong/{_TRANSFORMATION_ID}/schedule", _payload()),
-        (f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/nested/schedule", _payload()),
-        (f"/v1/architecture-transformations//schedule", _payload()),
         (
-            f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/schedule#fragment",
+            "/v1/architecture-transformations/"
+            f"{_TRANSFORMATION_ID}/nested/schedule",
             _payload(),
         ),
+        ("/v1/architecture-transformations//schedule", _payload()),
+        (f"{_SCHEDULE_PATH}#fragment", _payload()),
         (
-            f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/schedule",
-            _payload(evidence_record_id="00000000-0000-4000-8000-000000000000"),
+            _SCHEDULE_PATH,
+            _payload(
+                evidence_record_id="00000000-0000-4000-8000-000000000000"
+            ),
         ),
-        (
-            f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/schedule",
-            _payload(decision_reason_text="x" * 4097),
-        ),
-        (
-            f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/schedule",
-            _payload(effective_at=123),
-        ),
+        (_SCHEDULE_PATH, _payload(decision_reason_text="x" * 4097)),
+        (_SCHEDULE_PATH, _payload(effective_at=123)),
     ],
 )
 def test_schedule_parser_rejects_remaining_ambiguous_inputs(
     path: str,
     payload: dict[str, object],
 ) -> None:
-    """Every unbound route, identifier, reason, or non-string field fails closed."""
+    """Unbound routes, identifiers, reasons, and typed values fail closed."""
     with pytest.raises(PlannerRequestError):
         parse_target_state_schedule_request(path, payload)
 
 
 def test_schedule_request_rejects_non_string_transformation_id() -> None:
-    """Direct callers cannot bypass canonical UUIDv7 parsing with Python values."""
+    """Direct callers cannot bypass UUIDv7 parsing with Python values."""
     with pytest.raises(PlannerRequestError):
         TargetStateScheduleRequest.from_values(  # type: ignore[arg-type]
             None,
@@ -230,7 +251,7 @@ def test_schedule_request_rejects_non_string_transformation_id() -> None:
 
 
 def test_schedule_writer_rejects_unbounded_verified_actor_reference() -> None:
-    """Verified identity data remains bounded before reaching the audit function."""
+    """Verified identity data is bounded before reaching the audit function."""
     writer = build_target_state_schedule_writer(
         "postgresql://ea_runtime@db.example/ea_core",
         runner=lambda command, **kwargs: pytest.fail("runner should not execute"),
@@ -244,7 +265,9 @@ def test_schedule_writer_rejects_unbounded_verified_actor_reference() -> None:
     ("runner", "message"),
     [
         (
-            lambda command, **kwargs: (_ for _ in ()).throw(OSError("psql missing")),
+            lambda command, **kwargs: (_ for _ in ()).throw(
+                OSError("psql missing")
+            ),
             "database command failed",
         ),
         (
@@ -265,19 +288,14 @@ def test_schedule_writer_rejects_unbounded_verified_actor_reference() -> None:
             ),
             "invalid JSON",
         ),
-        (
-            lambda command, **kwargs: subprocess.CompletedProcess(
-                command, 0, stdout="[]", stderr=""
-            ),
-            "invalid schedule receipt",
-        ),
+        (_runner_for([]), "invalid schedule receipt"),
     ],
 )
 def test_schedule_writer_fails_closed_on_runtime_faults(
     runner: Any,
     message: str,
 ) -> None:
-    """Command and decoding faults can never masquerade as scheduling success."""
+    """Command and decoding faults never masquerade as scheduling success."""
     writer = build_target_state_schedule_writer(
         "postgresql://ea_runtime@db.example/ea_core",
         runner=runner,
@@ -293,37 +311,36 @@ def test_schedule_writer_fails_closed_on_runtime_faults(
         {"transformation_schedule_record_id": "not-a-uuid"},
         {"milestone_target_at": "not-a-time"},
         {"schedule_recorded_at": "not-a-time"},
-        {"architecture_transformation_id": "0196e010-1111-7111-8111-111111111192"},
+        {
+            "architecture_transformation_id": (
+                "0196e010-1111-7111-8111-111111111192"
+            )
+        },
         {"initiative_milestone_id": "0196e060-1111-7111-8111-111111111192"},
         {"decision_request_id": "0196e070-1111-7111-8111-111111111192"},
         {"replayed": "false"},
         {"next_action": "silently_mutate"},
     ],
 )
-def test_schedule_writer_rejects_receipt_drift(changes: dict[str, object]) -> None:
-    """A syntactically valid but semantically different receipt fails closed."""
-    def runner(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
-        return subprocess.CompletedProcess(
-            command,
-            0,
-            stdout=json.dumps(_valid_receipt(**changes)),
-            stderr="",
-        )
-
+def test_schedule_writer_rejects_receipt_drift(
+    changes: dict[str, object],
+) -> None:
+    """A syntactically valid but different receipt fails closed."""
     writer = build_target_state_schedule_writer(
         "postgresql://ea_runtime@db.example/ea_core",
-        runner=runner,
+        runner=_runner_for(_valid_receipt(**changes)),
         base_environment={},
     )
     with pytest.raises(PlannerExecutionError, match="invalid schedule receipt"):
         writer(_context(), _request())
 
 
-def test_http_schedule_is_purpose_authorized_and_returns_actionable_receipt() -> None:
-    """Only a scheduler can bind the approved transformation to its milestone."""
+def test_http_schedule_is_purpose_authorized_and_actionable() -> None:
+    """Only a scheduler can bind an approved transformation to a milestone."""
     writes: list[str] = []
 
     def writer(context: Any, request: Any) -> dict[str, object]:
+        del request
         writes.append(context.subject_id)
         return _valid_receipt()
 
@@ -334,7 +351,12 @@ def test_http_schedule_is_purpose_authorized_and_returns_actionable_receipt() ->
         target_state_schedule_writer=writer,
     )
     try:
-        anonymous_status, anonymous = _post(host, port, _payload(), authorization=None)
+        anonymous_status, anonymous = _post(
+            host,
+            port,
+            _payload(),
+            authorization=None,
+        )
         denied_status, denied = _post(
             host,
             port,
@@ -360,12 +382,14 @@ def test_http_schedule_is_purpose_authorized_and_returns_actionable_receipt() ->
 
 
 def test_http_schedule_replay_returns_200() -> None:
-    """An exact replay is observable without presenting it as a new schedule."""
+    """An exact replay is observable without presenting a new schedule."""
     server, thread, host, port = _start_server(
         schedule_authorization_config=_config(),
         jwks_loader=_jwks_loader,
         signature_verifier=lambda signing_input, signature, jwk: True,
-        target_state_schedule_writer=lambda context, request: _valid_receipt(replayed=True),
+        target_state_schedule_writer=lambda context, request: _valid_receipt(
+            replayed=True
+        ),
     )
     try:
         status, body = _post(
@@ -393,7 +417,7 @@ def test_http_schedule_replay_returns_200() -> None:
 def test_http_schedule_fails_closed_without_policy_and_writer(
     kwargs: dict[str, object],
 ) -> None:
-    """Scheduling is unavailable unless both authorization and command port exist."""
+    """Scheduling requires both authorization policy and command port."""
     server, thread, host, port = _start_server(**kwargs)
     try:
         status, body = _post(
@@ -411,11 +435,17 @@ def test_http_schedule_fails_closed_without_policy_and_writer(
 def test_http_schedule_rejects_invalid_request_before_write() -> None:
     """Malformed scheduling meaning remains a 400 before command execution."""
     writes: list[str] = []
+
+    def writer(context: Any, request: Any) -> dict[str, object]:
+        del context, request
+        writes.append("write")
+        return {}
+
     server, thread, host, port = _start_server(
         schedule_authorization_config=_config(),
         jwks_loader=_jwks_loader,
         signature_verifier=lambda signing_input, signature, jwk: True,
-        target_state_schedule_writer=lambda context, request: writes.append("write") or {},
+        target_state_schedule_writer=writer,
     )
     try:
         status, body = _post(
@@ -432,8 +462,10 @@ def test_http_schedule_rejects_invalid_request_before_write() -> None:
 
 
 def test_http_schedule_returns_retriable_failure_when_writer_raises() -> None:
-    """Database/state conflicts remain non-success with an actionable retry path."""
+    """Database conflicts remain non-success with an actionable retry path."""
+
     def failing_writer(context: Any, request: Any) -> dict[str, object]:
+        del context, request
         raise PlannerExecutionError("conflict")
 
     server, thread, host, port = _start_server(
@@ -457,7 +489,10 @@ def test_http_schedule_returns_retriable_failure_when_writer_raises() -> None:
 
 
 def test_non_schedule_post_preserves_inherited_handler_behavior() -> None:
-    """Extending POST routing does not steal the existing approval endpoint."""
+    """Scheduling routing does not steal the existing approval endpoint."""
+    approval_path = (
+        f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval"
+    )
     server, thread, host, port = _start_server()
     try:
         status, body = _post(
@@ -465,7 +500,7 @@ def test_non_schedule_post_preserves_inherited_handler_behavior() -> None:
             port,
             {},
             authorization=None,
-            path=f"/v1/architecture-transformations/{_TRANSFORMATION_ID}/approval",
+            path=approval_path,
         )
     finally:
         _stop_server(server, thread)
@@ -473,48 +508,76 @@ def test_non_schedule_post_preserves_inherited_handler_behavior() -> None:
     assert body["error_code"] == "approval_unavailable"
 
 
-def test_runtime_main_closes_server_on_keyboard_interrupt(monkeypatch) -> None:
-    """Operator interruption closes the listener and returns a successful stop."""
-    fake_server = SimpleNamespace(server_close=lambda: None)
-    closed: list[bool] = []
-    fake_server.server_close = lambda: closed.append(True)
-
-    monkeypatch.setattr(runtime_module, "resolve_bind_address", lambda environ: BindAddress("127.0.0.1", 0))
-    monkeypatch.setattr(runtime_module, "probe_context_contract", lambda: True)
-    monkeypatch.setattr(runtime_module, "build_database_readiness_probe", lambda dsn: None)
-    monkeypatch.setattr(runtime_module, "build_keyverse_authorization_config", lambda env: None)
-    monkeypatch.setattr(runtime_module, "build_approval_authorization_config", lambda env: None)
-    monkeypatch.setattr(runtime_module, "build_schedule_authorization_config", lambda env: None)
-    monkeypatch.setattr(runtime_module, "build_target_state_plan_reader", lambda dsn: None)
-    monkeypatch.setattr(runtime_module, "build_target_state_approval_writer", lambda dsn: None)
-    monkeypatch.setattr(runtime_module, "build_target_state_schedule_writer", lambda dsn: None)
-    monkeypatch.setattr(runtime_module, "create_runtime_server", lambda *args, **kwargs: fake_server)
+def _patch_runtime_main(monkeypatch, fake_server: Any, loop: Any) -> None:
+    """Replace external runtime ports while preserving main orchestration."""
     monkeypatch.setattr(
         runtime_module,
-        "serve_forever",
-        lambda server: (_ for _ in ()).throw(KeyboardInterrupt()),
+        "resolve_bind_address",
+        lambda environ: BindAddress("127.0.0.1", 0),
     )
+    monkeypatch.setattr(runtime_module, "probe_context_contract", lambda: True)
+    monkeypatch.setattr(
+        runtime_module,
+        "build_database_readiness_probe",
+        lambda dsn: None,
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "build_keyverse_authorization_config",
+        lambda env: None,
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "build_approval_authorization_config",
+        lambda env: None,
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "build_schedule_authorization_config",
+        lambda env: None,
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "build_target_state_plan_reader",
+        lambda dsn: None,
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "build_target_state_approval_writer",
+        lambda dsn: None,
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "build_target_state_schedule_writer",
+        lambda dsn: None,
+    )
+    monkeypatch.setattr(
+        runtime_module,
+        "create_runtime_server",
+        lambda *args, **kwargs: fake_server,
+    )
+    monkeypatch.setattr(runtime_module, "serve_forever", loop)
 
+
+def test_runtime_main_closes_server_on_keyboard_interrupt(monkeypatch) -> None:
+    """Operator interruption closes the listener and returns success."""
+    closed: list[bool] = []
+    fake_server = SimpleNamespace(server_close=lambda: closed.append(True))
+
+    def interrupt(server: Any) -> None:
+        del server
+        raise KeyboardInterrupt
+
+    _patch_runtime_main(monkeypatch, fake_server, interrupt)
     assert runtime_module.main([]) == 0
     assert closed == [True]
 
 
 def test_runtime_main_returns_zero_when_server_loop_returns(monkeypatch) -> None:
-    """A normally returning injected server loop still closes its listener."""
+    """A normally returning injected loop still closes its listener."""
     closed: list[bool] = []
     fake_server = SimpleNamespace(server_close=lambda: closed.append(True))
-
-    monkeypatch.setattr(runtime_module, "resolve_bind_address", lambda environ: BindAddress("127.0.0.1", 0))
-    monkeypatch.setattr(runtime_module, "probe_context_contract", lambda: True)
-    monkeypatch.setattr(runtime_module, "build_database_readiness_probe", lambda dsn: None)
-    monkeypatch.setattr(runtime_module, "build_keyverse_authorization_config", lambda env: None)
-    monkeypatch.setattr(runtime_module, "build_approval_authorization_config", lambda env: None)
-    monkeypatch.setattr(runtime_module, "build_schedule_authorization_config", lambda env: None)
-    monkeypatch.setattr(runtime_module, "build_target_state_plan_reader", lambda dsn: None)
-    monkeypatch.setattr(runtime_module, "build_target_state_approval_writer", lambda dsn: None)
-    monkeypatch.setattr(runtime_module, "build_target_state_schedule_writer", lambda dsn: None)
-    monkeypatch.setattr(runtime_module, "create_runtime_server", lambda *args, **kwargs: fake_server)
-    monkeypatch.setattr(runtime_module, "serve_forever", lambda server: None)
+    _patch_runtime_main(monkeypatch, fake_server, lambda server: None)
 
     assert runtime_module.main([]) == 0
     assert closed == [True]
