@@ -182,7 +182,7 @@ BEGIN
       WHEN transformation_match.transformation_state_code = 'completed'
         THEN 'verify_target_state'
       WHEN transformation_match.transformation_state_code = 'verified'
-        THEN 'continue_monitoring'
+        THEN 'monitor_target_state'
       WHEN transformation_match.transformation_state_code IN
            ('gap_detected', 'cancelled', 'rejected')
         THEN 'replan_target_state'
@@ -235,6 +235,6 @@ COMMENT ON FUNCTION architecture_core.project_technology_target_state_plan(
     timestamptz,
     integer
 ) IS
-'Projects the tenant-scoped Technology Change Impact and Target-State Planner through terminal verification: verified targets remain under monitoring while gap-detected, cancelled, or rejected targets route to governed replanning. The read-only projector preserves bitemporal cutoffs and foreign truth/evidence authority.';
+'Projects the tenant-scoped Technology Change Impact and Target-State Planner through terminal verification: verified targets route through the evidence-freshness monitoring boundary before any continue-monitoring decision, while gap-detected, cancelled, or rejected targets route to governed replanning. The read-only projector preserves bitemporal cutoffs and foreign truth/evidence authority.';
 
 COMMIT;
