@@ -32,7 +32,9 @@ def _payload(**changes: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "decision_request_id": _DECISION_REQUEST_ID,
         "effective_at": "2027-02-01T00:00:00Z",
-        "decision_reason_text": "Confirm the governed target-state execution is complete.",
+        "decision_reason_text": (
+            "Confirm the governed target-state execution is complete."
+        ),
         "evidence_record_id": _EVIDENCE_ID,
     }
     payload.update(changes)
@@ -92,7 +94,9 @@ def test_completion_authority_is_separate_from_read_or_start_roles() -> None:
     environment = {
         "EA_OIDC_ISSUER": "https://id.example/realms/cwl",
         "EA_OIDC_AUDIENCE": "enterprise-architecture-core",
-        "EA_OIDC_JWKS_URL": "https://id.example/realms/cwl/protocol/openid-connect/certs",
+        "EA_OIDC_JWKS_URL": (
+            "https://id.example/realms/cwl/protocol/openid-connect/certs"
+        ),
         "EA_TENANT_CLAIM": "tenant",
         "EA_ROLE_CLAIM": "role",
         "EA_READ_ROLES": "ea_reader",
@@ -127,7 +131,9 @@ def test_completion_writer_preserves_private_decision_context_and_receipt_identi
     assert "transformation-verifier-123" not in command_text
     assert "Confirm the governed" not in command_text
     environment = captured["environment"]
-    assert environment["EA_COMPLETE_ACTOR_REF"].endswith("#transformation-verifier-123")
+    assert environment["EA_COMPLETE_ACTOR_REF"].endswith(
+        "#transformation-verifier-123"
+    )
     assert environment["EA_COMPLETE_REASON_TEXT"].startswith("Confirm")
     assert result["transformation_state_code"] == "completed"
     assert result["next_action"] == "verify_target_state"
