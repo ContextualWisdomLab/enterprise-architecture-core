@@ -101,7 +101,9 @@ def parse_target_state_complete_request(
 
     parsed = urlparse(path)
     if parsed.query or parsed.fragment:
-        raise PlannerRequestError("completion path cannot contain query or fragment data")
+        raise PlannerRequestError(
+            "completion path cannot contain query or fragment data"
+        )
     route = parsed.path
     if (
         not route.startswith(_TARGET_STATE_COMMAND_PATH_PREFIX)
