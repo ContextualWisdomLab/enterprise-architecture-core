@@ -110,7 +110,9 @@ def parse_target_state_verification_request(
 
     parsed = urlparse(path)
     if parsed.query or parsed.fragment:
-        raise PlannerRequestError("verification path cannot contain query or fragment data")
+        raise PlannerRequestError(
+            "verification path cannot contain query or fragment data"
+        )
     route = parsed.path
     if (
         not route.startswith(_TARGET_STATE_COMMAND_PATH_PREFIX)
@@ -233,7 +235,9 @@ def build_target_state_verification_writer(
                 "target-state verification database command failed"
             ) from error
         if result.returncode != 0:
-            raise PlannerExecutionError("target-state verification database query failed")
+            raise PlannerExecutionError(
+                "target-state verification database query failed"
+            )
         try:
             payload = json.loads(result.stdout.strip())
         except json.JSONDecodeError as error:
