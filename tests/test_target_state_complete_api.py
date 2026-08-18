@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 from types import SimpleNamespace
+from uuid import UUID
 
 import pytest
 
@@ -42,10 +43,10 @@ def _context() -> AuthorizationContext:
     """Return one already-verified Keyverse authorization context."""
 
     return AuthorizationContext(
-        tenant_record_id="018f47b2-905a-7b16-bfd4-7e4f53f10e91",
+        tenant_record_id=UUID("018f47b2-905a-7b16-bfd4-7e4f53f10e91"),
+        role_code="ea_transformation_completer",
         subject_id="transformation-verifier-123",
         issuer_uri="https://id.example/realms/cwl",
-        roles=frozenset({"ea_transformation_completer"}),
     )
 
 
