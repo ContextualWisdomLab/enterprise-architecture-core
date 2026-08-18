@@ -41,6 +41,7 @@ DECLARE
   inserted_history_id uuid;
   inserted_recorded_at timestamptz;
   inserted_event_id uuid;
+  aggregate_serialized boolean := false;
 BEGIN
   IF requested_tenant_record_id IS NULL
      OR requested_transformation_id IS NULL
@@ -75,81 +76,91 @@ BEGIN
       true
   );
 
-  SELECT
-      history_record.transformation_history_record_id,
-      history_record.architecture_transformation_id,
-      history_record.transformation_state_code,
-      history_record.effective_at,
-      history_record.decision_actor_ref,
-      history_record.decision_reason_text,
-      history_record.evidence_record_id,
-      history_record.recorded_at
-    INTO
-      existing_history_id,
-      existing_transformation_id,
-      existing_state_code,
-      existing_effective_at,
-      existing_actor_ref,
-      existing_reason_text,
-      existing_evidence_id,
-      existing_recorded_at
-    FROM architecture_core.transformation_history_record AS history_record
-   WHERE history_record.tenant_record_id = requested_tenant_record_id
-     AND history_record.decision_request_id = requested_decision_request_id;
+  -- Preserve fast immutable-receipt replay, but for a fresh request serialize on
+  -- the authoritative transformation and then recheck the idempotency key. The
+  -- second worker in a same-key race can therefore observe the winner's commit
+  -- and return that receipt instead of misclassifying the new `started` state.
+  LOOP
+    SELECT
+        history_record.transformation_history_record_id,
+        history_record.architecture_transformation_id,
+        history_record.transformation_state_code,
+        history_record.effective_at,
+        history_record.decision_actor_ref,
+        history_record.decision_reason_text,
+        history_record.evidence_record_id,
+        history_record.recorded_at
+      INTO
+        existing_history_id,
+        existing_transformation_id,
+        existing_state_code,
+        existing_effective_at,
+        existing_actor_ref,
+        existing_reason_text,
+        existing_evidence_id,
+        existing_recorded_at
+      FROM architecture_core.transformation_history_record AS history_record
+     WHERE history_record.tenant_record_id = requested_tenant_record_id
+       AND history_record.decision_request_id = requested_decision_request_id;
 
-  IF existing_history_id IS NOT NULL THEN
-    IF existing_transformation_id IS DISTINCT FROM requested_transformation_id
-       OR existing_state_code IS DISTINCT FROM 'started'
-       OR existing_effective_at IS DISTINCT FROM requested_effective_at
-       OR existing_actor_ref IS DISTINCT FROM requested_decision_actor_ref
-       OR existing_reason_text IS DISTINCT FROM requested_decision_reason_text
-       OR existing_evidence_id IS DISTINCT FROM requested_evidence_record_id THEN
-      RAISE EXCEPTION USING
-        ERRCODE = '23505',
-        MESSAGE = 'decision request id already represents different start meaning';
+    IF existing_history_id IS NOT NULL THEN
+      IF existing_transformation_id IS DISTINCT FROM requested_transformation_id
+         OR existing_state_code IS DISTINCT FROM 'started'
+         OR existing_effective_at IS DISTINCT FROM requested_effective_at
+         OR existing_actor_ref IS DISTINCT FROM requested_decision_actor_ref
+         OR existing_reason_text IS DISTINCT FROM requested_decision_reason_text
+         OR existing_evidence_id IS DISTINCT FROM requested_evidence_record_id THEN
+        RAISE EXCEPTION USING
+          ERRCODE = '23505',
+          MESSAGE = 'decision request id already represents different start meaning';
+      END IF;
+
+      SELECT event_record.outbox_event_id
+        INTO existing_event_id
+        FROM architecture_core.outbox_event AS event_record
+       WHERE event_record.tenant_record_id = requested_tenant_record_id
+         AND event_record.decision_request_id = requested_decision_request_id
+         AND event_record.event_type_code =
+             'org.contextualwisdomlab.ea.transformation.started.v1';
+
+      IF existing_event_id IS NULL THEN
+        RAISE EXCEPTION USING
+          ERRCODE = '23514',
+          MESSAGE = 'started history exists without transactional outbox evidence';
+      END IF;
+
+      RETURN QUERY
+      SELECT
+        existing_history_id,
+        requested_transformation_id,
+        'started'::text,
+        existing_event_id,
+        requested_decision_request_id,
+        existing_recorded_at,
+        true,
+        'monitor_transformation'::text;
+      RETURN;
     END IF;
 
-    SELECT event_record.outbox_event_id
-      INTO existing_event_id
-      FROM architecture_core.outbox_event AS event_record
-     WHERE event_record.tenant_record_id = requested_tenant_record_id
-       AND event_record.decision_request_id = requested_decision_request_id
-       AND event_record.event_type_code =
-           'org.contextualwisdomlab.ea.transformation.started.v1';
+    EXIT WHEN aggregate_serialized;
 
-    IF existing_event_id IS NULL THEN
+    PERFORM 1
+      FROM architecture_core.architecture_transformation AS transformation_record
+     WHERE transformation_record.tenant_record_id = requested_tenant_record_id
+       AND transformation_record.architecture_transformation_id =
+           requested_transformation_id
+       AND transformation_record.superseded_at IS NULL
+       AND transformation_record.truth_status_code = 'authoritative'
+     FOR UPDATE;
+
+    IF NOT FOUND THEN
       RAISE EXCEPTION USING
         ERRCODE = '23514',
-        MESSAGE = 'started history exists without transactional outbox evidence';
+        MESSAGE = 'authoritative transformation is unavailable for the verified tenant';
     END IF;
 
-    RETURN QUERY
-    SELECT
-      existing_history_id,
-      requested_transformation_id,
-      'started'::text,
-      existing_event_id,
-      requested_decision_request_id,
-      existing_recorded_at,
-      true,
-      'monitor_transformation'::text;
-    RETURN;
-  END IF;
-
-  PERFORM 1
-    FROM architecture_core.architecture_transformation AS transformation_record
-   WHERE transformation_record.tenant_record_id = requested_tenant_record_id
-     AND transformation_record.architecture_transformation_id =
-         requested_transformation_id
-     AND transformation_record.superseded_at IS NULL
-     AND transformation_record.truth_status_code = 'authoritative'
-   FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'authoritative transformation is unavailable for the verified tenant';
-  END IF;
+    aggregate_serialized := true;
+  END LOOP;
 
   SELECT
       history_record.sequence_number,
@@ -301,6 +312,6 @@ COMMENT ON FUNCTION architecture_core.start_scheduled_transformation(
     text,
     uuid
 ) IS
-'Purpose-bound human execution command that advances one approved and actively scheduled authoritative EA transformation to started. The caller must already have verified Keyverse signature, issuer, audience, expiration, tenant and start role. One UUIDv7 decision request is idempotent: exact replay returns the original history/outbox receipt, conflicting meaning is rejected, start cannot precede approval or the governed schedule, and the authoritative history append plus privacy-minimized outbox event commit atomically.';
+'Purpose-bound human execution command that advances one approved and actively scheduled authoritative EA transformation to started. The caller must already have verified Keyverse signature, issuer, audience, expiration, tenant and start role. One UUIDv7 decision request is idempotent: exact replay returns the original history/outbox receipt, conflicting meaning is rejected, concurrent same-key delivery serializes on the authoritative transformation before replay recheck, start cannot precede approval or the governed schedule, and the authoritative history append plus privacy-minimized outbox event commit atomically.';
 
 COMMIT;
