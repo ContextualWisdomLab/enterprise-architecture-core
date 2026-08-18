@@ -17,8 +17,8 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     assert report.column_count == 447
     assert report.index_count == 15
     assert report.constraint_count == 337
-    assert report.openapi_operation_count == 5
-    assert report.asyncapi_operation_count == 4
+    assert report.openapi_operation_count == 6
+    assert report.asyncapi_operation_count == 5
     assert report.adr_count >= 14
     assert report.connector_count == 7
 
