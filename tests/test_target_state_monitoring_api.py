@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -62,6 +63,47 @@ def test_parse_monitoring_request_binds_bitemporal_cutoffs_and_age_policy() -> N
         monitor.parse_target_state_monitoring_request(_PATH + "&unsafe=1")
     with pytest.raises(service.PlannerRequestError, match="between 1 and 3650"):
         monitor.parse_target_state_monitoring_request(_PATH.replace("90", "0"))
+
+
+def test_monitoring_route_is_published_in_openapi_contract() -> None:
+    """The deployed monitoring route and distinct authority must be discoverable."""
+
+    document = json.loads(
+        (Path(__file__).resolve().parents[1] / "contracts" / "openapi.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    route = document["paths"][
+        "/v1/architecture-transformations/{architecture_transformation_id}/monitoring"
+    ]["get"]
+    assert route["operationId"] == "getTargetStateMonitoring"
+    parameters = {parameter["name"]: parameter for parameter in route["parameters"]}
+    assert parameters["architecture_transformation_id"]["required"] is True
+    assert parameters["valid_at"]["required"] is True
+    assert parameters["recorded_at"]["required"] is True
+    assert parameters["max_evidence_age_days"]["schema"] == {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3650,
+        "default": 90,
+    }
+    assert route["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/TargetStateMonitoringStatus"
+    }
+    monitoring_schema = document["components"]["schemas"]["TargetStateMonitoringStatus"]
+    assert set(monitoring_schema["required"]) == {
+        "architecture_transformation_id",
+        "verification_state_code",
+        "verification_effective_at",
+        "verification_recorded_at",
+        "evidence_record_id",
+        "evidence_age_days",
+        "monitoring_state_code",
+        "next_action",
+    }
+    assert "EA_MONITOR_ROLES" in document["x-keyverse-contract"][
+        "requiredConfiguration"
+    ]
 
 
 def test_monitoring_authority_is_separate_and_fail_closed() -> None:
