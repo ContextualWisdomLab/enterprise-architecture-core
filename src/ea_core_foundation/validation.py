@@ -90,12 +90,14 @@ def _validate_execution_operation(
         )
     if operation.get("security") != [{"keyverseBearer": []}]:
         raise ContractValidationError(
-            f"target-state {command_name} must require Keyverse bearer authorization"
+            f"target-state {command_name} must require "
+            "Keyverse bearer authorization"
         )
     parameters = core._parameter_index(operation)
     if set(parameters) != {("architecture_transformation_id", "path")}:
         raise ContractValidationError(
-            f"target-state {command_name} parameters must match executable request parsing"
+            f"target-state {command_name} parameters must match "
+            "executable request parsing"
         )
     core._require_parameter(
         parameters,
@@ -113,7 +115,8 @@ def _validate_execution_operation(
     }
     if operation.get("requestBody") != expected_request_body:
         raise ContractValidationError(
-            f"target-state {command_name} request body must match executable JSON parsing"
+            f"target-state {command_name} request body must match "
+            "executable JSON parsing"
         )
     for status_code in ("200", "201"):
         core._require_json_schema_ref(
@@ -259,7 +262,8 @@ def _validate_execution_event(
     message = core._require_mapping(messages.get(message_name), message_name)
     if message != _expected_event_message(event_type):
         raise ContractValidationError(
-            f"transformation {command_name} event must reuse the shared Context Graph envelope"
+            f"transformation {command_name} event must reuse the shared "
+            "Context Graph envelope"
         )
 
 
