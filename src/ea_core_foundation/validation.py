@@ -153,9 +153,30 @@ def _expected_schedule_message() -> dict[str, Any]:
     }
 
 
+def _without_schedule_asyncapi(document: dict[str, Any]) -> dict[str, Any]:
+    """Return the pre-scheduling AsyncAPI view for generic contract validation."""
+
+    changed = deepcopy(document)
+    channels = changed.get("channels")
+    if isinstance(channels, dict):
+        channels.pop(_TARGET_STATE_SCHEDULE_CHANNEL_NAME, None)
+    operations = changed.get("operations")
+    if isinstance(operations, dict):
+        operations.pop(_TARGET_STATE_SCHEDULE_OPERATION_NAME, None)
+    components = changed.get("components")
+    if isinstance(components, dict):
+        messages = components.get("messages")
+        if isinstance(messages, dict):
+            messages.pop(_TARGET_STATE_SCHEDULE_MESSAGE_NAME, None)
+    return changed
+
+
 def validate_asyncapi_document(document: dict[str, Any]) -> int:
     """Validate existing publishers plus the transformation schedule event."""
 
+    legacy_operation_count = core.validate_asyncapi_document(
+        _without_schedule_asyncapi(document)
+    )
     channels = core._require_mapping(document.get("channels"), "channels")
     operations = core._require_mapping(document.get("operations"), "operations")
     components = core._require_mapping(document.get("components"), "components")
@@ -204,11 +225,7 @@ def validate_asyncapi_document(document: dict[str, Any]) -> int:
         raise ContractValidationError(
             "transformation schedule event must reuse the shared Context Graph envelope"
         )
-    changed = deepcopy(document)
-    changed["channels"].pop(_TARGET_STATE_SCHEDULE_CHANNEL_NAME)
-    changed["operations"].pop(_TARGET_STATE_SCHEDULE_OPERATION_NAME)
-    changed["components"]["messages"].pop(_TARGET_STATE_SCHEDULE_MESSAGE_NAME)
-    return core.validate_asyncapi_document(changed) + 1
+    return legacy_operation_count + 1
 
 
 def validate_repository(repository_root: Path) -> RepositoryReport:
