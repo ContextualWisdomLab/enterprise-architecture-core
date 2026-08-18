@@ -20,6 +20,10 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         "/v1/architecture-transformations/"
         "{architecture_transformation_id}/start"
     )
+    complete_path = (
+        "/v1/architecture-transformations/"
+        "{architecture_transformation_id}/complete"
+    )
     assert set(openapi_document["paths"]) == {
         "/health",
         "/ready",
@@ -27,6 +31,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         approval_path,
         schedule_path,
         start_path,
+        complete_path,
     }
     assert set(openapi_document["paths"]["/health"]) == {"get"}
     assert set(openapi_document["paths"]["/ready"]) == {"get"}
@@ -34,6 +39,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
     assert set(openapi_document["paths"][approval_path]) == {"post"}
     assert set(openapi_document["paths"][schedule_path]) == {"post"}
     assert set(openapi_document["paths"][start_path]) == {"post"}
+    assert set(openapi_document["paths"][complete_path]) == {"post"}
 
 
 def test_openapi_binds_governed_approval_request_receipt_and_role(
@@ -157,6 +163,46 @@ def test_openapi_binds_governed_start_request_receipt_and_role(
     }
 
 
+def test_openapi_binds_governed_completion_request_receipt_and_role(
+    openapi_document,
+) -> None:
+    """The published contract matches the purpose-bound completion boundary."""
+
+    complete_path = (
+        "/v1/architecture-transformations/"
+        "{architecture_transformation_id}/complete"
+    )
+    operation = openapi_document["paths"][complete_path]["post"]
+    assert operation["operationId"] == "completeTechnologyTargetState"
+    assert operation["security"] == [{"keyverseBearer": []}]
+    assert operation["requestBody"]["required"] is True
+    request_schema = operation["requestBody"]["content"]["application/json"]["schema"]
+    assert request_schema == {"$ref": "#/components/schemas/TargetStateCompleteRequest"}
+    assert set(operation["responses"]) == {"200", "201", "400", "401", "403", "503"}
+    assert "EA_COMPLETE_ROLES" in openapi_document["x-keyverse-contract"][
+        "requiredConfiguration"
+    ]
+
+    request = openapi_document["components"]["schemas"]["TargetStateCompleteRequest"]
+    assert request["additionalProperties"] is False
+    assert request["required"] == [
+        "decision_request_id",
+        "effective_at",
+        "decision_reason_text",
+        "evidence_record_id",
+    ]
+    receipt = openapi_document["components"]["schemas"]["TargetStateCompleteReceipt"]
+    assert receipt["additionalProperties"] is False
+    assert receipt["properties"]["transformation_state_code"] == {
+        "type": "string",
+        "const": "completed",
+    }
+    assert receipt["properties"]["next_action"] == {
+        "type": "string",
+        "const": "verify_target_state",
+    }
+
+
 def test_asyncapi_publishes_transformation_schedule_event(asyncapi_document) -> None:
     """Scheduling's transactional outbox event must be in the event contract."""
 
@@ -183,6 +229,18 @@ def test_asyncapi_publishes_transformation_started_event(asyncapi_document) -> N
     message = asyncapi_document["components"]["messages"]["TransformationStarted"]
     event_type = message["payload"]["schema"]["allOf"][1]["properties"]["type"]
     assert event_type["const"] == "org.contextualwisdomlab.ea.transformation.started.v1"
+
+
+def test_asyncapi_publishes_transformation_completed_event(asyncapi_document) -> None:
+    """Completion's transactional outbox event must be in the event contract."""
+
+    channel = asyncapi_document["channels"]["transformationCompleteEvents"]
+    assert channel["address"] == "org.contextualwisdomlab.ea.transformation.completed.v1"
+    operation = asyncapi_document["operations"]["publishTransformationCompleted"]
+    assert operation["action"] == "send"
+    message = asyncapi_document["components"]["messages"]["TransformationCompleted"]
+    event_type = message["payload"]["schema"]["allOf"][1]["properties"]["type"]
+    assert event_type["const"] == "org.contextualwisdomlab.ea.transformation.completed.v1"
 
 
 def test_foundation_asyncapi_tracks_current_stable_minor(asyncapi_document) -> None:
