@@ -21,7 +21,7 @@
 - Immutable target-state scenario baselines plus ordered object-presence deltas and deterministic `project_scenario_objects(uuid)` projection, preserving exact valid-time/system-time baseline cutoffs without mutating authoritative architecture truth.
 - Scenario integrity controls for UUIDv7 identity, tenant-bound foreign keys, forced RLS, authoritative/observed evidence, positive non-reusable delta ordering, target-time semantics, immutable baseline/decision meaning, one-time supersession, and hard-delete rejection.
 - Real PostgreSQL scenario-projection buyer acceptance and previous-boundary upgrade rehearsal from migration 0011 through migration 0012.
-- Versioned strategy execution facts for architecture objectives, remediation initiatives, objective-contribution links, and ordered initiative milestones with UUIDv7 identity, composite tenant foreign keys, forced RLS, valid/system time, explicit truth origin, and tenant-bound provenance.
+- Versioned strategy execution facts for architecture objectives, remediation initiatives, objective-contribution links, and ordered initiative milestones with UUIDv7 identifiers, composite tenant foreign keys, forced RLS, valid/system time, explicit truth origin, and tenant-bound provenance.
 - Strategy semantic guards that require authoritative/observed evidence, contain initiative-objective links inside referenced valid-time intervals, keep milestone targets inside initiative validity, require positive milestone sequence values, prevent overlapping current authoritative facts, and preserve decision meaning through one-time supersession plus append.
 - Real PostgreSQL strategy-execution acceptance with observed RED-before-GREEN evidence and upgrade rehearsal from migration 0010 through migration 0011.
 - Normalized versioned portfolio assessment for framework/version, scale/value, dimension, cycle, and object assessment facts with UUIDv7 identifiers, composite tenant foreign keys, forced RLS, valid/system time, truth origin, and provenance-aware assessment history.
@@ -42,6 +42,7 @@
 
 ### Fixed
 
+- Route canonical planner results for `verified` target states through `monitor_target_state` so the evidence-freshness boundary decides whether monitoring may continue, and route `gap_detected` states directly to governed `replan_target_state` instead of the unknown-state fallback.
 - Map the PostgreSQL URI `sslsni` parameter to the documented libpq `PGSSLSNI` environment variable instead of the invalid `PGSSNI` alias, with executable connection-environment regression coverage.
 - Reject an approval database receipt whose returned `decision_request_id` does not match the exact command idempotency key so a successful call cannot acknowledge another decision request.
 - Reject every JWS `crit` protected-header form at the Keyverse bearer boundary because EA Core implements no critical JWS extensions, preventing signed tokens with unsupported extension semantics from being accepted as ordinary JWTs.
