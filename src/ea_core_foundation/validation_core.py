@@ -18,6 +18,12 @@ _CREATE_TABLE_PATTERN = re.compile(
     r"(?P<schema>[a-z][a-z0-9_]*)\.(?P<table>[a-z][a-z0-9_]*)",
     re.IGNORECASE,
 )
+_CREATE_TABLE_BODY_PATTERN = re.compile(
+    r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
+    r"[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*\s*\("
+    r"(?P<body>.*?)^\s*\);",
+    re.IGNORECASE | re.MULTILINE | re.DOTALL,
+)
 _CREATE_INDEX_PATTERN = re.compile(
     r"CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?"
     r"(?P<index>[a-z][a-z0-9_]*)",
@@ -141,8 +147,9 @@ def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
         for match in _CREATE_INDEX_PATTERN.finditer(sql_text)
     ]
     columns = [
-        match.group("column").lower()
-        for match in _COLUMN_PATTERN.finditer(sql_text)
+        column_match.group("column").lower()
+        for table_match in _CREATE_TABLE_BODY_PATTERN.finditer(sql_text)
+        for column_match in _COLUMN_PATTERN.finditer(table_match.group("body"))
     ]
     constraints = [
         match.group("constraint").lower()
