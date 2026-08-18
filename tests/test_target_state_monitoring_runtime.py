@@ -326,7 +326,7 @@ def _patch_main_builders(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
 def test_main_wires_monitoring_and_closes_after_exit_or_interrupt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Startup composes monitoring with every earlier governed port and closes cleanly."""
+    """Compose monitoring with earlier ports and close the runtime safely."""
 
     server = _patch_main_builders(monkeypatch)
     closed: list[bool] = []
