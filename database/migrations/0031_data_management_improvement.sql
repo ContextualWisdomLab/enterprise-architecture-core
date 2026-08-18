@@ -352,7 +352,6 @@ DECLARE
   receipt_status_code text;
   receipt_processed_at timestamptz;
   normalized_missing_codes text[];
-  existing_projection_id uuid;
   existing_missing_codes text[];
   existing_projection architecture_core.data_management_assessment_projection%ROWTYPE;
   superseded_projection_id uuid;
@@ -615,7 +614,8 @@ BEGIN
       requested_provenance_source_locator,
       requested_supersedes_result_ref
   )
-  RETURNING data_management_assessment_projection_id
+  RETURNING
+      data_management_assessment_projection.data_management_assessment_projection_id
     INTO inserted_projection_id;
 
   INSERT INTO architecture_core.assessment_missing_evidence_projection (
@@ -858,7 +858,7 @@ BEGIN
       source_recorded_at,
       'proposed'
   )
-  RETURNING remediation_initiative_id
+  RETURNING remediation_initiative.remediation_initiative_id
     INTO inserted_initiative_id;
 
   INSERT INTO architecture_core.initiative_milestone (
@@ -882,7 +882,7 @@ BEGIN
       source_recorded_at,
       'proposed'
   )
-  RETURNING initiative_milestone_id
+  RETURNING initiative_milestone.initiative_milestone_id
     INTO inserted_milestone_id;
 
   INSERT INTO architecture_core.assessment_improvement_plan (
@@ -906,7 +906,7 @@ BEGIN
       inserted_milestone_id,
       requested_funding_reference
   )
-  RETURNING assessment_improvement_plan_id
+  RETURNING assessment_improvement_plan.assessment_improvement_plan_id
     INTO inserted_plan_id;
 
   INSERT INTO architecture_core.outbox_event (
