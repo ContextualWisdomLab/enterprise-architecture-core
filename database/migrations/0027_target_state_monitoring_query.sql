@@ -44,7 +44,8 @@ BEGIN
       MESSAGE = 'target-state monitoring transformation id must be UUIDv7';
   END IF;
 
-  IF requested_max_evidence_age_days NOT BETWEEN 1 AND 3650 THEN
+  IF requested_max_evidence_age_days IS NULL
+     OR requested_max_evidence_age_days NOT BETWEEN 1 AND 3650 THEN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
       MESSAGE = 'maximum evidence age must be between 1 and 3650 days';
