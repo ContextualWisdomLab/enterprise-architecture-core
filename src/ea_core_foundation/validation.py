@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from collections import Counter
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -13,8 +15,13 @@ ContractValidationError = core.ContractValidationError
 RepositoryReport = core.RepositoryReport
 validate_connector_catalog = core.validate_connector_catalog
 validate_migration_inventory = core.validate_migration_inventory
-validate_migration_sql = core.validate_migration_sql
 
+_CONSTRAINT_DDL_PATTERN = re.compile(
+    r"\b(?:(?P<drop>DROP)\s+CONSTRAINT(?:\s+IF\s+EXISTS)?|"
+    r"(?:(?:ADD)\s+)?CONSTRAINT)\s+"
+    r"(?P<constraint>[a-z][a-z0-9_]*)",
+    re.IGNORECASE,
+)
 _TARGET_STATE_SCHEDULE_RUNTIME_PATH = (
     "/v1/architecture-transformations/{architecture_transformation_id}/schedule"
 )
@@ -46,6 +53,34 @@ _TARGET_STATE_COMPLETE_EVENT_TYPE = (
 _EXECUTION_ROLE_CONFIGURATION = frozenset(
     {"EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES"}
 )
+
+
+def _current_constraint_count(sql_text: str) -> int:
+    """Count the constraints that remain after ordered DROP/ADD replacement DDL."""
+
+    active_counts: Counter[str] = Counter()
+    for match in _CONSTRAINT_DDL_PATTERN.finditer(sql_text):
+        constraint_name = match.group("constraint").lower()
+        if match.group("drop") is None:
+            active_counts[constraint_name] += 1
+        else:
+            active_counts[constraint_name] = max(
+                0,
+                active_counts[constraint_name] - 1,
+            )
+    return sum(active_counts.values())
+
+
+def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
+    """Validate migrations and report current logical schema inventory counts."""
+
+    table_count, column_count, index_count, _ = core.validate_migration_sql(sql_text)
+    return (
+        table_count,
+        column_count,
+        index_count,
+        _current_constraint_count(sql_text),
+    )
 
 
 def _without_execution_roles(document: dict[str, Any]) -> dict[str, Any]:
