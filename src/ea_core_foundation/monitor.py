@@ -65,6 +65,10 @@ class TargetStateMonitoringRequest:
         )
         valid_time = _parse_timestamp(valid_at, "valid_at")
         recorded_time = _parse_timestamp(recorded_at, "recorded_at")
+        if isinstance(max_evidence_age_days, bool) or not isinstance(
+            max_evidence_age_days, int
+        ):
+            raise PlannerRequestError("max_evidence_age_days must be an integer")
         if max_evidence_age_days < 1 or max_evidence_age_days > 3650:
             raise PlannerRequestError(
                 "max_evidence_age_days must be between 1 and 3650"
