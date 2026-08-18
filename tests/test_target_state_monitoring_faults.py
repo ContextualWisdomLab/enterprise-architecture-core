@@ -196,18 +196,26 @@ def test_monitoring_reader_accepts_all_defined_actionable_states() -> None:
     """Current, stale, and detected-gap states preserve distinct buyer actions."""
 
     cases = [
-        ("current", "verified", "continue_monitoring"),
-        ("stale", "verified", "collect_new_target_state_evidence"),
-        ("gap_detected", "gap_detected", "replan_target_state"),
+        {
+            "monitoring_state_code": "current",
+            "verification_state_code": "verified",
+            "next_action": "continue_monitoring",
+        },
+        {
+            "monitoring_state_code": "stale",
+            "verification_state_code": "verified",
+            "verification_effective_at": "2026-11-30T00:00:00+00:00",
+            "evidence_age_days": 91,
+            "next_action": "collect_new_target_state_evidence",
+        },
+        {
+            "monitoring_state_code": "gap_detected",
+            "verification_state_code": "gap_detected",
+            "next_action": "replan_target_state",
+        },
     ]
     request = monitor.parse_target_state_monitoring_request(_PATH)
-    for state, verification_state, action in cases:
-        result = _reader_for_payload(
-            _status(
-                monitoring_state_code=state,
-                verification_state_code=verification_state,
-                next_action=action,
-            )
-        )(_context(), request)
-        assert result["next_action"] == action
+    for status_changes in cases:
+        result = _reader_for_payload(_status(**status_changes))(_context(), request)
+        assert result["next_action"] == status_changes["next_action"]
         assert result["evidence_record_id"] == _EVIDENCE_ID
