@@ -168,7 +168,8 @@ def _validate_execution_operation(
     }
     if operation.get("requestBody") != expected_request_body:
         raise ContractValidationError(
-            f"target-state {command_name} request body must match executable JSON parsing"
+            f"target-state {command_name} request body must match "
+            "executable JSON parsing"
         )
     for status_code in ("200", "201"):
         core._require_json_schema_ref(
