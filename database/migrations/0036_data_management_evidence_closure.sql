@@ -458,6 +458,16 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION architecture_core.accept_data_management_improvement_evidence(
+    uuid,
+    uuid,
+    text,
+    text,
+    text,
+    uuid,
+    timestamptz
+) FROM PUBLIC;
+
 COMMENT ON TABLE architecture_core.assessment_evidence_acceptance IS
 'Append-only EA receipt that binds one accountable data-management improvement gap to accepted Data/AI Context evidence without copying source-system authority.';
 
