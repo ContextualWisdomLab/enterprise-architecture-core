@@ -226,11 +226,11 @@ def build_target_state_monitoring_reader(
         evidence_age_days = payload.get("evidence_age_days")
         try:
             _parse_uuid7(str(evidence_id), "evidence record id")
-            _parse_timestamp(
+            verification_effective_at = _parse_timestamp(
                 str(payload.get("verification_effective_at")),
                 "verification_effective_at",
             )
-            _parse_timestamp(
+            verification_recorded_at = _parse_timestamp(
                 str(payload.get("verification_recorded_at")),
                 "verification_recorded_at",
             )
@@ -239,6 +239,16 @@ def build_target_state_monitoring_reader(
                 "target-state monitoring returned invalid monitoring status"
             ) from error
         verification_state = payload.get("verification_state_code")
+        expected_age_days = (request.valid_at - verification_effective_at).days
+        expected_state = (
+            "gap_detected"
+            if verification_state == "gap_detected"
+            else (
+                "stale"
+                if expected_age_days > request.max_evidence_age_days
+                else "current"
+            )
+        )
         if (
             payload.get("architecture_transformation_id")
             != str(request.architecture_transformation_id)
@@ -246,16 +256,12 @@ def build_target_state_monitoring_reader(
             or not isinstance(evidence_age_days, int)
             or isinstance(evidence_age_days, bool)
             or evidence_age_days < 0
+            or verification_effective_at > request.valid_at
+            or verification_recorded_at > request.recorded_at
+            or evidence_age_days != expected_age_days
+            or state != expected_state
             or expected_action is None
             or payload.get("next_action") != expected_action
-            or (
-                state == "gap_detected"
-                and verification_state != "gap_detected"
-            )
-            or (
-                state in {"current", "stale"}
-                and verification_state != "verified"
-            )
         ):
             raise PlannerExecutionError(
                 "target-state monitoring returned invalid monitoring status"
