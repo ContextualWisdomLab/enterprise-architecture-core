@@ -12,15 +12,34 @@ from ea_core_foundation.validation_replan import (
 )
 from scripts.validate_repository import main
 
+_DATA_MANAGEMENT_EVENT_MEMBERS = (
+    (
+        "dataManagementImprovementEvents",
+        "publishDataManagementImprovementInitiativeCreated",
+        "DataManagementImprovementInitiativeCreated",
+    ),
+    (
+        "dataManagementEvidenceAcceptedEvents",
+        "publishDataManagementEvidenceAccepted",
+        "DataManagementEvidenceAccepted",
+    ),
+    (
+        "dataManagementMilestoneCompletedEvents",
+        "publishDataManagementMilestoneCompleted",
+        "DataManagementMilestoneCompleted",
+    ),
+)
+
 
 def _strip_data_management_event_contract(repository_root: Path) -> None:
     """Restore the previous replanning event view for compatibility validation."""
 
     asyncapi_path = repository_root / "contracts/asyncapi.json"
     document = json.loads(asyncapi_path.read_text(encoding="utf-8"))
-    document["channels"].pop("dataManagementImprovementEvents")
-    document["operations"].pop("publishDataManagementImprovementInitiativeCreated")
-    document["components"]["messages"].pop("DataManagementImprovementInitiativeCreated")
+    for channel_name, operation_name, message_name in _DATA_MANAGEMENT_EVENT_MEMBERS:
+        document["channels"].pop(channel_name, None)
+        document["operations"].pop(operation_name, None)
+        document["components"]["messages"].pop(message_name, None)
     asyncapi_path.write_text(
         json.dumps(document, indent=2) + "\n",
         encoding="utf-8",
@@ -36,7 +55,7 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     assert report.index_count == 17
     assert report.constraint_count == 400
     assert report.openapi_operation_count == 10
-    assert report.asyncapi_operation_count == 9
+    assert report.asyncapi_operation_count == 11
     assert report.adr_count >= 19
     assert report.connector_count == 7
 
