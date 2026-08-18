@@ -56,35 +56,146 @@ BEGIN
 END;
 $$;
 
-CREATE TEMP TABLE start_receipt AS
-SELECT *
-  FROM architecture_core.start_scheduled_transformation(
-      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-      '0196e010-1111-7111-8111-111111111191',
-      '0196e090-1111-7111-8111-111111111191',
-      '2027-01-17T00:00:00Z',
-      'keyverse:https://id.example/realms/cwl#transformation-operator-123',
-      'Begin the approved target-state execution against the reviewed milestone.',
-      '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
-  );
+-- Two delivery workers can race the same idempotency key in production. Hold
+-- the aggregate row long enough for both independent sessions to reach the
+-- serialization boundary, then prove one execution and one exact replay return
+-- the same committed receipt instead of turning the loser into a state error.
+CREATE EXTENSION IF NOT EXISTS dblink;
+SELECT dblink_connect(
+    'start_race_one',
+    'host=127.0.0.1 port=5432 dbname=ea_core user=ea_app password=ea_test_password application_name=start_race_one'
+);
+SELECT dblink_connect(
+    'start_race_two',
+    'host=127.0.0.1 port=5432 dbname=ea_core user=ea_app password=ea_test_password application_name=start_race_two'
+);
+
+BEGIN;
+SELECT 1
+  FROM architecture_core.architecture_transformation
+ WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+   AND architecture_transformation_id = '0196e010-1111-7111-8111-111111111191'
+ FOR UPDATE;
+
+SELECT dblink_send_query(
+    'start_race_one',
+    $$SELECT * FROM architecture_core.start_scheduled_transformation(
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196e010-1111-7111-8111-111111111191',
+        '0196e090-1111-7111-8111-111111111191',
+        '2027-01-17T00:00:00Z',
+        'keyverse:https://id.example/realms/cwl#transformation-operator-123',
+        'Begin the approved target-state execution against the reviewed milestone.',
+        '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
+    )$$
+);
+SELECT dblink_send_query(
+    'start_race_two',
+    $$SELECT * FROM architecture_core.start_scheduled_transformation(
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196e010-1111-7111-8111-111111111191',
+        '0196e090-1111-7111-8111-111111111191',
+        '2027-01-17T00:00:00Z',
+        'keyverse:https://id.example/realms/cwl#transformation-operator-123',
+        'Begin the approved target-state execution against the reviewed milestone.',
+        '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
+    )$$
+);
 
 DO $$
 DECLARE
-  replayed_flag boolean;
-  state_code text;
-  action_code text;
+  blocked_worker_count integer;
+  poll_attempt integer := 0;
+BEGIN
+  LOOP
+    SELECT count(*)
+      INTO blocked_worker_count
+      FROM pg_catalog.pg_stat_activity
+     WHERE application_name IN ('start_race_one', 'start_race_two')
+       AND wait_event_type = 'Lock';
+    EXIT WHEN blocked_worker_count = 2;
+    poll_attempt := poll_attempt + 1;
+    IF poll_attempt > 200 THEN
+      RAISE EXCEPTION 'concurrent start workers did not reach the aggregate lock';
+    END IF;
+    PERFORM pg_catalog.pg_sleep(0.01);
+  END LOOP;
+END;
+$$;
+COMMIT;
+
+CREATE TEMP TABLE start_receipt (
+    transformation_history_record_id uuid,
+    architecture_transformation_id uuid,
+    transformation_state_code text,
+    outbox_event_id uuid,
+    decision_request_id uuid,
+    start_recorded_at timestamptz,
+    start_replayed boolean,
+    next_action text
+);
+
+INSERT INTO start_receipt
+SELECT *
+  FROM dblink_get_result('start_race_one') AS race_receipt(
+      transformation_history_record_id uuid,
+      architecture_transformation_id uuid,
+      transformation_state_code text,
+      outbox_event_id uuid,
+      decision_request_id uuid,
+      start_recorded_at timestamptz,
+      start_replayed boolean,
+      next_action text
+  );
+INSERT INTO start_receipt
+SELECT *
+  FROM dblink_get_result('start_race_two') AS race_receipt(
+      transformation_history_record_id uuid,
+      architecture_transformation_id uuid,
+      transformation_state_code text,
+      outbox_event_id uuid,
+      decision_request_id uuid,
+      start_recorded_at timestamptz,
+      start_replayed boolean,
+      next_action text
+  );
+SELECT dblink_disconnect('start_race_one');
+SELECT dblink_disconnect('start_race_two');
+DROP EXTENSION dblink;
+
+DO $$
+DECLARE
+  receipt_count integer;
+  fresh_count integer;
+  replay_count integer;
+  state_count integer;
+  identity_count integer;
   history_count integer;
   event_count integer;
   schedule_count integer;
   leaked_private_context boolean;
 BEGIN
-  SELECT transformation_state_code, start_replayed, next_action
-    INTO state_code, replayed_flag, action_code
+  SELECT
+      count(*),
+      count(*) FILTER (WHERE NOT start_replayed),
+      count(*) FILTER (WHERE start_replayed),
+      count(*) FILTER (
+          WHERE transformation_state_code = 'started'
+            AND next_action = 'monitor_transformation'
+      ),
+      count(DISTINCT (
+          transformation_history_record_id,
+          outbox_event_id,
+          decision_request_id
+      ))
+    INTO receipt_count, fresh_count, replay_count, state_count, identity_count
     FROM start_receipt;
-  IF state_code <> 'started'
-     OR replayed_flag
-     OR action_code <> 'monitor_transformation' THEN
-    RAISE EXCEPTION 'fresh start receipt is not actionable';
+  IF receipt_count <> 2
+     OR fresh_count <> 1
+     OR replay_count <> 1
+     OR state_count <> 2
+     OR identity_count <> 1 THEN
+    RAISE EXCEPTION 'concurrent exact start did not converge on one receipt';
   END IF;
 
   SELECT count(*) INTO history_count
