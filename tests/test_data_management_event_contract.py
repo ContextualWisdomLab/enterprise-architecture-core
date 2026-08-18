@@ -64,5 +64,7 @@ def test_improvement_event_contract_fails_closed_when_member_is_missing(
     else:
         del changed[collection_name][member_name]
 
-    with pytest.raises(ContractValidationError, match="data-management improvement"):
+    with pytest.raises(ContractValidationError) as error:
         validate_asyncapi_document(changed)
+
+    assert member_name in str(error.value)
