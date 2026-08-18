@@ -13,10 +13,12 @@ import pytest
 import ea_core_foundation.validation as base_validation
 import ea_core_foundation.validation_replan as replan_validation
 from ea_core_foundation.authorization import AuthorizationContext
-from ea_core_foundation.replan import build_target_state_replan_writer, parse_target_state_replan_request
+from ea_core_foundation.replan import (
+    build_target_state_replan_writer,
+    parse_target_state_replan_request,
+)
 from ea_core_foundation.service import PlannerExecutionError, PlannerRequestError
 from tests.test_target_state_replan_api import (
-    _DECISION_REQUEST_ID,
     _PATH,
     _PREDECESSOR_ID,
     _REPLACEMENT_ID,
@@ -57,7 +59,10 @@ def test_replan_request_rejects_out_of_contract_meaning(
 @pytest.mark.parametrize(
     "path",
     [
-        "/v1/not-architecture-transformations/0196e010-1111-7111-8111-111111111191/replan",
+        (
+            "/v1/not-architecture-transformations/"
+            "0196e010-1111-7111-8111-111111111191/replan"
+        ),
         f"/v1/architecture-transformations/{_PREDECESSOR_ID}/replan/extra",
         (
             "/v1/architecture-transformations/"
@@ -134,7 +139,9 @@ def test_replan_writer_translates_process_failures(failure: BaseException) -> No
         SimpleNamespace(returncode=0, stdout="[]", stderr=""),
     ],
 )
-def test_replan_writer_rejects_failed_or_malformed_database_responses(result) -> None:
+def test_replan_writer_rejects_failed_or_malformed_database_responses(
+    result: SimpleNamespace,
+) -> None:
     """A successful command boundary requires one well-formed receipt object."""
 
     writer = build_target_state_replan_writer(
@@ -210,7 +217,10 @@ def _validation_fixture(tmp_path: Path, *, adr_count: int = 10) -> Path:
     )
     (root / "contracts/openapi.json").write_text("{}", encoding="utf-8")
     (root / "contracts/asyncapi.json").write_text("{}", encoding="utf-8")
-    (root / "contracts/connectors/ecosystem.json").write_text("{}", encoding="utf-8")
+    (root / "contracts/connectors/ecosystem.json").write_text(
+        "{}",
+        encoding="utf-8",
+    )
     for index in range(adr_count):
         (root / f"docs/adr/{index + 1:04d}-fixture.md").write_text(
             "# Accepted fixture decision\n",
@@ -222,12 +232,36 @@ def _validation_fixture(tmp_path: Path, *, adr_count: int = 10) -> Path:
 def _stub_base_validators(monkeypatch: pytest.MonkeyPatch) -> None:
     """Isolate legacy orchestration from lower-level artifact parsing rules."""
 
-    monkeypatch.setattr(base_validation, "validate_migration_inventory", lambda paths: None)
-    monkeypatch.setattr(base_validation, "validate_migration_sql", lambda text: (1, 2, 3, 4))
-    monkeypatch.setattr(base_validation, "validate_openapi_document", lambda document: 5)
-    monkeypatch.setattr(base_validation, "validate_openapi_runtime_surface", lambda document: None)
-    monkeypatch.setattr(base_validation, "validate_asyncapi_document", lambda document: 6)
-    monkeypatch.setattr(base_validation, "validate_connector_catalog", lambda document: 7)
+    monkeypatch.setattr(
+        base_validation,
+        "validate_migration_inventory",
+        lambda paths: None,
+    )
+    monkeypatch.setattr(
+        base_validation,
+        "validate_migration_sql",
+        lambda text: (1, 2, 3, 4),
+    )
+    monkeypatch.setattr(
+        base_validation,
+        "validate_openapi_document",
+        lambda document: 5,
+    )
+    monkeypatch.setattr(
+        base_validation,
+        "validate_openapi_runtime_surface",
+        lambda document: None,
+    )
+    monkeypatch.setattr(
+        base_validation,
+        "validate_asyncapi_document",
+        lambda document: 6,
+    )
+    monkeypatch.setattr(
+        base_validation,
+        "validate_connector_catalog",
+        lambda document: 7,
+    )
 
 
 def test_base_repository_orchestration_remains_executable(
@@ -260,12 +294,18 @@ def test_base_repository_orchestration_fails_closed_on_missing_evidence(
     root = _validation_fixture(tmp_path)
     _stub_base_validators(monkeypatch)
     (root / "contracts/openapi.json").unlink()
-    with pytest.raises(base_validation.ContractValidationError, match="missing required file"):
+    with pytest.raises(
+        base_validation.ContractValidationError,
+        match="missing required file",
+    ):
         base_validation.validate_repository(root)
 
     root = _validation_fixture(tmp_path / "short", adr_count=9)
     _stub_base_validators(monkeypatch)
-    with pytest.raises(base_validation.ContractValidationError, match="at least ten ADRs"):
+    with pytest.raises(
+        base_validation.ContractValidationError,
+        match="at least ten ADRs",
+    ):
         base_validation.validate_repository(root)
 
 
@@ -283,10 +323,13 @@ def test_replan_validation_fails_closed_on_malformed_role_configuration(
 def test_replan_runtime_contract_requires_both_replan_schemas(
     openapi_document: dict[str, object],
 ) -> None:
-    """The executable command surface fails when either request or receipt schema is absent."""
+    """The command surface fails when either request or receipt schema is absent."""
 
     for schema_name in ("TargetStateReplanRequest", "TargetStateReplanReceipt"):
         changed = deepcopy(openapi_document)
         changed["components"]["schemas"].pop(schema_name)
-        with pytest.raises(replan_validation.ContractValidationError, match="missing OpenAPI schemas"):
+        with pytest.raises(
+            replan_validation.ContractValidationError,
+            match="missing OpenAPI schemas",
+        ):
             replan_validation.validate_openapi_runtime_surface(changed)
