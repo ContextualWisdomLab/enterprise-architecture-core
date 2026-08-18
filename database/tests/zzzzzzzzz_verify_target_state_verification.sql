@@ -1,17 +1,12 @@
 \set ON_ERROR_STOP on
 
 -- Buyer acceptance for evidence-backed target-state verification after execution.
--- Completion is not verification: a human-authorized decision must explicitly
--- record whether the target state was verified or a gap was found, with immutable
--- evidence and an atomic privacy-minimized outbox event.
+-- Completion is not verification: a human-authorized decision appends a distinct
+-- immutable verification state to transformation history and emits atomic,
+-- privacy-minimized outbox evidence.
 
 DO $$
 BEGIN
-  IF to_regclass(
-      'architecture_core.transformation_verification_record'
-     ) IS NULL THEN
-    RAISE EXCEPTION 'target-state verification evidence table is missing';
-  END IF;
   IF to_regprocedure(
       'architecture_core.record_target_state_verification(uuid,uuid,uuid,timestamptz,text,text,uuid,text)'
      ) IS NULL THEN
@@ -27,10 +22,10 @@ SELECT set_config(
 );
 
 -- Verification cannot be backdated before the authoritative completion and a
--- rejected command must not leave partial verification/outbox evidence.
+-- rejected command must leave both append-only history and outbox unchanged.
 DO $$
 DECLARE
-  verification_count integer;
+  history_count integer;
   event_count integer;
 BEGIN
   BEGIN
@@ -50,13 +45,13 @@ BEGIN
     NULL;
   END;
 
-  SELECT count(*) INTO verification_count
-    FROM architecture_core.transformation_verification_record
+  SELECT count(*) INTO history_count
+    FROM architecture_core.transformation_history_record
    WHERE decision_request_id = '0196e0a0-1111-7111-8111-111111111193';
   SELECT count(*) INTO event_count
     FROM architecture_core.outbox_event
    WHERE decision_request_id = '0196e0a0-1111-7111-8111-111111111193';
-  IF verification_count <> 0 OR event_count <> 0 THEN
+  IF history_count <> 0 OR event_count <> 0 THEN
     RAISE EXCEPTION 'rejected verification partially committed evidence';
   END IF;
 END;
@@ -80,8 +75,9 @@ DECLARE
   receipt_outcome text;
   receipt_next_action text;
   replayed_flag boolean;
-  verification_count integer;
+  history_count integer;
   event_count integer;
+  projected_state text;
   leaked_private_context boolean;
 BEGIN
   SELECT verification_outcome_code, next_action, verification_replayed
@@ -93,16 +89,29 @@ BEGIN
     RAISE EXCEPTION 'fresh target-state verification is not actionable evidence';
   END IF;
 
-  SELECT count(*) INTO verification_count
-    FROM architecture_core.transformation_verification_record
+  SELECT count(*) INTO history_count
+    FROM architecture_core.transformation_history_record
    WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
      AND architecture_transformation_id = '0196e010-1111-7111-8111-111111111191'
-     AND verification_outcome_code = 'verified'
+     AND sequence_number = 5
+     AND transformation_state_code = 'verified'
      AND effective_at = '2027-02-02T00:00:00Z'::timestamptz
+     AND truth_status_code = 'authoritative'
      AND evidence_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cbf10'
      AND decision_request_id = '0196e0a0-1111-7111-8111-111111111193';
-  IF verification_count <> 1 THEN
-    RAISE EXCEPTION 'verified target-state evidence was not recorded exactly once';
+  IF history_count <> 1 THEN
+    RAISE EXCEPTION 'verified target-state history was not appended exactly once';
+  END IF;
+
+  SELECT transformation_state_code
+    INTO projected_state
+    FROM architecture_core.project_transformation_state(
+        '0196e010-1111-7111-8111-111111111191',
+        '2027-02-02T00:00:00Z',
+        clock_timestamp()
+    );
+  IF projected_state <> 'verified' THEN
+    RAISE EXCEPTION 'verification state is not visible through bitemporal projection';
   END IF;
 
   SELECT count(*) INTO event_count
@@ -133,7 +142,8 @@ BEGIN
 END;
 $$;
 
--- Exact replay is idempotent and returns the original immutable receipt.
+-- Exact replay is idempotent and returns the original immutable history/outbox
+-- receipt instead of appending another verification state.
 DROP TABLE verification_receipt;
 CREATE TEMP TABLE verification_receipt AS
 SELECT *
@@ -151,20 +161,20 @@ SELECT *
 DO $$
 DECLARE
   replayed_flag boolean;
-  verification_count integer;
+  history_count integer;
   event_count integer;
 BEGIN
   SELECT verification_replayed INTO replayed_flag FROM verification_receipt;
   IF NOT replayed_flag THEN
     RAISE EXCEPTION 'exact target-state verification replay was not idempotent';
   END IF;
-  SELECT count(*) INTO verification_count
-    FROM architecture_core.transformation_verification_record
+  SELECT count(*) INTO history_count
+    FROM architecture_core.transformation_history_record
    WHERE decision_request_id = '0196e0a0-1111-7111-8111-111111111193';
   SELECT count(*) INTO event_count
     FROM architecture_core.outbox_event
    WHERE decision_request_id = '0196e0a0-1111-7111-8111-111111111193';
-  IF verification_count <> 1 OR event_count <> 1 THEN
+  IF history_count <> 1 OR event_count <> 1 THEN
     RAISE EXCEPTION 'verification replay duplicated immutable evidence';
   END IF;
 END;
@@ -192,24 +202,24 @@ BEGIN
 END;
 $$;
 
--- Verification evidence is append-only and one terminal verification decision
--- owns the completed transformation. Replanning creates a new governed scenario
--- and transformation rather than rewriting the prior decision.
+-- Verification is terminal for this completed transformation. A detected gap
+-- or later change is handled by a new governed scenario/transformation rather
+-- than rewriting or adding another verification outcome to the old decision.
 DO $$
 BEGIN
   BEGIN
-    UPDATE architecture_core.transformation_verification_record
-       SET decision_reason_text = 'Mutation must be rejected.'
-     WHERE decision_request_id = '0196e0a0-1111-7111-8111-111111111193';
-    RAISE EXCEPTION 'target-state verification evidence was mutable';
-  EXCEPTION WHEN check_violation THEN
-    NULL;
-  END;
-
-  BEGIN
-    DELETE FROM architecture_core.transformation_verification_record
-     WHERE decision_request_id = '0196e0a0-1111-7111-8111-111111111193';
-    RAISE EXCEPTION 'target-state verification evidence was deletable';
+    PERFORM *
+      FROM architecture_core.record_target_state_verification(
+          '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+          '0196e010-1111-7111-8111-111111111191',
+          '0196e0a0-1111-7111-8111-111111111194',
+          '2027-02-03T00:00:00Z',
+          'keyverse:https://id.example/realms/cwl#target-state-verifier-123',
+          'A second terminal verification must not rewrite the old decision.',
+          '0195d145-64e8-7f4f-8a23-a0cc784cbf10',
+          'gap_detected'
+      );
+    RAISE EXCEPTION 'second terminal target-state verification was accepted';
   EXCEPTION WHEN check_violation THEN
     NULL;
   END;
