@@ -1,8 +1,9 @@
 \set ON_ERROR_STOP on
 
 -- Regression: the canonical buyer planner must understand the terminal states
--- introduced after migration 0020. A verified target stays under monitoring;
--- a later gap_detected observation must route directly to governed replanning.
+-- introduced after migration 0020. A verified target must route through the
+-- evidence-freshness monitoring boundary before the buyer may continue; a later
+-- gap_detected observation must route directly to governed replanning.
 
 SELECT set_config(
     'app.tenant_record_id',
@@ -27,8 +28,8 @@ BEGIN
 
   IF planned_row.transformation_state_code <> 'verified'
      OR planned_row.decision_readiness_code <> 'target_state_verified'
-     OR planned_row.recommended_action_code <> 'continue_monitoring' THEN
-    RAISE EXCEPTION 'verified target state is not actionable in the canonical planner';
+     OR planned_row.recommended_action_code <> 'monitor_target_state' THEN
+    RAISE EXCEPTION 'verified target state bypasses freshness monitoring in the canonical planner';
   END IF;
 END;
 $$;
