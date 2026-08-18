@@ -50,8 +50,18 @@ _TARGET_STATE_COMPLETE_OPERATION_NAME = "publishTransformationCompleted"
 _TARGET_STATE_COMPLETE_EVENT_TYPE = (
     "org.contextualwisdomlab.ea.transformation.completed.v1"
 )
+_TARGET_STATE_VERIFY_RUNTIME_PATH = (
+    "/v1/architecture-transformations/{architecture_transformation_id}/verification"
+)
+_TARGET_STATE_VERIFY_OPERATION_ID = "verifyTechnologyTargetState"
+_TARGET_STATE_VERIFY_MESSAGE_NAME = "TransformationVerificationRecorded"
+_TARGET_STATE_VERIFY_CHANNEL_NAME = "transformationVerificationEvents"
+_TARGET_STATE_VERIFY_OPERATION_NAME = "publishTransformationVerificationRecorded"
+_TARGET_STATE_VERIFY_EVENT_TYPE = (
+    "org.contextualwisdomlab.ea.transformation.verification_recorded.v1"
+)
 _EXECUTION_ROLE_CONFIGURATION = frozenset(
-    {"EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES"}
+    {"EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES", "EA_VERIFY_ROLES"}
 )
 
 
@@ -123,28 +133,20 @@ def _validate_execution_operation(
 ) -> None:
     """Bind one governed execution OpenAPI operation to executable behavior."""
 
-    path_item = core._require_mapping(
-        paths.get(runtime_path),
-        f"path {runtime_path}",
-    )
-    operation = core._require_mapping(
-        path_item.get("post"),
-        f"{runtime_path} post",
-    )
+    path_item = core._require_mapping(paths.get(runtime_path), f"path {runtime_path}")
+    operation = core._require_mapping(path_item.get("post"), f"{runtime_path} post")
     if operation.get("operationId") != operation_id:
         raise ContractValidationError(
             f"target-state {command_name} operationId must be {operation_id}"
         )
     if operation.get("security") != [{"keyverseBearer": []}]:
         raise ContractValidationError(
-            f"target-state {command_name} must require "
-            "Keyverse bearer authorization"
+            f"target-state {command_name} must require Keyverse bearer authorization"
         )
     parameters = core._parameter_index(operation)
     if set(parameters) != {("architecture_transformation_id", "path")}:
         raise ContractValidationError(
-            f"target-state {command_name} parameters must match "
-            "executable request parsing"
+            f"target-state {command_name} parameters must match executable request parsing"
         )
     core._require_parameter(
         parameters,
@@ -162,8 +164,7 @@ def _validate_execution_operation(
     }
     if operation.get("requestBody") != expected_request_body:
         raise ContractValidationError(
-            f"target-state {command_name} request body must match "
-            "executable JSON parsing"
+            f"target-state {command_name} request body must match executable JSON parsing"
         )
     for status_code in ("200", "201"):
         core._require_json_schema_ref(
@@ -207,14 +208,17 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
             "TargetStateCompleteRequest",
             "TargetStateCompleteReceipt",
         ),
+        (
+            _TARGET_STATE_VERIFY_RUNTIME_PATH,
+            _TARGET_STATE_VERIFY_OPERATION_ID,
+            "verification",
+            "TargetStateVerificationRequest",
+            "TargetStateVerificationReceipt",
+        ),
     )
-    for (
-        runtime_path,
-        operation_id,
-        command_name,
-        request_schema,
-        receipt_schema,
-    ) in execution_operations:
+    for runtime_path, operation_id, command_name, request_schema, receipt_schema in (
+        execution_operations
+    ):
         _validate_execution_operation(
             paths,
             runtime_path=runtime_path,
@@ -234,6 +238,8 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
         "TargetStateStartReceipt",
         "TargetStateCompleteRequest",
         "TargetStateCompleteReceipt",
+        "TargetStateVerificationRequest",
+        "TargetStateVerificationReceipt",
     }
     missing_schemas = required_execution_schemas.difference(schemas)
     if missing_schemas:
@@ -292,6 +298,11 @@ def _without_execution_asyncapi(document: dict[str, Any]) -> dict[str, Any]:
             _TARGET_STATE_COMPLETE_OPERATION_NAME,
             _TARGET_STATE_COMPLETE_MESSAGE_NAME,
         ),
+        (
+            _TARGET_STATE_VERIFY_CHANNEL_NAME,
+            _TARGET_STATE_VERIFY_OPERATION_NAME,
+            _TARGET_STATE_VERIFY_MESSAGE_NAME,
+        ),
     ):
         if isinstance(channels, dict):
             channels.pop(channel_name, None)
@@ -343,13 +354,12 @@ def _validate_execution_event(
     message = core._require_mapping(messages.get(message_name), message_name)
     if message != _expected_event_message(event_type):
         raise ContractValidationError(
-            f"transformation {command_name} event must reuse the shared "
-            "Context Graph envelope"
+            f"transformation {command_name} event must reuse the shared Context Graph envelope"
         )
 
 
 def validate_asyncapi_document(document: dict[str, Any]) -> int:
-    """Validate existing publishers plus schedule/start/complete execution events."""
+    """Validate existing publishers plus all governed execution decision events."""
 
     legacy_operation_count = core.validate_asyncapi_document(
         _without_execution_asyncapi(document)
@@ -376,6 +386,13 @@ def validate_asyncapi_document(document: dict[str, Any]) -> int:
             _TARGET_STATE_COMPLETE_EVENT_TYPE,
             "complete",
         ),
+        (
+            _TARGET_STATE_VERIFY_CHANNEL_NAME,
+            _TARGET_STATE_VERIFY_OPERATION_NAME,
+            _TARGET_STATE_VERIFY_MESSAGE_NAME,
+            _TARGET_STATE_VERIFY_EVENT_TYPE,
+            "verification",
+        ),
     ):
         _validate_execution_event(
             document,
@@ -385,7 +402,7 @@ def validate_asyncapi_document(document: dict[str, Any]) -> int:
             event_type=event_type,
             command_name=command_name,
         )
-    return legacy_operation_count + 3
+    return legacy_operation_count + 4
 
 
 def validate_repository(repository_root: Path) -> RepositoryReport:
