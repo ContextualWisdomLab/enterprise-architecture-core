@@ -40,7 +40,9 @@ _TARGET_STATE_COMPLETE_OPERATION_ID = "completeTechnologyTargetState"
 _TARGET_STATE_COMPLETE_MESSAGE_NAME = "TransformationCompleted"
 _TARGET_STATE_COMPLETE_CHANNEL_NAME = "transformationCompleteEvents"
 _TARGET_STATE_COMPLETE_OPERATION_NAME = "publishTransformationCompleted"
-_TARGET_STATE_COMPLETE_EVENT_TYPE = "org.contextualwisdomlab.ea.transformation.completed.v1"
+_TARGET_STATE_COMPLETE_EVENT_TYPE = (
+    "org.contextualwisdomlab.ea.transformation.completed.v1"
+)
 _EXECUTION_ROLE_CONFIGURATION = frozenset(
     {"EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES"}
 )
