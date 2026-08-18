@@ -235,12 +235,16 @@ def test_asyncapi_publishes_transformation_completed_event(asyncapi_document) ->
     """Completion's transactional outbox event must be in the event contract."""
 
     channel = asyncapi_document["channels"]["transformationCompleteEvents"]
-    assert channel["address"] == "org.contextualwisdomlab.ea.transformation.completed.v1"
+    assert channel["address"] == (
+        "org.contextualwisdomlab.ea.transformation.completed.v1"
+    )
     operation = asyncapi_document["operations"]["publishTransformationCompleted"]
     assert operation["action"] == "send"
     message = asyncapi_document["components"]["messages"]["TransformationCompleted"]
     event_type = message["payload"]["schema"]["allOf"][1]["properties"]["type"]
-    assert event_type["const"] == "org.contextualwisdomlab.ea.transformation.completed.v1"
+    assert event_type["const"] == (
+        "org.contextualwisdomlab.ea.transformation.completed.v1"
+    )
 
 
 def test_foundation_asyncapi_tracks_current_stable_minor(asyncapi_document) -> None:
