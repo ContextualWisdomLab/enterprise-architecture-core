@@ -151,3 +151,16 @@ def test_openapi_rejects_incomplete_keyverse_runtime_configuration(
     ]
     with pytest.raises(ContractValidationError, match="requiredConfiguration"):
         validate_openapi_document(changed)
+
+
+def test_openapi_rejects_incomplete_base_keyverse_configuration(
+    openapi_document,
+) -> None:
+    """Execution-role extensions cannot hide a missing base authorization setting."""
+
+    changed = deepcopy(openapi_document)
+    changed["x-keyverse-contract"]["requiredConfiguration"].remove(
+        "EA_APPROVAL_ROLES"
+    )
+    with pytest.raises(ContractValidationError, match="configuration is incomplete"):
+        validate_openapi_document(changed)
