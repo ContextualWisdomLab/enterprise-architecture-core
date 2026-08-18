@@ -129,7 +129,8 @@ class MonitoringServiceHandler(VerificationServiceHandler):
                     "error_code": "invalid_monitoring_request",
                     "next_action": (
                         "Provide one canonical UUIDv7 transformation identifier, "
-                        "valid_at, recorded_at, and an evidence age from 1 to 3650 days."
+                        "valid_at, recorded_at, and an evidence age from 1 to "
+                        "3650 days."
                     ),
                 },
             )
