@@ -49,12 +49,16 @@ def test_api_guide_names_every_buyer_facing_v1_operation_and_role(
 ) -> None:
     """The API guide cannot lag an implemented route or purpose-bound role gate."""
 
-    api_guide = (repository_root / "docs/API_CONTRACT.md").read_text(encoding="utf-8")
+    api_guide = (repository_root / "docs/API_CONTRACT.md").read_text(
+        encoding="utf-8"
+    )
     public_paths = _public_paths(openapi_document)
     required_configuration = set(
         openapi_document["x-keyverse-contract"]["requiredConfiguration"]
     )
-    role_configuration = {name for name in required_configuration if name.endswith("_ROLES")}
+    role_configuration = {
+        name for name in required_configuration if name.endswith("_ROLES")
+    }
     assert public_paths
     assert role_configuration
     assert all(path in api_guide for path in public_paths)
