@@ -217,12 +217,16 @@ def test_http_monitoring_rejects_invalid_request_before_read() -> None:
         signature_verifier=lambda signing_input, signature, jwk: True,
         target_state_monitoring_reader=reader,
     )
+    invalid_path = _PATH.replace(
+        "max_evidence_age_days=90",
+        "max_evidence_age_days=0",
+    )
     try:
         status, body = _get(
             host,
             port,
             authorization=f"Bearer {_token()}",
-            path=_PATH.replace("max_evidence_age_days=90", "max_evidence_age_days=0"),
+            path=invalid_path,
         )
     finally:
         _stop_server(server, thread)
