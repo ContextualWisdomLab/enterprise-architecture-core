@@ -362,7 +362,7 @@ def test_main_wires_replan_and_closes_after_exit_or_interrupt(
 
 
 def test_replan_route_event_role_and_entrypoint_are_published() -> None:
-    """Executable replanning must be discoverable in every canonical operator surface."""
+    """Expose replanning through every canonical operator surface."""
 
     openapi = json.loads((_REPOSITORY_ROOT / "contracts/openapi.json").read_text())
     asyncapi = json.loads((_REPOSITORY_ROOT / "contracts/asyncapi.json").read_text())
