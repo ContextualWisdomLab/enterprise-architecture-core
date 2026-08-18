@@ -191,8 +191,7 @@ BEGIN
      OR split_part(requested_evidence_uri, ':', 4) IS DISTINCT FROM 'data_context'
      OR split_part(requested_evidence_uri, ':', 5) IS DISTINCT FROM 'assessment_evidence'
      OR evidence_identifier_text !~
-        '^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-     OR uuid_extract_version(evidence_identifier_text::uuid) <> 7 THEN
+        '^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
       MESSAGE = 'evidence URI must be a tenant-local canonical UUIDv7 Data Context assessment-evidence reference';
