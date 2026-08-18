@@ -53,6 +53,7 @@ from .start import (
 
 _TARGET_STATE_COMMAND_PATH_PREFIX = "/v1/architecture-transformations/"
 _TARGET_STATE_SCHEDULE_PATH_SUFFIX = "/schedule"
+_TARGET_STATE_START_PATH_SUFFIX = "/start"
 _SCHEDULE_ACTOR_ENV = "EA_SCHEDULE_ACTOR_REF"
 _SCHEDULE_REASON_ENV = "EA_SCHEDULE_REASON_TEXT"
 _TARGET_STATE_SCHEDULE_SQL = """
@@ -311,7 +312,7 @@ def build_target_state_schedule_writer(
 
 
 class SchedulingServiceHandler(FoundationServiceHandler):
-    """Extend the existing decision surface with one governed schedule command."""
+    """Extend the decision surface with governed schedule and start commands."""
 
     def _schedule_authorization_config(self) -> KeyverseAuthorizationConfig | None:
         """Return the distinct Keyverse schedule RP profile or fail closed."""
@@ -325,10 +326,28 @@ class SchedulingServiceHandler(FoundationServiceHandler):
         writer = getattr(self.server, "target_state_schedule_writer", None)
         return writer if callable(writer) else None
 
+    def _start_authorization_config(self) -> KeyverseAuthorizationConfig | None:
+        """Return the distinct Keyverse start RP profile or fail closed."""
+
+        config = getattr(self.server, "start_authorization_config", None)
+        return config if isinstance(config, KeyverseAuthorizationConfig) else None
+
+    def _start_writer(self):
+        """Return the configured purpose-bound start writer."""
+
+        writer = getattr(self.server, "target_state_start_writer", None)
+        return writer if callable(writer) else None
+
     def do_POST(self) -> None:
-        """Route the schedule command and preserve all inherited POST behavior."""
+        """Route execution commands and preserve inherited POST behavior."""
 
         normalized_path = urlparse(self.path).path
+        if (
+            normalized_path.startswith(_TARGET_STATE_COMMAND_PATH_PREFIX)
+            and normalized_path.endswith(_TARGET_STATE_START_PATH_SUFFIX)
+        ):
+            self._serve_target_state_start()
+            return
         if (
             normalized_path.startswith(_TARGET_STATE_COMMAND_PATH_PREFIX)
             and normalized_path.endswith(_TARGET_STATE_SCHEDULE_PATH_SUFFIX)
@@ -404,6 +423,73 @@ class SchedulingServiceHandler(FoundationServiceHandler):
         status = 200 if receipt.get("replayed") is True else 201
         self._write_json(status, receipt)
 
+    def _serve_target_state_start(self) -> None:
+        """Authorize and atomically start one already-scheduled transformation."""
+
+        config = self._start_authorization_config()
+        writer = self._start_writer()
+        if config is None or writer is None:
+            self._write_json(
+                503,
+                {
+                    "error_code": "start_unavailable",
+                    "next_action": (
+                        "Configure Keyverse start roles and the EA runtime database."
+                    ),
+                },
+            )
+            return
+        jwks_loader = getattr(self.server, "jwks_loader", load_keyverse_jwks)
+        signature_verifier = getattr(
+            self.server,
+            "signature_verifier",
+            verify_rs256_signature,
+        )
+        try:
+            context = verify_keyverse_bearer(
+                self.headers.get("Authorization"),
+                config,
+                jwks_loader=jwks_loader,
+                signature_verifier=signature_verifier,
+            )
+        except AuthorizationError as error:
+            self._write_json(
+                error.http_status,
+                {"error_code": error.error_code, "next_action": error.next_action},
+            )
+            return
+        try:
+            payload = self._read_approval_json()
+            request = parse_target_state_start_request(self.path, payload)
+        except PlannerRequestError:
+            self._write_json(
+                400,
+                {
+                    "error_code": "invalid_start_request",
+                    "next_action": (
+                        "Send canonical UUIDv7 decision and evidence ids, effective_at, "
+                        "and a bounded decision reason as JSON."
+                    ),
+                },
+            )
+            return
+        try:
+            receipt = writer(context, request)
+        except Exception:
+            self._write_json(
+                503,
+                {
+                    "error_code": "start_command_failed",
+                    "next_action": (
+                        "Refresh the approved schedule and transformation evidence, "
+                        "then retry with the same decision request id."
+                    ),
+                },
+            )
+            return
+        status = 200 if receipt.get("replayed") is True else 201
+        self._write_json(status, receipt)
+
 
 def create_runtime_server(
     bind_address: BindAddress,
@@ -413,13 +499,15 @@ def create_runtime_server(
     authorization_config: KeyverseAuthorizationConfig | None = None,
     approval_authorization_config: KeyverseAuthorizationConfig | None = None,
     schedule_authorization_config: KeyverseAuthorizationConfig | None = None,
+    start_authorization_config: KeyverseAuthorizationConfig | None = None,
     jwks_loader: JwksLoader = load_keyverse_jwks,
     signature_verifier: SignatureVerifier = verify_rs256_signature,
     target_state_plan_reader: TargetStatePlanReader | None = None,
     target_state_approval_writer: TargetStateApprovalWriter | None = None,
     target_state_schedule_writer=None,
+    target_state_start_writer=None,
 ) -> ThreadingHTTPServer:
-    """Create the deployable runtime with read, approval, and scheduling surfaces."""
+    """Create the deployable runtime with governed read and execution surfaces."""
 
     server = ThreadingHTTPServer(
         (bind_address.bind_host, bind_address.bind_port),
@@ -430,11 +518,13 @@ def create_runtime_server(
     server.authorization_config = authorization_config
     server.approval_authorization_config = approval_authorization_config
     server.schedule_authorization_config = schedule_authorization_config
+    server.start_authorization_config = start_authorization_config
     server.jwks_loader = jwks_loader
     server.signature_verifier = signature_verifier
     server.target_state_plan_reader = target_state_plan_reader
     server.target_state_approval_writer = target_state_approval_writer
     server.target_state_schedule_writer = target_state_schedule_writer
+    server.target_state_start_writer = target_state_start_writer
     return server
 
 
@@ -452,9 +542,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         authorization_config=build_keyverse_authorization_config(environment),
         approval_authorization_config=build_approval_authorization_config(environment),
         schedule_authorization_config=build_schedule_authorization_config(environment),
+        start_authorization_config=build_start_authorization_config(environment),
         target_state_plan_reader=build_target_state_plan_reader(database_dsn),
         target_state_approval_writer=build_target_state_approval_writer(database_dsn),
         target_state_schedule_writer=build_target_state_schedule_writer(database_dsn),
+        target_state_start_writer=build_target_state_start_writer(database_dsn),
     )
     try:
         serve_forever(server)
