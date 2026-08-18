@@ -64,6 +64,7 @@ def test_replan_request_rejects_out_of_contract_meaning(
             "0196e010-1111-7111-8111-111111111191/replan"
         ),
         f"/v1/architecture-transformations/{_PREDECESSOR_ID}/replan/extra",
+        "/v1/architecture-transformations//replan",
         (
             "/v1/architecture-transformations/"
             f"{_PREDECESSOR_ID}/nested/replan"
