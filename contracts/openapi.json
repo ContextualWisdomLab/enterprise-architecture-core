@@ -1,1 +1,863 @@
-{"openapi":"3.2.0","info":{"title":"Enterprise Architecture Core API","version":"0.1.0","description":"Implemented governed Enterprise Architecture decision surface from technology impact through approved, scheduled, started, and completed transformation evidence."},"servers":[{"url":"https://ea-core.example.invalid"}],"security":[{"keyverseBearer":[]}],"paths":{"/health":{"get":{"operationId":"getHealth","security":[],"summary":"Confirm the process is alive","responses":{"200":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HealthStatus"}}}}}}},"/ready":{"get":{"operationId":"getReady","security":[],"summary":"Confirm contracts and database dependencies","responses":{"200":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ReadyStatus"}}}},"503":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ReadyStatus"}}}}}}},"/v1/technology-target-state-plans/{technology_version_id}":{"get":{"operationId":"getTechnologyTargetStatePlan","summary":"Decide the next action for a technology lifecycle change","description":"Returns tenant-scoped bitemporal EA decision evidence without promoting inferred foreign evidence.","security":[{"keyverseBearer":[]}],"parameters":[{"name":"technology_version_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},{"name":"valid_at","in":"query","required":true,"schema":{"type":"string","format":"date-time"}},{"name":"recorded_at","in":"query","required":true,"schema":{"type":"string","format":"date-time"}},{"name":"planning_horizon_days","in":"query","required":false,"schema":{"type":"integer","minimum":1,"maximum":3650,"default":180}}],"responses":{"200":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStatePlanResponse"}}}},"400":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"401":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"403":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"503":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}}}}},"/v1/architecture-transformations/{architecture_transformation_id}/approval":{"post":{"operationId":"approveTechnologyTargetState","summary":"Approve one proposed target-state transformation","description":"Commit a human-authorized target-state approval through the purpose-bound EA command port.","security":[{"keyverseBearer":[]}],"parameters":[{"name":"architecture_transformation_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateApprovalRequest"}}}},"responses":{"200":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateApprovalReceipt"}}}},"201":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateApprovalReceipt"}}}},"400":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"401":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"403":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"503":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}}}}},"/v1/architecture-transformations/{architecture_transformation_id}/schedule":{"post":{"operationId":"scheduleTechnologyTargetState","summary":"Schedule one approved target-state transformation","description":"Bind one approved transformation to one authoritative remediation milestone.","security":[{"keyverseBearer":[]}],"parameters":[{"name":"architecture_transformation_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateScheduleRequest"}}}},"responses":{"200":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateScheduleReceipt"}}}},"201":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateScheduleReceipt"}}}},"400":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"401":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"403":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"503":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}}}}},"/v1/architecture-transformations/{architecture_transformation_id}/start":{"post":{"operationId":"startTechnologyTargetState","summary":"Start one scheduled target-state transformation","description":"Advance one scheduled authoritative transformation to started.","security":[{"keyverseBearer":[]}],"parameters":[{"name":"architecture_transformation_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateStartRequest"}}}},"responses":{"200":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateStartReceipt"}}}},"201":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateStartReceipt"}}}},"400":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"401":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"403":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"503":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}}}}},"/v1/architecture-transformations/{architecture_transformation_id}/complete":{"post":{"operationId":"completeTechnologyTargetState","summary":"Complete one started target-state transformation","description":"Append authoritative completion history and transactional outbox evidence; then verify target state.","security":[{"keyverseBearer":[]}],"parameters":[{"name":"architecture_transformation_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateCompleteRequest"}}}},"responses":{"200":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateCompleteReceipt"}}}},"201":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TargetStateCompleteReceipt"}}}},"400":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"401":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"403":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}},"503":{"description":"See response schema.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorStatus"}}}}}}}},"components":{"securitySchemes":{"keyverseBearer":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}},"schemas":{"HealthStatus":{"type":"object","additionalProperties":false,"required":["service_name","status_code"],"properties":{"service_name":{"type":"string","const":"enterprise-architecture-core"},"status_code":{"type":"string","const":"alive"}}},"ReadyStatus":{"type":"object","additionalProperties":false,"required":["service_name","status_code","contract_ready","database_ready"],"properties":{"service_name":{"type":"string","const":"enterprise-architecture-core"},"status_code":{"type":"string","enum":["ready","not_ready"]},"contract_ready":{"type":"boolean"},"database_ready":{"type":"boolean"}}},"TargetStatePlanResponse":{"type":"object","additionalProperties":false,"required":["technology_version_id","valid_at","recorded_at","planning_horizon_days","decision_count","decisions","next_action"],"properties":{"technology_version_id":{"type":"string","format":"uuid"},"valid_at":{"type":"string","format":"date-time"},"recorded_at":{"type":"string","format":"date-time"},"planning_horizon_days":{"type":"integer","minimum":1,"maximum":3650},"decision_count":{"type":"integer","minimum":0},"decisions":{"type":"array","items":{"$ref":"#/components/schemas/TargetStateDecision"}},"next_action":{"type":"string","minLength":1}}},"TargetStateDecision":{"type":"object","additionalProperties":false,"required":["technology_version_id","application_object_id","capability_object_id","external_context_reference_id","remediation_initiative_id","architecture_scenario_id","architecture_transformation_id","application_code","impact_status_code","impact_evidence_state_code","decision_readiness_code","recommended_action_code","capability_code","external_object_kind_code","external_truth_status_code","external_evidence_state_code","remediation_initiative_code","scenario_code","transformation_state_code"],"properties":{"technology_version_id":{"type":"string","format":"uuid"},"application_object_id":{"type":"string","format":"uuid"},"capability_object_id":{"type":["string","null"],"format":"uuid"},"external_context_reference_id":{"type":["string","null"],"format":"uuid"},"remediation_initiative_id":{"type":["string","null"],"format":"uuid"},"architecture_scenario_id":{"type":["string","null"],"format":"uuid"},"architecture_transformation_id":{"type":["string","null"],"format":"uuid"},"application_code":{"type":"string"},"impact_status_code":{"type":"string"},"impact_evidence_state_code":{"type":"string"},"decision_readiness_code":{"type":"string"},"recommended_action_code":{"type":"string"},"capability_code":{"type":["string","null"]},"external_object_kind_code":{"type":["string","null"]},"external_truth_status_code":{"type":["string","null"]},"external_evidence_state_code":{"type":["string","null"]},"remediation_initiative_code":{"type":["string","null"]},"scenario_code":{"type":["string","null"]},"transformation_state_code":{"type":["string","null"]}}},"TargetStateApprovalRequest":{"type":"object","additionalProperties":false,"required":["decision_request_id","effective_at","decision_reason_text","evidence_record_id"],"properties":{"decision_request_id":{"type":"string","format":"uuid"},"effective_at":{"type":"string","format":"date-time"},"decision_reason_text":{"type":"string","minLength":1,"maxLength":4096},"evidence_record_id":{"type":"string","format":"uuid"}}},"TargetStateApprovalReceipt":{"type":"object","additionalProperties":false,"required":["transformation_history_record_id","transformation_state_code","outbox_event_id","decision_request_id","approval_recorded_at","replayed","next_action"],"properties":{"transformation_history_record_id":{"type":"string","format":"uuid"},"transformation_state_code":{"type":"string","const":"approved"},"outbox_event_id":{"type":"string","format":"uuid"},"decision_request_id":{"type":"string","format":"uuid"},"approval_recorded_at":{"type":"string","format":"date-time"},"replayed":{"type":"boolean"},"next_action":{"type":"string","const":"schedule_transformation"}}},"TargetStateScheduleRequest":{"type":"object","additionalProperties":false,"required":["decision_request_id","initiative_milestone_id","effective_at","decision_reason_text","evidence_record_id"],"properties":{"decision_request_id":{"type":"string","format":"uuid"},"effective_at":{"type":"string","format":"date-time"},"decision_reason_text":{"type":"string","minLength":1,"maxLength":4096},"evidence_record_id":{"type":"string","format":"uuid"},"initiative_milestone_id":{"type":"string","format":"uuid"}}},"TargetStateScheduleReceipt":{"type":"object","additionalProperties":false,"required":["transformation_schedule_record_id","architecture_transformation_id","initiative_milestone_id","outbox_event_id","decision_request_id","milestone_target_at","schedule_recorded_at","replayed","next_action"],"properties":{"transformation_schedule_record_id":{"type":"string","format":"uuid"},"architecture_transformation_id":{"type":"string","format":"uuid"},"initiative_milestone_id":{"type":"string","format":"uuid"},"outbox_event_id":{"type":"string","format":"uuid"},"decision_request_id":{"type":"string","format":"uuid"},"milestone_target_at":{"type":"string","format":"date-time"},"schedule_recorded_at":{"type":"string","format":"date-time"},"replayed":{"type":"boolean"},"next_action":{"type":"string","const":"start_transformation"}}},"TargetStateStartRequest":{"type":"object","additionalProperties":false,"required":["decision_request_id","effective_at","decision_reason_text","evidence_record_id"],"properties":{"decision_request_id":{"type":"string","format":"uuid"},"effective_at":{"type":"string","format":"date-time"},"decision_reason_text":{"type":"string","minLength":1,"maxLength":4096},"evidence_record_id":{"type":"string","format":"uuid"}}},"TargetStateStartReceipt":{"type":"object","additionalProperties":false,"required":["transformation_history_record_id","architecture_transformation_id","transformation_state_code","outbox_event_id","decision_request_id","start_recorded_at","replayed","next_action"],"properties":{"transformation_history_record_id":{"type":"string","format":"uuid"},"architecture_transformation_id":{"type":"string","format":"uuid"},"transformation_state_code":{"type":"string","const":"started"},"outbox_event_id":{"type":"string","format":"uuid"},"decision_request_id":{"type":"string","format":"uuid"},"start_recorded_at":{"type":"string","format":"date-time"},"replayed":{"type":"boolean"},"next_action":{"type":"string","const":"monitor_transformation"}}},"TargetStateCompleteRequest":{"type":"object","additionalProperties":false,"required":["decision_request_id","effective_at","decision_reason_text","evidence_record_id"],"properties":{"decision_request_id":{"type":"string","format":"uuid"},"effective_at":{"type":"string","format":"date-time"},"decision_reason_text":{"type":"string","minLength":1,"maxLength":4096},"evidence_record_id":{"type":"string","format":"uuid"}}},"TargetStateCompleteReceipt":{"type":"object","additionalProperties":false,"required":["transformation_history_record_id","architecture_transformation_id","transformation_state_code","outbox_event_id","decision_request_id","completion_recorded_at","replayed","next_action"],"properties":{"transformation_history_record_id":{"type":"string","format":"uuid"},"architecture_transformation_id":{"type":"string","format":"uuid"},"transformation_state_code":{"type":"string","const":"completed"},"outbox_event_id":{"type":"string","format":"uuid"},"decision_request_id":{"type":"string","format":"uuid"},"completion_recorded_at":{"type":"string","format":"date-time"},"replayed":{"type":"boolean"},"next_action":{"type":"string","const":"verify_target_state"}}},"ErrorStatus":{"type":"object","additionalProperties":false,"required":["error_code","next_action"],"properties":{"error_code":{"type":"string","minLength":1},"next_action":{"type":"string","minLength":1}}}}},"x-keyverse-contract":{"requiredConfiguration":["EA_OIDC_ISSUER","EA_OIDC_AUDIENCE","EA_OIDC_JWKS_URL","EA_TENANT_CLAIM","EA_ROLE_CLAIM","EA_READ_ROLES","EA_APPROVAL_ROLES","EA_SCHEDULE_ROLES","EA_START_ROLES","EA_COMPLETE_ROLES"],"requiredChecks":["signature","issuer","audience","expiration","tenant","role"]}}
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Enterprise Architecture Core API",
+    "version": "0.1.0",
+    "description": "Implemented governed Enterprise Architecture decision surface from technology impact through approved, scheduled, started, completed, and verified transformation evidence."
+  },
+  "servers": [
+    {
+      "url": "https://ea-core.example.invalid"
+    }
+  ],
+  "security": [
+    {
+      "keyverseBearer": []
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "security": [],
+        "summary": "Confirm the process is alive",
+        "responses": {
+          "200": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "getReady",
+        "security": [],
+        "summary": "Confirm contracts and database dependencies",
+        "responses": {
+          "200": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/technology-target-state-plans/{technology_version_id}": {
+      "get": {
+        "operationId": "getTechnologyTargetStatePlan",
+        "summary": "Decide the next action for a technology lifecycle change",
+        "description": "Returns tenant-scoped bitemporal EA decision evidence without promoting inferred foreign evidence.",
+        "security": [
+          {
+            "keyverseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "technology_version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "valid_at",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "recorded_at",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "planning_horizon_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650,
+              "default": 180
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStatePlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/architecture-transformations/{architecture_transformation_id}/approval": {
+      "post": {
+        "operationId": "approveTechnologyTargetState",
+        "summary": "Approve one proposed target-state transformation",
+        "description": "Commit a human-authorized target-state approval through the purpose-bound EA command port.",
+        "security": [
+          {
+            "keyverseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "architecture_transformation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetStateApprovalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateApprovalReceipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateApprovalReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/architecture-transformations/{architecture_transformation_id}/schedule": {
+      "post": {
+        "operationId": "scheduleTechnologyTargetState",
+        "summary": "Schedule one approved target-state transformation",
+        "description": "Bind one approved transformation to one authoritative remediation milestone.",
+        "security": [
+          {
+            "keyverseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "architecture_transformation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetStateScheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateScheduleReceipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateScheduleReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/architecture-transformations/{architecture_transformation_id}/start": {
+      "post": {
+        "operationId": "startTechnologyTargetState",
+        "summary": "Start one scheduled target-state transformation",
+        "description": "Advance one scheduled authoritative transformation to started.",
+        "security": [
+          {
+            "keyverseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "architecture_transformation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetStateStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateStartReceipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateStartReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/architecture-transformations/{architecture_transformation_id}/complete": {
+      "post": {
+        "operationId": "completeTechnologyTargetState",
+        "summary": "Complete one started target-state transformation",
+        "description": "Append authoritative completion history and transactional outbox evidence; then verify target state.",
+        "security": [
+          {
+            "keyverseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "architecture_transformation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetStateCompleteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateCompleteReceipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateCompleteReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/architecture-transformations/{architecture_transformation_id}/verification": {
+      "post": {
+        "operationId": "verifyTechnologyTargetState",
+        "summary": "Verify the achieved target state of one completed transformation",
+        "description": "Record a human-authorized target-state verification decision with immutable evidence and an explicit next action.",
+        "security": [
+          {
+            "keyverseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "architecture_transformation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetStateVerificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateVerificationReceipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetStateVerificationReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "keyverseBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "HealthStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["service_name", "status_code"],
+        "properties": {
+          "service_name": {"type": "string", "const": "enterprise-architecture-core"},
+          "status_code": {"type": "string", "const": "alive"}
+        }
+      },
+      "ReadyStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["service_name", "status_code", "contract_ready", "database_ready"],
+        "properties": {
+          "service_name": {"type": "string", "const": "enterprise-architecture-core"},
+          "status_code": {"type": "string", "enum": ["ready", "not_ready"]},
+          "contract_ready": {"type": "boolean"},
+          "database_ready": {"type": "boolean"}
+        }
+      },
+      "TargetStatePlanResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["technology_version_id", "valid_at", "recorded_at", "planning_horizon_days", "decision_count", "decisions", "next_action"],
+        "properties": {
+          "technology_version_id": {"type": "string", "format": "uuid"},
+          "valid_at": {"type": "string", "format": "date-time"},
+          "recorded_at": {"type": "string", "format": "date-time"},
+          "planning_horizon_days": {"type": "integer", "minimum": 1, "maximum": 3650},
+          "decision_count": {"type": "integer", "minimum": 0},
+          "decisions": {"type": "array", "items": {"$ref": "#/components/schemas/TargetStateDecision"}},
+          "next_action": {"type": "string", "minLength": 1}
+        }
+      },
+      "TargetStateDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["technology_version_id", "application_object_id", "capability_object_id", "external_context_reference_id", "remediation_initiative_id", "architecture_scenario_id", "architecture_transformation_id", "application_code", "impact_status_code", "impact_evidence_state_code", "decision_readiness_code", "recommended_action_code", "capability_code", "external_object_kind_code", "external_truth_status_code", "external_evidence_state_code", "remediation_initiative_code", "scenario_code", "transformation_state_code"],
+        "properties": {
+          "technology_version_id": {"type": "string", "format": "uuid"},
+          "application_object_id": {"type": "string", "format": "uuid"},
+          "capability_object_id": {"type": ["string", "null"], "format": "uuid"},
+          "external_context_reference_id": {"type": ["string", "null"], "format": "uuid"},
+          "remediation_initiative_id": {"type": ["string", "null"], "format": "uuid"},
+          "architecture_scenario_id": {"type": ["string", "null"], "format": "uuid"},
+          "architecture_transformation_id": {"type": ["string", "null"], "format": "uuid"},
+          "application_code": {"type": "string"},
+          "impact_status_code": {"type": "string"},
+          "impact_evidence_state_code": {"type": "string"},
+          "decision_readiness_code": {"type": "string"},
+          "recommended_action_code": {"type": "string"},
+          "capability_code": {"type": ["string", "null"]},
+          "external_object_kind_code": {"type": ["string", "null"]},
+          "external_truth_status_code": {"type": ["string", "null"]},
+          "external_evidence_state_code": {"type": ["string", "null"]},
+          "remediation_initiative_code": {"type": ["string", "null"]},
+          "scenario_code": {"type": ["string", "null"]},
+          "transformation_state_code": {"type": ["string", "null"]}
+        }
+      },
+      "TargetStateApprovalRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id"],
+        "properties": {
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "effective_at": {"type": "string", "format": "date-time"},
+          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "evidence_record_id": {"type": "string", "format": "uuid"}
+        }
+      },
+      "TargetStateApprovalReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transformation_history_record_id", "transformation_state_code", "outbox_event_id", "decision_request_id", "approval_recorded_at", "replayed", "next_action"],
+        "properties": {
+          "transformation_history_record_id": {"type": "string", "format": "uuid"},
+          "transformation_state_code": {"type": "string", "const": "approved"},
+          "outbox_event_id": {"type": "string", "format": "uuid"},
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "approval_recorded_at": {"type": "string", "format": "date-time"},
+          "replayed": {"type": "boolean"},
+          "next_action": {"type": "string", "const": "schedule_transformation"}
+        }
+      },
+      "TargetStateScheduleRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision_request_id", "initiative_milestone_id", "effective_at", "decision_reason_text", "evidence_record_id"],
+        "properties": {
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "effective_at": {"type": "string", "format": "date-time"},
+          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "evidence_record_id": {"type": "string", "format": "uuid"},
+          "initiative_milestone_id": {"type": "string", "format": "uuid"}
+        }
+      },
+      "TargetStateScheduleReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transformation_schedule_record_id", "architecture_transformation_id", "initiative_milestone_id", "outbox_event_id", "decision_request_id", "milestone_target_at", "schedule_recorded_at", "replayed", "next_action"],
+        "properties": {
+          "transformation_schedule_record_id": {"type": "string", "format": "uuid"},
+          "architecture_transformation_id": {"type": "string", "format": "uuid"},
+          "initiative_milestone_id": {"type": "string", "format": "uuid"},
+          "outbox_event_id": {"type": "string", "format": "uuid"},
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "milestone_target_at": {"type": "string", "format": "date-time"},
+          "schedule_recorded_at": {"type": "string", "format": "date-time"},
+          "replayed": {"type": "boolean"},
+          "next_action": {"type": "string", "const": "start_transformation"}
+        }
+      },
+      "TargetStateStartRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id"],
+        "properties": {
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "effective_at": {"type": "string", "format": "date-time"},
+          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "evidence_record_id": {"type": "string", "format": "uuid"}
+        }
+      },
+      "TargetStateStartReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transformation_history_record_id", "architecture_transformation_id", "transformation_state_code", "outbox_event_id", "decision_request_id", "start_recorded_at", "replayed", "next_action"],
+        "properties": {
+          "transformation_history_record_id": {"type": "string", "format": "uuid"},
+          "architecture_transformation_id": {"type": "string", "format": "uuid"},
+          "transformation_state_code": {"type": "string", "const": "started"},
+          "outbox_event_id": {"type": "string", "format": "uuid"},
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "start_recorded_at": {"type": "string", "format": "date-time"},
+          "replayed": {"type": "boolean"},
+          "next_action": {"type": "string", "const": "monitor_transformation"}
+        }
+      },
+      "TargetStateCompleteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id"],
+        "properties": {
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "effective_at": {"type": "string", "format": "date-time"},
+          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "evidence_record_id": {"type": "string", "format": "uuid"}
+        }
+      },
+      "TargetStateCompleteReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transformation_history_record_id", "architecture_transformation_id", "transformation_state_code", "outbox_event_id", "decision_request_id", "completion_recorded_at", "replayed", "next_action"],
+        "properties": {
+          "transformation_history_record_id": {"type": "string", "format": "uuid"},
+          "architecture_transformation_id": {"type": "string", "format": "uuid"},
+          "transformation_state_code": {"type": "string", "const": "completed"},
+          "outbox_event_id": {"type": "string", "format": "uuid"},
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "completion_recorded_at": {"type": "string", "format": "date-time"},
+          "replayed": {"type": "boolean"},
+          "next_action": {"type": "string", "const": "verify_target_state"}
+        }
+      },
+      "TargetStateVerificationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id", "verification_outcome_code"],
+        "properties": {
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "effective_at": {"type": "string", "format": "date-time"},
+          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "evidence_record_id": {"type": "string", "format": "uuid"},
+          "verification_outcome_code": {"type": "string", "enum": ["verified", "gap_detected"]}
+        }
+      },
+      "TargetStateVerificationReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transformation_history_record_id", "architecture_transformation_id", "verification_outcome_code", "outbox_event_id", "decision_request_id", "verification_recorded_at", "replayed", "next_action"],
+        "properties": {
+          "transformation_history_record_id": {"type": "string", "format": "uuid"},
+          "architecture_transformation_id": {"type": "string", "format": "uuid"},
+          "verification_outcome_code": {"type": "string", "enum": ["verified", "gap_detected"]},
+          "outbox_event_id": {"type": "string", "format": "uuid"},
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "verification_recorded_at": {"type": "string", "format": "date-time"},
+          "replayed": {"type": "boolean"},
+          "next_action": {"type": "string", "enum": ["monitor_target_state", "replan_target_state"]}
+        }
+      },
+      "ErrorStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error_code", "next_action"],
+        "properties": {
+          "error_code": {"type": "string", "minLength": 1},
+          "next_action": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "x-keyverse-contract": {
+    "requiredConfiguration": ["EA_OIDC_ISSUER", "EA_OIDC_AUDIENCE", "EA_OIDC_JWKS_URL", "EA_TENANT_CLAIM", "EA_ROLE_CLAIM", "EA_READ_ROLES", "EA_APPROVAL_ROLES", "EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES", "EA_VERIFY_ROLES"],
+    "requiredChecks": ["signature", "issuer", "audience", "expiration", "tenant", "role"]
+  }
+}
