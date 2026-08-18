@@ -41,7 +41,9 @@ def _payload(**changes: object) -> dict[str, object]:
         "transformation_title": "Replan database target state",
         "transformation_description": "Replace the gap-detected target state.",
         "effective_at": "2027-02-03T00:00:00Z",
-        "decision_reason_text": "Verification evidence requires a governed replacement.",
+        "decision_reason_text": (
+            "Verification evidence requires a governed replacement."
+        ),
         "evidence_record_id": _EVIDENCE_ID,
     }
     payload.update(changes)
@@ -94,7 +96,10 @@ def test_parse_replan_binds_terminal_predecessor_to_explicit_replacement() -> No
             _payload(replacement_architecture_transformation_id=_PREDECESSOR_ID),
         )
     with pytest.raises(PlannerRequestError, match="only the documented fields"):
-        parse_target_state_replan_request(_PATH, _payload(truth_status_code="authoritative"))
+        parse_target_state_replan_request(
+            _PATH,
+            _payload(truth_status_code="authoritative"),
+        )
     with pytest.raises(PlannerRequestError, match="replan path"):
         parse_target_state_replan_request(_PATH + "?unsafe=1", _payload())
 
@@ -153,7 +158,7 @@ def test_replan_writer_preserves_private_context_and_receipt_meaning() -> None:
 
 
 def test_replan_writer_fails_closed_on_unavailable_or_semantic_drift() -> None:
-    """Unavailable storage and a semantically different receipt never look successful."""
+    """Unavailable storage and semantic drift never look successful."""
 
     request = parse_target_state_replan_request(_PATH, _payload())
     writer = build_target_state_replan_writer(None)
