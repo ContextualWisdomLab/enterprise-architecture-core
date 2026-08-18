@@ -55,3 +55,25 @@ def test_monitoring_reader_rejects_response_not_bound_to_requested_cutoffs(
         match="invalid monitoring status",
     ):
         _reader_for_status(**changes)(_context(), request)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"monitoring_state_code": []},
+        {"monitoring_state_code": {}},
+        {"verification_state_code": []},
+        {"verification_state_code": {}},
+    ],
+)
+def test_monitoring_reader_fails_closed_on_non_scalar_state_codes(
+    changes: dict[str, object],
+) -> None:
+    """Malformed database JSON cannot escape as an unhandled TypeError."""
+
+    request = monitor.parse_target_state_monitoring_request(_PATH)
+    with pytest.raises(
+        service.PlannerExecutionError,
+        match="invalid monitoring status",
+    ):
+        _reader_for_status(**changes)(_context(), request)
