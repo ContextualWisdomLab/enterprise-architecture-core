@@ -93,7 +93,7 @@ class TargetStateReplanRequest:
         decision_reason_text: str,
         evidence_record_id: str,
     ) -> TargetStateReplanRequest:
-        """Validate canonical replacement-plan meaning before PostgreSQL is reachable."""
+        """Validate replacement-plan meaning before PostgreSQL is reachable."""
 
         predecessor_id = _parse_uuid7(
             predecessor_architecture_transformation_id,
