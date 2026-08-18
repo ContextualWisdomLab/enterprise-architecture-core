@@ -35,64 +35,31 @@ SET search_path = pg_catalog
 AS $$
 BEGIN
   IF requested_tenant_record_id IS NULL THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'verified tenant identity is required for target-state reads';
+    RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'verified tenant identity is required for target-state reads';
   END IF;
-
-  PERFORM pg_catalog.set_config(
-      'app.tenant_record_id',
-      requested_tenant_record_id::text,
-      true
-  );
-
-  RETURN QUERY
-  SELECT *
-    FROM architecture_core.project_technology_target_state_plan(
-        requested_technology_version_id,
-        assessment_valid_at,
-        assessment_recorded_at,
-        planning_horizon_days
-    );
+  PERFORM pg_catalog.set_config('app.tenant_record_id', requested_tenant_record_id::text, true);
+  RETURN QUERY SELECT * FROM architecture_core.project_technology_target_state_plan(
+      requested_technology_version_id, assessment_valid_at, assessment_recorded_at, planning_horizon_days);
 END;
 $$;
 
-REVOKE ALL
-ON FUNCTION architecture_core.read_technology_target_state_plan(
-    uuid,
-    uuid,
-    timestamptz,
-    timestamptz,
-    integer
-)
-FROM PUBLIC;
+REVOKE ALL ON FUNCTION architecture_core.read_technology_target_state_plan(uuid,uuid,timestamptz,timestamptz,integer) FROM PUBLIC;
 
--- Repository migration rehearsals intentionally run before deployment-only
--- role bootstrap. Grant during an in-place upgrade only when the runtime role
--- already exists; clean installation re-establishes the same narrow grant in
--- database/init/003_grant_runtime_access.sql after the role is created.
+-- Migration 0020 creates this projector after deployment bootstrap may already
+-- have revoked PUBLIC execution on existing functions. PostgreSQL grants newly
+-- created functions to PUBLIC by default, so revoke the underlying projector
+-- explicitly to preserve the purpose-bound SECURITY DEFINER boundary on upgrade.
+REVOKE ALL ON FUNCTION architecture_core.project_technology_target_state_plan(uuid,timestamptz,timestamptz,integer) FROM PUBLIC;
+
 DO $$
 BEGIN
-  IF EXISTS (
-      SELECT 1
-        FROM pg_catalog.pg_roles
-       WHERE rolname = 'ea_runtime'
-  ) THEN
-    EXECUTE
-      'GRANT EXECUTE ON FUNCTION '
-      'architecture_core.read_technology_target_state_plan('
-      'uuid,uuid,timestamptz,timestamptz,integer) TO ea_runtime';
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'ea_runtime') THEN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION architecture_core.read_technology_target_state_plan(uuid,uuid,timestamptz,timestamptz,integer) TO ea_runtime';
   END IF;
 END;
 $$;
 
-COMMENT ON FUNCTION architecture_core.read_technology_target_state_plan(
-    uuid,
-    uuid,
-    timestamptz,
-    timestamptz,
-    integer
-) IS
+COMMENT ON FUNCTION architecture_core.read_technology_target_state_plan(uuid,uuid,timestamptz,timestamptz,integer) IS
 'Purpose-bound SECURITY DEFINER read port for the authenticated EA service. The service verifies Keyverse signature, issuer, audience, expiration, tenant, and role before passing the verified tenant UUID. The runtime role receives EXECUTE only on this wrapper and retains no direct table or projector authority.';
 
 COMMIT;
