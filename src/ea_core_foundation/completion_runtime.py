@@ -23,11 +23,11 @@ from .complete import (
 from .runtime import (
     SchedulingServiceHandler,
     build_schedule_authorization_config,
+    build_target_state_schedule_writer,
     create_runtime_server as create_scheduling_runtime_server,
 )
 from .service import (
     BindAddress,
-    PlannerExecutionError,
     PlannerRequestError,
     build_approval_authorization_config,
     build_database_readiness_probe,
@@ -124,7 +124,7 @@ class CompletionServiceHandler(SchedulingServiceHandler):
             return
         try:
             receipt = writer(context, request)
-        except PlannerExecutionError:
+        except Exception:
             self._write_json(
                 503,
                 {
@@ -174,12 +174,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         complete_authorization_config=build_complete_authorization_config(environment),
         target_state_plan_reader=build_target_state_plan_reader(database_dsn),
         target_state_approval_writer=build_target_state_approval_writer(database_dsn),
-        target_state_schedule_writer=(
-            __import__(
-                "ea_core_foundation.runtime",
-                fromlist=["build_target_state_schedule_writer"],
-            ).build_target_state_schedule_writer(database_dsn)
-        ),
+        target_state_schedule_writer=build_target_state_schedule_writer(database_dsn),
         target_state_start_writer=build_target_state_start_writer(database_dsn),
         target_state_complete_writer=build_target_state_complete_writer(database_dsn),
     )
