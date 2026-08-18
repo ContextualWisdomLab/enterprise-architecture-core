@@ -45,7 +45,7 @@ from .service import (
     serve_forever,
 )
 from .start import (
-    TargetStateStartRequest,
+    TargetStateStartRequest as TargetStateStartRequest,
     build_start_authorization_config,
     build_target_state_start_writer,
     parse_target_state_start_request,
@@ -467,8 +467,8 @@ class SchedulingServiceHandler(FoundationServiceHandler):
                 {
                     "error_code": "invalid_start_request",
                     "next_action": (
-                        "Send canonical UUIDv7 decision and evidence ids, effective_at, "
-                        "and a bounded decision reason as JSON."
+                        "Send canonical UUIDv7 decision and evidence ids, "
+                        "effective_at, and a bounded decision reason as JSON."
                     ),
                 },
             )
