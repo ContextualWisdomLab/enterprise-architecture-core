@@ -202,26 +202,69 @@ BEGIN
 END;
 $$;
 
--- Verification is terminal for this completed transformation. A detected gap
--- or later change is handled by a new governed scenario/transformation rather
--- than rewriting or adding another verification outcome to the old decision.
+-- Monitoring can demand fresh evidence after the first successful verification.
+-- A new human decision with later evidence appends another authoritative
+-- verification observation without reopening execution or rewriting history.
+INSERT INTO architecture_core.evidence_record (
+    tenant_record_id,
+    evidence_record_id,
+    evidence_uri,
+    sha256_digest,
+    source_locator
+) VALUES (
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    '0196e0a0-1111-7111-8111-111111111195',
+    'urn:cwl:tenant_001:ea_core:target_state_evidence:0196e0a0-1111-7111-8111-111111111195',
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    'verification://target-state/refresh-1'
+);
+
+DROP TABLE verification_receipt;
+CREATE TEMP TABLE verification_receipt AS
+SELECT *
+  FROM architecture_core.record_target_state_verification(
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      '0196e010-1111-7111-8111-111111111191',
+      '0196e0a0-1111-7111-8111-111111111194',
+      '2027-02-03T00:00:00Z',
+      'keyverse:https://id.example/realms/cwl#target-state-verifier-123',
+      'Fresh monitoring evidence reconfirms the approved target state.',
+      '0196e0a0-1111-7111-8111-111111111195',
+      'verified'
+  );
+
 DO $$
+DECLARE
+  replayed_flag boolean;
+  receipt_next_action text;
+  history_count integer;
+  event_count integer;
 BEGIN
-  BEGIN
-    PERFORM *
-      FROM architecture_core.record_target_state_verification(
-          '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-          '0196e010-1111-7111-8111-111111111191',
-          '0196e0a0-1111-7111-8111-111111111194',
-          '2027-02-03T00:00:00Z',
-          'keyverse:https://id.example/realms/cwl#target-state-verifier-123',
-          'A second terminal verification must not rewrite the old decision.',
-          '0195d145-64e8-7f4f-8a23-a0cc784cbf10',
-          'gap_detected'
-      );
-    RAISE EXCEPTION 'second terminal target-state verification was accepted';
-  EXCEPTION WHEN check_violation THEN
-    NULL;
-  END;
+  SELECT verification_replayed, next_action
+    INTO replayed_flag, receipt_next_action
+    FROM verification_receipt;
+  IF replayed_flag OR receipt_next_action <> 'monitor_target_state' THEN
+    RAISE EXCEPTION 'fresh monitoring evidence did not append a new verification';
+  END IF;
+
+  SELECT count(*) INTO history_count
+    FROM architecture_core.transformation_history_record
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND architecture_transformation_id = '0196e010-1111-7111-8111-111111111191'
+     AND sequence_number = 6
+     AND transformation_state_code = 'verified'
+     AND effective_at = '2027-02-03T00:00:00Z'::timestamptz
+     AND evidence_record_id = '0196e0a0-1111-7111-8111-111111111195'
+     AND decision_request_id = '0196e0a0-1111-7111-8111-111111111194';
+  SELECT count(*) INTO event_count
+    FROM architecture_core.outbox_event
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND architecture_transformation_id = '0196e010-1111-7111-8111-111111111191'
+     AND decision_request_id = '0196e0a0-1111-7111-8111-111111111194'
+     AND event_type_code =
+         'org.contextualwisdomlab.ea.transformation.verification_recorded.v1';
+  IF history_count <> 1 OR event_count <> 1 THEN
+    RAISE EXCEPTION 'monitoring re-verification did not commit history/outbox atomically';
+  END IF;
 END;
 $$;
