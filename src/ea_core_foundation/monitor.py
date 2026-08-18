@@ -221,6 +221,11 @@ def build_target_state_monitoring_reader(
             )
 
         state = payload.get("monitoring_state_code")
+        verification_state = payload.get("verification_state_code")
+        if not isinstance(state, str) or not isinstance(verification_state, str):
+            raise PlannerExecutionError(
+                "target-state monitoring returned invalid monitoring status"
+            )
         expected_action = _MONITORING_ACTIONS.get(state)
         evidence_id = payload.get("evidence_record_id")
         evidence_age_days = payload.get("evidence_age_days")
@@ -238,7 +243,6 @@ def build_target_state_monitoring_reader(
             raise PlannerExecutionError(
                 "target-state monitoring returned invalid monitoring status"
             ) from error
-        verification_state = payload.get("verification_state_code")
         expected_age_days = (request.valid_at - verification_effective_at).days
         expected_state = (
             "gap_detected"
