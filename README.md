@@ -14,7 +14,7 @@ After approval, a separately authorized scheduler can bind that transformation t
 
 A separately authorized operator can then start the scheduled transformation and later record completion. Completion is deliberately non-final: an authorized verifier must record whether the approved target state was actually achieved. A `verified` outcome advances the buyer to `monitor_target_state`; a `gap_detected` outcome advances to `replan_target_state`. Each mutation derives the actor from Keyverse, requires explicit evidence and reason, appends immutable authoritative history, and emits its transactional outbox event atomically. The event payloads do not export the decision actor or reason.
 
-After a verified outcome, a separately authorized monitoring read evaluates the exact bitemporal verification evidence against a bounded freshness policy without reopening terminal transformation history. `current` directs the buyer to `continue_monitoring`, `stale` to `collect_new_target_state_evidence`, and `gap_detected` to `replan_target_state`. Monitoring is read-only and never converts inferred, proposed, or stale evidence into authoritative success.
+After a verified outcome, a separately authorized monitoring read evaluates the exact bitemporal verification evidence against a bounded freshness policy. `current` directs the buyer to `continue_monitoring`, `stale` to `collect_new_target_state_evidence`, and `gap_detected` to `replan_target_state`. Monitoring itself is read-only. When evidence is stale, the buyer collects newer evidence and submits another human-authorized verification decision; EA Core appends a later `verified` or `gap_detected` observation without reopening execution or rewriting prior history. A detected gap remains terminal for that transformation and requires replanning. Inferred, proposed, stale, or foreign evidence never becomes authoritative success merely by being observed.
 
 `semantic-data-portal` remains the Data/AI Context system of record; `pg-erd-cloud` remains physical schema/design evidence; LineageWeave evidence remains inferred/proposed unless governed elsewhere. EA Core stores canonical references and receipt evidence rather than copying those products or querying their application tables.
 
@@ -114,7 +114,7 @@ Content-Type: application/json
 }
 ```
 
-Use `verification_outcome_code: "verified"` only when the evidence demonstrates the approved target state was achieved. Use `"gap_detected"` when evidence shows a material target-state gap; the receipt then directs the operator to replan rather than silently declaring success.
+Use `verification_outcome_code: "verified"` only when the evidence demonstrates the approved target state was achieved. Use `"gap_detected"` when evidence shows a material target-state gap; the receipt then directs the operator to replan rather than silently declaring success. After an earlier `verified` result, the same endpoint accepts a later evidence-backed human decision so stale monitoring evidence can be refreshed append-only; it never rewrites prior verification history or reopens execution.
 
 The post-verification monitoring endpoint is:
 
