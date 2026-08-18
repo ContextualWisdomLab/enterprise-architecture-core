@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from urllib.parse import parse_qsl, urlparse
@@ -75,6 +75,11 @@ class TargetStateMonitoringRequest:
             recorded_at=recorded_time,
             max_evidence_age_days=max_evidence_age_days,
         )
+
+
+TargetStateMonitoringReader = Callable[
+    [AuthorizationContext, TargetStateMonitoringRequest], Mapping[str, object]
+]
 
 
 def parse_target_state_monitoring_request(path: str) -> TargetStateMonitoringRequest:
@@ -150,7 +155,7 @@ def build_target_state_monitoring_reader(
     *,
     runner: CommandRunner = subprocess.run,
     base_environment: Mapping[str, str] | None = None,
-):
+) -> TargetStateMonitoringReader:
     """Build a tenant-bound monitoring reader without direct application-table SQL."""
 
     if not dsn:
@@ -229,17 +234,24 @@ def build_target_state_monitoring_reader(
             raise PlannerExecutionError(
                 "target-state monitoring returned invalid monitoring status"
             ) from error
+        verification_state = payload.get("verification_state_code")
         if (
             payload.get("architecture_transformation_id")
             != str(request.architecture_transformation_id)
-            or payload.get("verification_state_code") not in {"verified", "gap_detected"}
+            or verification_state not in {"verified", "gap_detected"}
             or not isinstance(evidence_age_days, int)
             or isinstance(evidence_age_days, bool)
             or evidence_age_days < 0
             or expected_action is None
             or payload.get("next_action") != expected_action
-            or (state == "gap_detected" and payload.get("verification_state_code") != "gap_detected")
-            or (state in {"current", "stale"} and payload.get("verification_state_code") != "verified")
+            or (
+                state == "gap_detected"
+                and verification_state != "gap_detected"
+            )
+            or (
+                state in {"current", "stale"}
+                and verification_state != "verified"
+            )
         ):
             raise PlannerExecutionError(
                 "target-state monitoring returned invalid monitoring status"
