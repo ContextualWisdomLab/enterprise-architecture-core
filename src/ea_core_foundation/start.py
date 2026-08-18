@@ -135,7 +135,7 @@ def parse_target_state_start_request(
 def build_start_authorization_config(
     environ: Mapping[str, str],
 ) -> KeyverseAuthorizationConfig | None:
-    """Build a Keyverse profile whose roles grant only transformation-start authority."""
+    """Build a Keyverse profile granting only transformation-start authority."""
 
     start_environment = dict(environ)
     start_environment["EA_READ_ROLES"] = environ.get("EA_START_ROLES", "")
@@ -220,7 +220,9 @@ def build_target_state_start_writer(
         try:
             payload = json.loads(result.stdout.strip())
         except json.JSONDecodeError as error:
-            raise PlannerExecutionError("target-state start returned invalid JSON") from error
+            raise PlannerExecutionError(
+                "target-state start returned invalid JSON"
+            ) from error
         if not isinstance(payload, Mapping):
             raise PlannerExecutionError(
                 "target-state start returned invalid start receipt"
