@@ -141,6 +141,7 @@ DECLARE
   predecessor_truth_status_code text;
   previous_state_code text;
   previous_effective_at timestamptz;
+  replacement_valid_to timestamptz;
   inserted_history_id uuid;
   inserted_replan_id uuid;
   inserted_recorded_at timestamptz;
@@ -392,6 +393,15 @@ BEGIN
       MESSAGE = 'replacement transformation id already exists';
   END IF;
 
+  SELECT LEAST(scenario_record.valid_to, initiative_record.valid_to)
+    INTO replacement_valid_to
+    FROM architecture_core.architecture_scenario AS scenario_record
+    JOIN architecture_core.remediation_initiative AS initiative_record
+      ON initiative_record.tenant_record_id = scenario_record.tenant_record_id
+   WHERE scenario_record.tenant_record_id = requested_tenant_record_id
+     AND scenario_record.architecture_scenario_id = requested_scenario_id
+     AND initiative_record.remediation_initiative_id = requested_initiative_id;
+
   UPDATE architecture_core.architecture_transformation
      SET superseded_at = clock_timestamp()
    WHERE tenant_record_id = requested_tenant_record_id
@@ -419,7 +429,7 @@ BEGIN
       requested_transformation_title,
       requested_transformation_description,
       requested_effective_at,
-      NULL,
+      replacement_valid_to,
       'authoritative',
       requested_evidence_record_id
   );
@@ -567,6 +577,6 @@ COMMENT ON FUNCTION architecture_core.record_target_state_replan(
     text,
     uuid
 ) IS
-'Atomically supersedes one authoritative gap-detected predecessor in system time, creates a distinct evidence-backed authoritative replacement transformation in proposed state, records their immutable replan relationship, and emits a privacy-minimized transactional outbox event. Exact decision replay is idempotent; conflicting meaning fails closed.';
+'Atomically supersedes one authoritative gap-detected predecessor in system time, creates a distinct evidence-backed authoritative replacement transformation in proposed state bounded by its scenario and remediation initiative validity, records their immutable replan relationship, and emits a privacy-minimized transactional outbox event. Exact decision replay is idempotent; conflicting meaning fails closed.';
 
 COMMIT;
