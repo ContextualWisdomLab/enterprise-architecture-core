@@ -102,7 +102,7 @@ INSERT INTO architecture_core.projection_receipt (
     '0196f200-1111-7111-8111-111111111145',
     'urn:cwl:tenant_001:semantic_data_portal',
     '0196f200-1111-7111-8111-111111111146',
-    repeat('3', 64),
+    repeat('5', 64),
     '1.0.0',
     '2026-08-19T00:10:00Z',
     '2026-08-19T00:10:01Z',
@@ -184,6 +184,22 @@ BEGIN
         '2026-08-19T00:10:02Z'
       );
     RAISE EXCEPTION 'foreign-authority assessment evidence was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    PERFORM *
+      FROM architecture_core.accept_data_management_improvement_evidence(
+        plan_id,
+        '0196f200-1111-7111-8111-111111111145',
+        'urn:cwl:tenant_001:data_context:assessment_evidence:0196f200-1111-7111-8111-111111111146',
+        'observed',
+        repeat('6', 64),
+        '0196f200-1111-7111-8111-111111111152',
+        '2026-08-19T00:10:02Z'
+      );
+    RAISE EXCEPTION 'evidence digest not bound to projection receipt payload';
   EXCEPTION WHEN check_violation THEN
     NULL;
   END;
