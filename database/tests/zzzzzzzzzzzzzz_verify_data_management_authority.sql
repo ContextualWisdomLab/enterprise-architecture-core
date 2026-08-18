@@ -54,7 +54,7 @@ INSERT INTO architecture_core.projection_receipt (
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
     '0196f100-1111-7111-8111-111111111115',
     'urn:cwl:tenant_001:semantic_data_portal',
-    'data-management-assessment-rejected',
+    '0196f100-1111-7111-8111-111111111116',
     repeat('2', 64),
     '1.0.0',
     '2026-10-18T00:00:02Z',
