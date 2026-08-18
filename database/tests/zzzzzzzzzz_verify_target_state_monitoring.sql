@@ -39,17 +39,47 @@ BEGIN
 END;
 $$;
 
+-- The freshness threshold is inclusive. Bind the boundary to the latest
+-- verification observation so a later append-only re-verification cannot make
+-- this acceptance test accidentally exercise an older evidence record.
 DO $$
 DECLARE
   monitoring_state text;
   buyer_next_action text;
+  latest_verification_at timestamptz;
 BEGIN
+  SELECT max(effective_at)
+    INTO latest_verification_at
+    FROM architecture_core.transformation_history_record
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND architecture_transformation_id = '0196e010-1111-7111-8111-111111111191'
+     AND transformation_state_code = 'verified';
+
+  IF latest_verification_at IS NULL THEN
+    RAISE EXCEPTION 'monitoring freshness boundary has no verification evidence';
+  END IF;
+
   SELECT monitoring_state_code, next_action
     INTO monitoring_state, buyer_next_action
     FROM architecture_core.read_target_state_monitoring_status(
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
         '0196e010-1111-7111-8111-111111111191',
-        '2027-05-04T00:00:00Z',
+        latest_verification_at + interval '90 days',
+        clock_timestamp(),
+        90
+    );
+
+  IF monitoring_state <> 'current'
+     OR buyer_next_action <> 'continue_monitoring' THEN
+    RAISE EXCEPTION 'verification evidence at the freshness boundary was not current';
+  END IF;
+
+  SELECT monitoring_state_code, next_action
+    INTO monitoring_state, buyer_next_action
+    FROM architecture_core.read_target_state_monitoring_status(
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196e010-1111-7111-8111-111111111191',
+        latest_verification_at + interval '91 days',
         clock_timestamp(),
         90
     );
