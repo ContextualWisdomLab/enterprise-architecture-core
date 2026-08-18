@@ -20,6 +20,8 @@ Start the `ea-core` process, call `GET /health`, then call `GET /ready`. Use the
 
 `GET /v1/architecture-transformations/{architecture_transformation_id}/monitoring` is the read-only post-verification monitoring boundary. Supply explicit `valid_at` and `recorded_at` CWL timestamps and, optionally, `max_evidence_age_days` from 1 through 3650; the default is 90. The purpose-bound PostgreSQL read returns the exact verification evidence UUID, valid/system timestamps, evidence age, monitoring state, and buyer next action. `current` directs `continue_monitoring`, `stale` directs `collect_new_target_state_evidence`, and `gap_detected` directs `replan_target_state`. Monitoring itself never mutates authoritative history: after `stale`, the buyer collects new evidence and uses the verification command for a new human-authorized observation. Monitoring never promotes inferred, proposed, stale, or foreign evidence to authoritative success.
 
+`POST /v1/architecture-transformations/{architecture_transformation_id}/replan` is the separate human-authorized replacement boundary after `gap_detected`. The path UUID is the terminal predecessor. The strict body supplies a distinct canonical UUIDv7 replacement transformation, decision request, scenario, remediation initiative, transformation code/title/description, effective time, human reason, and evidence reference. EA Core never reopens the predecessor: it supersedes it, creates the replacement as authoritative `proposed` target-state work, records immutable `transformation_replan_record` evidence, and emits `org.contextualwisdomlab.ea.transformation.replanned.v1` transactionally. Exact retries are idempotent. Conflicting decision reuse, cross-tenant or missing references, non-gap/previously superseded predecessors, duplicate replacement IDs, and pre-gap effective times fail closed. The receipt directs the buyer to `approve_target_state` so the replacement follows the existing governed approval/execution lifecycle.
+
 All mutation commands use UUIDv7 decision/evidence/transformation identities, explicit business-effective time, bounded human reason, actor derivation from verified identity, exact idempotency-key receipt binding, and fail-closed conflicting replay. Outbound events omit the private decision actor and reason.
 
 The read and command surfaces remain Enterprise Architecture authority. pg-erd-cloud physical-schema evidence, Semantic Data Portal Data/AI Context, and LineageWeave inferred/proposed lineage remain foreign authority reached only through governed receipt/canonical-reference projection. No API performs cross-service application-table SQL or promotes foreign inferred evidence to authoritative truth.
@@ -35,6 +37,7 @@ The read and command surfaces remain Enterprise Architecture authority. pg-erd-c
 - Completion uses `EA_COMPLETE_ROLES`.
 - Target-state verification uses `EA_VERIFY_ROLES`.
 - Post-verification monitoring uses `EA_MONITOR_ROLES`.
+- Target-state replanning uses `EA_REPLAN_ROLES`.
 - Mutation and monitoring roles are purpose-bound and do not inherit authority from read or sibling roles.
 - Keyverse configuration is fail-closed and includes `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and every operation-specific role allow-list above.
 - JWKS retrieval remains HTTPS, same-origin, redirect-denied, bounded, timeout-limited, and fail-closed.
@@ -51,16 +54,18 @@ The `ea_runtime` login has no direct application-table authority. After service-
 - `complete_started_transformation(...)`
 - `record_target_state_verification(...)`
 - `read_target_state_monitoring_status(...)`
+- `record_target_state_replan(...)`
 
 Each wrapper transaction-locally binds the already verified tenant UUID before tenant-scoped work. The runtime role is not granted direct access to the underlying projectors or foreign-product stores.
 
 ## Command and evidence rules
 
-- An inferred/proposed target state, authoritative approval, schedule binding, started execution state, completion record, verification observation, and monitoring decision are distinct states and operations.
+- An inferred/proposed target state, authoritative approval, schedule binding, started execution state, completion record, verification observation, monitoring decision, and replacement replan are distinct states and operations.
 - Scheduling binds an existing remediation milestone; it does not duplicate project/task management truth.
 - Completion never means verification. A separate evidence-backed human verification is required before the target state can be recorded as verified.
 - A stale monitoring result is not a mutation. After new evidence is collected, the same purpose-bound verification command may append a later `verified` or `gap_detected` observation following `verified`; prior history remains immutable and `gap_detected` does not reopen.
 - Monitoring is read-only and uses explicit bitemporal cutoffs plus a bounded freshness policy; it cannot mutate authoritative history.
+- Replanning creates a new proposed transformation linked to the terminal gap-detected predecessor; it never mutates prior history into success or bypasses approval.
 - Human actor, reason, evidence identity, valid time, and system-recorded time remain auditable in authoritative history; privacy-minimized events carry only consumer-required references.
 - Authoritative history and transactional outbox evidence commit atomically. A failed command cannot leave one without the other.
 - Exact retries return the immutable receipt; decision-request reuse with different meaning fails closed.
@@ -68,4 +73,4 @@ Each wrapper transaction-locally binds the already verified tenant UUID before t
 
 ## Error contract
 
-Planner, approval, scheduling, start, completion, verification, and monitoring errors expose stable `error_code` and `next_action` fields for missing or invalid authorization, malformed requests, forbidden roles, unavailable purpose-bound ports, or command/query failure. Internal SQL, token, credential, actor/reason, and connector details never appear in error responses.
+Planner, approval, scheduling, start, completion, verification, monitoring, and replanning errors expose stable `error_code` and `next_action` fields for missing or invalid authorization, malformed requests, forbidden roles, unavailable purpose-bound ports, or command/query failure. Internal SQL, token, credential, actor/reason, and connector details never appear in error responses.
