@@ -68,6 +68,18 @@ def test_monitoring_request_rejects_ambiguous_or_incomplete_routes() -> None:
     assert default_age.max_evidence_age_days == 90
 
 
+def test_monitoring_request_rejects_boolean_age_policy() -> None:
+    """Python booleans must not silently become one-day freshness policies."""
+
+    with pytest.raises(service.PlannerRequestError, match="integer"):
+        monitor.TargetStateMonitoringRequest.from_values(
+            _TRANSFORMATION_ID,
+            "2027-03-01T00:00:00Z",
+            "2027-03-01T00:00:00Z",
+            True,
+        )
+
+
 def test_monitoring_reader_fails_closed_when_connection_profile_is_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
