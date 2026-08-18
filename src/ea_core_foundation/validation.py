@@ -60,8 +60,18 @@ _TARGET_STATE_VERIFY_OPERATION_NAME = "publishTransformationVerificationRecorded
 _TARGET_STATE_VERIFY_EVENT_TYPE = (
     "org.contextualwisdomlab.ea.transformation.verification_recorded.v1"
 )
-_EXECUTION_ROLE_CONFIGURATION = frozenset(
-    {"EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES", "EA_VERIFY_ROLES"}
+_TARGET_STATE_MONITOR_RUNTIME_PATH = (
+    "/v1/architecture-transformations/{architecture_transformation_id}/monitoring"
+)
+_TARGET_STATE_MONITOR_OPERATION_ID = "getTargetStateMonitoring"
+_EXTENSION_ROLE_CONFIGURATION = frozenset(
+    {
+        "EA_SCHEDULE_ROLES",
+        "EA_START_ROLES",
+        "EA_COMPLETE_ROLES",
+        "EA_VERIFY_ROLES",
+        "EA_MONITOR_ROLES",
+    }
 )
 
 
@@ -93,12 +103,12 @@ def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
     )
 
 
-def _without_execution_roles(document: dict[str, Any]) -> dict[str, Any]:
-    """Return a legacy-core validation view with execution-role extensions removed."""
+def _without_extension_roles(document: dict[str, Any]) -> dict[str, Any]:
+    """Return a legacy-core view with purpose-bound role extensions removed."""
 
     changed = deepcopy(document)
     configuration = changed["x-keyverse-contract"]["requiredConfiguration"]
-    missing_configuration = _EXECUTION_ROLE_CONFIGURATION.difference(configuration)
+    missing_configuration = _EXTENSION_ROLE_CONFIGURATION.difference(configuration)
     if missing_configuration:
         missing = sorted(missing_configuration)[0]
         raise ContractValidationError(
@@ -107,16 +117,16 @@ def _without_execution_roles(document: dict[str, Any]) -> dict[str, Any]:
     changed["x-keyverse-contract"]["requiredConfiguration"] = [
         value
         for value in configuration
-        if value not in _EXECUTION_ROLE_CONFIGURATION
+        if value not in _EXTENSION_ROLE_CONFIGURATION
     ]
     return changed
 
 
 def validate_openapi_document(document: dict[str, Any]) -> int:
-    """Validate generic OpenAPI rules plus purpose-bound execution role extensions."""
+    """Validate generic OpenAPI rules plus purpose-bound role extensions."""
 
     try:
-        changed = _without_execution_roles(document)
+        changed = _without_extension_roles(document)
     except (KeyError, TypeError):
         return core.validate_openapi_document(document)
     return core.validate_openapi_document(changed)
@@ -187,8 +197,82 @@ def _validate_execution_operation(
         )
 
 
+def _validate_monitoring_operation(paths: dict[str, Any]) -> None:
+    """Bind the read-only monitoring contract to its executable request parser."""
+
+    path_item = core._require_mapping(
+        paths.get(_TARGET_STATE_MONITOR_RUNTIME_PATH),
+        f"path {_TARGET_STATE_MONITOR_RUNTIME_PATH}",
+    )
+    operation = core._require_mapping(
+        path_item.get("get"),
+        f"{_TARGET_STATE_MONITOR_RUNTIME_PATH} get",
+    )
+    if operation.get("operationId") != _TARGET_STATE_MONITOR_OPERATION_ID:
+        raise ContractValidationError(
+            "target-state monitoring operationId must be getTargetStateMonitoring"
+        )
+    if operation.get("security") != [{"keyverseBearer": []}]:
+        raise ContractValidationError(
+            "target-state monitoring must require Keyverse bearer authorization"
+        )
+    parameters = core._parameter_index(operation)
+    expected_identities = {
+        ("architecture_transformation_id", "path"),
+        ("valid_at", "query"),
+        ("recorded_at", "query"),
+        ("max_evidence_age_days", "query"),
+    }
+    if set(parameters) != expected_identities:
+        raise ContractValidationError(
+            "target-state monitoring parameters must match executable request parsing"
+        )
+    core._require_parameter(
+        parameters,
+        ("architecture_transformation_id", "path"),
+        required=True,
+        schema={"type": "string", "format": "uuid"},
+    )
+    core._require_parameter(
+        parameters,
+        ("valid_at", "query"),
+        required=True,
+        schema={"type": "string", "format": "date-time"},
+    )
+    core._require_parameter(
+        parameters,
+        ("recorded_at", "query"),
+        required=True,
+        schema={"type": "string", "format": "date-time"},
+    )
+    core._require_parameter(
+        parameters,
+        ("max_evidence_age_days", "query"),
+        required=False,
+        schema={
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650,
+            "default": 90,
+        },
+    )
+    core._require_json_schema_ref(
+        operation,
+        _TARGET_STATE_MONITOR_RUNTIME_PATH,
+        "200",
+        "TargetStateMonitoringStatus",
+    )
+    for status_code in ("400", "401", "403", "503"):
+        core._require_json_schema_ref(
+            operation,
+            _TARGET_STATE_MONITOR_RUNTIME_PATH,
+            status_code,
+            "ErrorStatus",
+        )
+
+
 def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
-    """Require planner and all governed execution surfaces to match runtime code."""
+    """Require planner, execution, and monitoring surfaces to match runtime code."""
 
     paths = core._require_mapping(document.get("paths"), "paths")
     execution_operations = (
@@ -232,6 +316,7 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
             request_schema=request_schema,
             receipt_schema=receipt_schema,
         )
+    _validate_monitoring_operation(paths)
     schemas = core._require_mapping(
         core._require_mapping(document.get("components"), "components").get("schemas"),
         "schemas",
@@ -246,7 +331,10 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
         "TargetStateVerificationRequest",
         "TargetStateVerificationReceipt",
     }
-    missing_schemas = required_execution_schemas.difference(schemas)
+    required_extension_schemas = required_execution_schemas | {
+        "TargetStateMonitoringStatus"
+    }
+    missing_schemas = required_extension_schemas.difference(schemas)
     if missing_schemas:
         raise ContractValidationError(
             f"missing OpenAPI schemas: {sorted(missing_schemas)!r}"
@@ -254,7 +342,8 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
     changed = deepcopy(document)
     for runtime_path, *_ in execution_operations:
         changed["paths"].pop(runtime_path)
-    for schema_name in required_execution_schemas:
+    changed["paths"].pop(_TARGET_STATE_MONITOR_RUNTIME_PATH)
+    for schema_name in required_extension_schemas:
         changed["components"]["schemas"].pop(schema_name)
     core.validate_openapi_runtime_surface(changed)
 
