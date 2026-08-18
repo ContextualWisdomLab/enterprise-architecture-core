@@ -8,14 +8,9 @@ from uuid import UUID
 
 import pytest
 
+import ea_core_foundation.monitor as monitor
+import ea_core_foundation.service as service
 from ea_core_foundation.authorization import AuthorizationContext
-from ea_core_foundation.service import PlannerExecutionError, PlannerRequestError
-from ea_core_foundation.monitor import (
-    TargetStateMonitoringRequest,
-    build_monitoring_authorization_config,
-    build_target_state_monitoring_reader,
-    parse_target_state_monitoring_request,
-)
 
 _TRANSFORMATION_ID = "0196e010-1111-7111-8111-111111111191"
 _EVIDENCE_ID = "0195d145-64e8-7f4f-8a23-a0cc784cbf10"
@@ -58,15 +53,15 @@ def _status(**changes: object) -> dict[str, object]:
 def test_parse_monitoring_request_binds_bitemporal_cutoffs_and_age_policy() -> None:
     """Monitoring accepts only one canonical transformation and bounded age policy."""
 
-    request = parse_target_state_monitoring_request(_PATH)
-    assert isinstance(request, TargetStateMonitoringRequest)
+    request = monitor.parse_target_state_monitoring_request(_PATH)
+    assert isinstance(request, monitor.TargetStateMonitoringRequest)
     assert str(request.architecture_transformation_id) == _TRANSFORMATION_ID
     assert request.max_evidence_age_days == 90
 
-    with pytest.raises(PlannerRequestError, match="unknown parameters"):
-        parse_target_state_monitoring_request(_PATH + "&unsafe=1")
-    with pytest.raises(PlannerRequestError, match="between 1 and 3650"):
-        parse_target_state_monitoring_request(_PATH.replace("90", "0"))
+    with pytest.raises(service.PlannerRequestError, match="unknown parameters"):
+        monitor.parse_target_state_monitoring_request(_PATH + "&unsafe=1")
+    with pytest.raises(service.PlannerRequestError, match="between 1 and 3650"):
+        monitor.parse_target_state_monitoring_request(_PATH.replace("90", "0"))
 
 
 def test_monitoring_authority_is_separate_and_fail_closed() -> None:
@@ -84,12 +79,12 @@ def test_monitoring_authority_is_separate_and_fail_closed() -> None:
         "EA_VERIFY_ROLES": "ea_target_state_verifier",
         "EA_MONITOR_ROLES": "ea_target_state_monitor",
     }
-    config = build_monitoring_authorization_config(environment)
+    config = monitor.build_monitoring_authorization_config(environment)
     assert config is not None
     assert config.allowed_roles == frozenset({"ea_target_state_monitor"})
 
     environment.pop("EA_MONITOR_ROLES")
-    assert build_monitoring_authorization_config(environment) is None
+    assert monitor.build_monitoring_authorization_config(environment) is None
 
 
 def test_monitoring_reader_returns_actionable_freshness_decision() -> None:
@@ -99,12 +94,12 @@ def test_monitoring_reader_returns_actionable_freshness_decision() -> None:
         del command, kwargs
         return SimpleNamespace(returncode=0, stdout=json.dumps(_status()), stderr="")
 
-    reader = build_target_state_monitoring_reader(
+    reader = monitor.build_target_state_monitoring_reader(
         "postgresql://ea_runtime@127.0.0.1:5432/ea_core",
         runner=runner,
         base_environment={},
     )
-    result = reader(_context(), parse_target_state_monitoring_request(_PATH))
+    result = reader(_context(), monitor.parse_target_state_monitoring_request(_PATH))
     assert result["monitoring_state_code"] == "current"
     assert result["next_action"] == "continue_monitoring"
 
@@ -112,9 +107,9 @@ def test_monitoring_reader_returns_actionable_freshness_decision() -> None:
 def test_monitoring_reader_fails_closed_on_receipt_drift_or_missing_database() -> None:
     """Untrusted or unavailable monitoring evidence never looks actionable."""
 
-    reader = build_target_state_monitoring_reader(None)
-    with pytest.raises(PlannerExecutionError, match="unavailable"):
-        reader(_context(), parse_target_state_monitoring_request(_PATH))
+    reader = monitor.build_target_state_monitoring_reader(None)
+    with pytest.raises(service.PlannerExecutionError, match="unavailable"):
+        reader(_context(), monitor.parse_target_state_monitoring_request(_PATH))
 
     def drift_runner(command, **kwargs):
         del command, kwargs
@@ -124,9 +119,9 @@ def test_monitoring_reader_fails_closed_on_receipt_drift_or_missing_database() -
             stderr="",
         )
 
-    reader = build_target_state_monitoring_reader(
+    reader = monitor.build_target_state_monitoring_reader(
         "postgresql://ea_runtime@db.example/ea_core",
         runner=drift_runner,
     )
-    with pytest.raises(PlannerExecutionError, match="invalid monitoring status"):
-        reader(_context(), parse_target_state_monitoring_request(_PATH))
+    with pytest.raises(service.PlannerExecutionError, match="invalid monitoring status"):
+        reader(_context(), monitor.parse_target_state_monitoring_request(_PATH))
