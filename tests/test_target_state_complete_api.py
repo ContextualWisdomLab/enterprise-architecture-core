@@ -107,7 +107,7 @@ def test_completion_authority_is_separate_from_read_or_start_roles() -> None:
     assert config.allowed_roles == frozenset({"ea_transformation_completer"})
 
 
-def test_completion_writer_preserves_private_decision_context_and_receipt_identity() -> None:
+def test_completion_writer_preserves_private_decision_context() -> None:
     """Actor/reason avoid argv while the exact immutable receipt is verified."""
 
     captured: dict[str, object] = {}
