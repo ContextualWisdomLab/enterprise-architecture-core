@@ -179,11 +179,27 @@ BEGIN
         '0196f200-1111-7111-8111-111111111147',
         'urn:cwl:tenant_001:data_context:assessment_evidence:0196f200-1111-7111-8111-111111111148',
         'observed',
-        repeat('6', 64),
+        repeat('4', 64),
         '0196f200-1111-7111-8111-111111111150',
         '2026-08-19T00:10:02Z'
       );
     RAISE EXCEPTION 'foreign-authority assessment evidence was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    PERFORM *
+      FROM architecture_core.accept_data_management_improvement_evidence(
+        plan_id,
+        '0196f200-1111-7111-8111-111111111145',
+        'urn:cwl:tenant_001:data_context:assessment_evidence:not-a-uuid',
+        'observed',
+        repeat('5', 64),
+        '0196f200-1111-7111-8111-111111111153',
+        '2026-08-19T00:10:02Z'
+      );
+    RAISE EXCEPTION 'malformed evidence URI was accepted';
   EXCEPTION WHEN check_violation THEN
     NULL;
   END;
