@@ -67,6 +67,20 @@ ON FUNCTION architecture_core.read_technology_target_state_plan(
 )
 FROM PUBLIC;
 
+-- Migration 0020 creates this projector after deployment bootstrap may already
+-- have revoked PUBLIC execution on the existing schema functions. PostgreSQL
+-- grants EXECUTE on a newly created function to PUBLIC by default, so an
+-- in-place upgrade would otherwise let ea_runtime bypass the purpose-bound
+-- SECURITY DEFINER wrapper through its existing schema USAGE privilege.
+REVOKE ALL
+ON FUNCTION architecture_core.project_technology_target_state_plan(
+    uuid,
+    timestamptz,
+    timestamptz,
+    integer
+)
+FROM PUBLIC;
+
 -- Repository migration rehearsals intentionally run before deployment-only
 -- role bootstrap. Grant during an in-place upgrade only when the runtime role
 -- already exists; clean installation re-establishes the same narrow grant in
