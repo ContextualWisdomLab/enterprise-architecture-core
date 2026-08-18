@@ -271,12 +271,12 @@ def test_non_monitoring_get_preserves_existing_runtime_routing() -> None:
         database_probe=lambda: True,
     )
     try:
-        status, body = _get(host, port, authorization=None, path="/readyz")
+        status, body = _get(host, port, authorization=None, path="/ready")
     finally:
         _stop_server(server, thread)
 
     assert status == 200
-    assert body["status"] == "ready"
+    assert body["status_code"] == "ready"
 
 
 def _patch_main_builders(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
