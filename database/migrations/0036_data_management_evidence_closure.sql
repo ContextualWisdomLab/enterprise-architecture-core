@@ -133,6 +133,7 @@ DECLARE
   evidence_identifier_text text;
   receipt_source_uri text;
   receipt_event_identifier text;
+  receipt_payload_sha256 text;
   receipt_status_code text;
   receipt_processed_at timestamptz;
   source_plan architecture_core.assessment_improvement_plan%ROWTYPE;
@@ -301,11 +302,13 @@ BEGIN
   SELECT
       receipt_record.event_source_uri,
       receipt_record.event_identifier,
+      receipt_record.payload_sha256,
       receipt_record.processing_status_code,
       receipt_record.processed_at
     INTO
       receipt_source_uri,
       receipt_event_identifier,
+      receipt_payload_sha256,
       receipt_status_code,
       receipt_processed_at
     FROM architecture_core.projection_receipt AS receipt_record
@@ -316,12 +319,13 @@ BEGIN
      OR receipt_source_uri IS DISTINCT FROM
         'urn:cwl:' || active_tenant_code || ':semantic_data_portal'
      OR receipt_event_identifier IS DISTINCT FROM evidence_identifier_text
+     OR receipt_payload_sha256 IS DISTINCT FROM requested_evidence_sha256
      OR receipt_status_code IS DISTINCT FROM 'processed'
      OR receipt_processed_at IS NULL
      OR receipt_processed_at > requested_accepted_at THEN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
-      MESSAGE = 'accepted evidence requires a processed tenant-local Semantic Data Portal receipt matching the evidence UUIDv7 identity';
+      MESSAGE = 'accepted evidence requires a processed tenant-local Semantic Data Portal receipt matching the evidence UUIDv7 identity and digest';
   END IF;
 
   INSERT INTO architecture_core.assessment_evidence_acceptance (
@@ -469,6 +473,6 @@ COMMENT ON FUNCTION architecture_core.accept_data_management_improvement_evidenc
     uuid,
     timestamptz
 ) IS
-'Accepts only authoritative or observed tenant-local Semantic Data Portal assessment evidence, records immutable milestone completion and transactional outbox evidence atomically, returns an assessment-recheck next action when all projected gaps are closed, and makes exact UUIDv7 decision replay deterministic.';
+'Accepts only authoritative or observed tenant-local Semantic Data Portal assessment evidence with a receipt-bound digest, records immutable milestone completion and transactional outbox evidence atomically, returns an assessment-recheck next action when all projected gaps are closed, and makes exact UUIDv7 decision replay deterministic.';
 
 COMMIT;
