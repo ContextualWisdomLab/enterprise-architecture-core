@@ -149,5 +149,5 @@ def test_openapi_rejects_incomplete_keyverse_runtime_configuration(
         "EA_OIDC_ISSUER",
         "EA_OIDC_AUDIENCE",
     ]
-    with pytest.raises(ContractValidationError, match="configuration"):
+    with pytest.raises(ContractValidationError, match="requiredConfiguration"):
         validate_openapi_document(changed)
