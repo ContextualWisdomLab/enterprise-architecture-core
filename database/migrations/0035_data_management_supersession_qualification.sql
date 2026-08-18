@@ -339,6 +339,6 @@ COMMENT ON FUNCTION architecture_core.record_data_management_assessment_result_i
     text,
     text[]
 ) IS
-+'Preserves the contract-validated data-management assessment result and supersession history. Supersession updates explicitly qualify projection columns so PL/pgSQL output variables cannot shadow persisted identity fields.';
+'Preserves the contract-validated data-management assessment result and supersession history. Supersession updates explicitly qualify projection columns so PL/pgSQL output variables cannot shadow persisted identity fields.';
 
 COMMIT;
