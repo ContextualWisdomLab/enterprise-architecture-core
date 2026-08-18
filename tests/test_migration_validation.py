@@ -29,6 +29,30 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
     assert counts[3] == 337
 
 
+def test_migration_constraint_count_tracks_replacements_not_ddl_mentions(
+    repository_root: Path,
+) -> None:
+    """Drop/add replacement DDL keeps the current logical constraint count stable."""
+
+    migration_text = "\n".join(
+        migration_path.read_text(encoding="utf-8")
+        for migration_path in sorted(
+            (repository_root / "database/migrations").glob("*.sql")
+        )
+    )
+    baseline_count = validate_migration_sql(migration_text)[3]
+    replacement_sql = """
+ALTER TABLE architecture_core.architecture_transformation
+    DROP CONSTRAINT architecture_transformation_title_nonempty,
+    ADD CONSTRAINT architecture_transformation_title_nonempty
+        CHECK (length(btrim(transformation_title)) > 0);
+"""
+
+    assert validate_migration_sql(f"{migration_text}\n{replacement_sql}")[3] == (
+        baseline_count
+    )
+
+
 def test_migration_column_count_ignores_function_signatures(
     repository_root: Path,
 ) -> None:
