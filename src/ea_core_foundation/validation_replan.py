@@ -59,21 +59,38 @@ def validate_openapi_document(document: dict[str, Any]) -> int:
     return base.validate_openapi_document(_without_replan_role(document))
 
 
+def _without_replan_openapi(document: dict[str, Any]) -> dict[str, Any]:
+    """Return the prior runtime contract view without replanning additions."""
+
+    changed = deepcopy(document)
+    paths = changed.get("paths")
+    if isinstance(paths, dict):
+        paths.pop(_TARGET_STATE_REPLAN_RUNTIME_PATH, None)
+    components = changed.get("components")
+    schemas = components.get("schemas") if isinstance(components, dict) else None
+    if isinstance(schemas, dict):
+        schemas.pop(_TARGET_STATE_REPLAN_REQUEST_SCHEMA, None)
+        schemas.pop(_TARGET_STATE_REPLAN_RECEIPT_SCHEMA, None)
+    return changed
+
+
 def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
     """Require the replanning operation in addition to every earlier runtime path."""
 
-    changed = deepcopy(document)
-    paths = core._require_mapping(changed.get("paths"), "paths")
+    base.validate_openapi_runtime_surface(_without_replan_openapi(document))
+    paths = core._require_mapping(document.get("paths"), "paths")
     schemas = core._require_mapping(
-        core._require_mapping(changed.get("components"), "components").get("schemas"),
+        core._require_mapping(document.get("components"), "components").get("schemas"),
         "schemas",
     )
-    for schema_name in (
+    missing_schemas = {
         _TARGET_STATE_REPLAN_REQUEST_SCHEMA,
         _TARGET_STATE_REPLAN_RECEIPT_SCHEMA,
-    ):
-        if schema_name not in schemas:
-            raise ContractValidationError(f"missing OpenAPI schemas: {schema_name}")
+    }.difference(schemas)
+    if missing_schemas:
+        raise ContractValidationError(
+            f"missing OpenAPI schemas: {sorted(missing_schemas)!r}"
+        )
     base._validate_execution_operation(
         paths,
         runtime_path=_TARGET_STATE_REPLAN_RUNTIME_PATH,
@@ -82,20 +99,31 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
         request_schema=_TARGET_STATE_REPLAN_REQUEST_SCHEMA,
         receipt_schema=_TARGET_STATE_REPLAN_RECEIPT_SCHEMA,
     )
-    paths.pop(_TARGET_STATE_REPLAN_RUNTIME_PATH)
-    schemas.pop(_TARGET_STATE_REPLAN_REQUEST_SCHEMA)
-    schemas.pop(_TARGET_STATE_REPLAN_RECEIPT_SCHEMA)
-    base.validate_openapi_runtime_surface(changed)
+
+
+def _without_replan_asyncapi(document: dict[str, Any]) -> dict[str, Any]:
+    """Return the prior event contract view without replanning publication."""
+
+    changed = deepcopy(document)
+    channels = changed.get("channels")
+    if isinstance(channels, dict):
+        channels.pop(_TARGET_STATE_REPLAN_CHANNEL_NAME, None)
+    operations = changed.get("operations")
+    if isinstance(operations, dict):
+        operations.pop(_TARGET_STATE_REPLAN_OPERATION_NAME, None)
+    components = changed.get("components")
+    messages = components.get("messages") if isinstance(components, dict) else None
+    if isinstance(messages, dict):
+        messages.pop(_TARGET_STATE_REPLAN_MESSAGE_NAME, None)
+    return changed
 
 
 def validate_asyncapi_document(document: dict[str, Any]) -> int:
     """Validate every earlier event plus the replanning transactional outbox event."""
 
-    changed = deepcopy(document)
-    channels = core._require_mapping(changed.get("channels"), "channels")
-    operations = core._require_mapping(changed.get("operations"), "operations")
-    components = core._require_mapping(changed.get("components"), "components")
-    messages = core._require_mapping(components.get("messages"), "messages")
+    legacy_operation_count = base.validate_asyncapi_document(
+        _without_replan_asyncapi(document)
+    )
     base._validate_execution_event(
         document,
         channel_name=_TARGET_STATE_REPLAN_CHANNEL_NAME,
@@ -104,10 +132,7 @@ def validate_asyncapi_document(document: dict[str, Any]) -> int:
         event_type=_TARGET_STATE_REPLAN_EVENT_TYPE,
         command_name="replan",
     )
-    channels.pop(_TARGET_STATE_REPLAN_CHANNEL_NAME, None)
-    operations.pop(_TARGET_STATE_REPLAN_OPERATION_NAME, None)
-    messages.pop(_TARGET_STATE_REPLAN_MESSAGE_NAME, None)
-    return base.validate_asyncapi_document(changed) + 1
+    return legacy_operation_count + 1
 
 
 def validate_repository(repository_root: Path) -> RepositoryReport:
