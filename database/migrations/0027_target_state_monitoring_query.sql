@@ -84,7 +84,7 @@ BEGIN
   END IF;
 
   selected_evidence_age_days := pg_catalog.floor(
-      pg_catalog.extract(epoch FROM (requested_valid_at - selected_effective_at))
+      EXTRACT(EPOCH FROM (requested_valid_at - selected_effective_at))
       / 86400
   )::integer;
 
