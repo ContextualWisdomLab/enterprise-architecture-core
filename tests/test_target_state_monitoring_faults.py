@@ -117,7 +117,10 @@ def test_monitoring_reader_rejects_query_transport_and_json_failures() -> None:
         reader(_context(), request)
     with pytest.raises(service.PlannerExecutionError, match="invalid JSON"):
         _reader_for_payload("not-json")(_context(), request)
-    with pytest.raises(service.PlannerExecutionError, match="invalid monitoring status"):
+    with pytest.raises(
+        service.PlannerExecutionError,
+        match="invalid monitoring status",
+    ):
         _reader_for_payload([])(_context(), request)
 
 
@@ -149,7 +152,10 @@ def test_monitoring_reader_rejects_semantically_inconsistent_evidence(
     """Every returned identity, truth state, freshness value, and action is bound."""
 
     reader = _reader_for_payload(_status(**changes))
-    with pytest.raises(service.PlannerExecutionError, match="invalid monitoring status"):
+    with pytest.raises(
+        service.PlannerExecutionError,
+        match="invalid monitoring status",
+    ):
         reader(_context(), monitor.parse_target_state_monitoring_request(_PATH))
 
 
@@ -167,7 +173,10 @@ def test_monitoring_reader_rejects_invalid_evidence_identity_or_time(
     """Database evidence IDs and both temporal axes must remain canonical."""
 
     reader = _reader_for_payload(_status(**changes))
-    with pytest.raises(service.PlannerExecutionError, match="invalid monitoring status"):
+    with pytest.raises(
+        service.PlannerExecutionError,
+        match="invalid monitoring status",
+    ):
         reader(_context(), monitor.parse_target_state_monitoring_request(_PATH))
 
 
