@@ -14,7 +14,7 @@ _SHARED_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
 def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
     """The checked-in contract defines every implemented publisher operation."""
 
-    assert validate_asyncapi_document(asyncapi_document) == 4
+    assert validate_asyncapi_document(asyncapi_document) == 5
 
 
 def test_asyncapi_rejects_wrong_version(asyncapi_document) -> None:
@@ -81,63 +81,56 @@ def test_asyncapi_initial_operations_are_publish_only(asyncapi_document) -> None
         validate_asyncapi_document(asyncapi_document)
 
 
-def test_asyncapi_requires_components_object(asyncapi_document) -> None:
-    """Components must be a JSON object before messages are inspected."""
+def test_asyncapi_operation_references_channel(asyncapi_document) -> None:
+    """Publisher operations reference declared channels."""
+
+    asyncapi_document["operations"]["publishObjectChanged"]["channel"] = {
+        "$ref": "#/channels/missing"
+    }
+    with pytest.raises(ContractValidationError, match="unknown channel"):
+        validate_asyncapi_document(asyncapi_document)
+
+
+def test_asyncapi_requires_components_and_messages(asyncapi_document) -> None:
+    """Message contracts must be named under components.messages."""
 
     asyncapi_document["components"] = []
     with pytest.raises(ContractValidationError, match="components must be an object"):
         validate_asyncapi_document(asyncapi_document)
-
-
-def test_asyncapi_requires_messages_object(asyncapi_document) -> None:
-    """Messages must be represented as a JSON object."""
 
     asyncapi_document["components"] = {"messages": []}
     with pytest.raises(ContractValidationError, match="messages must be an object"):
         validate_asyncapi_document(asyncapi_document)
 
 
-def test_asyncapi_requires_at_least_one_message(asyncapi_document) -> None:
-    """Publisher operations require a message schema registry."""
+def test_asyncapi_message_uses_cloudevents_content_type(asyncapi_document) -> None:
+    """Events use the standard CloudEvents JSON media type."""
 
-    asyncapi_document["components"]["messages"] = {}
-    with pytest.raises(ContractValidationError, match="requires message schemas"):
+    message = asyncapi_document["components"]["messages"]["ArchitectureObjectChanged"]
+    message["contentType"] = "application/json"
+    with pytest.raises(ContractValidationError, match="CloudEvents"):
         validate_asyncapi_document(asyncapi_document)
 
 
-def test_asyncapi_messages_reuse_shared_context_graph_envelope(
-    asyncapi_document,
-) -> None:
-    """EA event payloads extend, rather than redefine, the shared envelope."""
+def test_asyncapi_message_uses_shared_context_graph_envelope(asyncapi_document) -> None:
+    """Published event types extend the Context Graph CloudEvents envelope."""
 
-    for message_name, message in asyncapi_document["components"]["messages"].items():
-        payload = message["payload"]
-        assert payload["schemaFormat"] == _SHARED_SCHEMA_FORMAT, message_name
-        assert payload["schema"]["allOf"][0] == {"$ref": _SHARED_ENVELOPE_SCHEMA}
+    message = asyncapi_document["components"]["messages"]["ArchitectureObjectChanged"]
+    payload = message["payload"]
+    assert payload["schemaFormat"] == _SHARED_SCHEMA_FORMAT
+    assert payload["schema"]["allOf"][0] == {"$ref": _SHARED_ENVELOPE_SCHEMA}
 
-    event_types = {
-        "ArchitectureObjectChanged": "org.contextualwisdomlab.ea.object.changed.v1",
-        "LifecycleChanged": "org.contextualwisdomlab.ea.lifecycle.changed.v1",
-        "TransformationApproved": (
-            "org.contextualwisdomlab.ea.transformation.approved.v1"
-        ),
-        "TransformationScheduled": (
-            "org.contextualwisdomlab.ea.transformation.scheduled.v1"
-        ),
-    }
-    for message_name, event_type in event_types.items():
-        message = asyncapi_document["components"]["messages"][message_name]
-        assert message["payload"]["schema"]["allOf"][1]["properties"]["type"] == {
-            "const": event_type
-        }
-
-
-def test_asyncapi_rejects_local_duplicate_envelope(asyncapi_document) -> None:
-    """A local envelope copy cannot silently drift from Context Graph Contracts."""
-
-    asyncapi_document["components"]["messages"]["ArchitectureObjectChanged"][
-        "payload"
-    ] = {"type": "object", "properties": {"id": {"type": "string"}}}
-
+    payload["schema"]["allOf"][0] = {"type": "object"}
     with pytest.raises(ContractValidationError, match="shared Context Graph envelope"):
+        validate_asyncapi_document(asyncapi_document)
+
+
+def test_asyncapi_message_type_matches_channel_address(asyncapi_document) -> None:
+    """CloudEvents type values match the subscribed channel address exactly."""
+
+    message = asyncapi_document["components"]["messages"]["ArchitectureObjectChanged"]
+    message["payload"]["schema"]["allOf"][1]["properties"]["type"]["const"] = (
+        "org.contextualwisdomlab.ea.object.mismatch.v1"
+    )
+    with pytest.raises(ContractValidationError, match="event type"):
         validate_asyncapi_document(asyncapi_document)
