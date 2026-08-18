@@ -369,7 +369,7 @@ def _patch_main_builders(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
         "build_target_state_start_writer",
         "build_target_state_complete_writer",
     ):
-        monkeypatch.setattr(completion_runtime, name, lambda value: name)
+        monkeypatch.setattr(completion_runtime, name, lambda value, name=name: name)
     monkeypatch.setattr(
         completion_runtime,
         "create_runtime_server",
