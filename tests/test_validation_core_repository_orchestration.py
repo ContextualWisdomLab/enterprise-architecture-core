@@ -31,7 +31,7 @@ def _fixture_repository(tmp_path: Path, *, adr_count: int = 10) -> Path:
 
 
 def _stub_artifact_validators(monkeypatch) -> None:
-    """Keep this test focused on orchestration instead of duplicate contract rules."""
+    """Keep orchestration tests independent from detailed contract rules."""
     monkeypatch.setattr(core, "validate_migration_inventory", lambda paths: None)
     monkeypatch.setattr(core, "validate_migration_sql", lambda text: (1, 2, 3, 4))
     monkeypatch.setattr(core, "validate_openapi_document", lambda document: 5)
@@ -44,7 +44,7 @@ def test_core_repository_orchestration_reports_all_artifact_dimensions(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    """The core composes migrations, contracts, ADRs, and connectors deterministically."""
+    """Compose migrations, contracts, ADRs, and connectors deterministically."""
     root = _fixture_repository(tmp_path)
     _stub_artifact_validators(monkeypatch)
 
@@ -64,7 +64,7 @@ def test_core_repository_orchestration_rejects_missing_contract_file(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    """A required contract disappearing fails before validators see partial state."""
+    """A missing contract fails before validators see partial repository state."""
     root = _fixture_repository(tmp_path)
     _stub_artifact_validators(monkeypatch)
     (root / "contracts/asyncapi.json").unlink()
@@ -77,7 +77,7 @@ def test_core_repository_orchestration_rejects_adr_baseline_loss(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    """Repository orchestration preserves the minimum accepted-decision evidence."""
+    """Repository orchestration preserves accepted-decision evidence."""
     root = _fixture_repository(tmp_path, adr_count=9)
     _stub_artifact_validators(monkeypatch)
 
