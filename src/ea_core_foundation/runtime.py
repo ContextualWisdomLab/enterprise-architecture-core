@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from http.server import ThreadingHTTPServer
@@ -45,7 +45,7 @@ from .service import (
     serve_forever,
 )
 from .start import (
-    TargetStateStartRequest as TargetStateStartRequest,
+    TargetStateStartRequest,
     build_start_authorization_config,
     build_target_state_start_writer,
     parse_target_state_start_request,
@@ -132,7 +132,12 @@ class TargetStateScheduleRequest:
         )
 
 
-TargetStateScheduleWriter = callable
+TargetStateScheduleWriter = Callable[
+    [AuthorizationContext, TargetStateScheduleRequest], Mapping[str, object]
+]
+TargetStateStartWriter = Callable[
+    [AuthorizationContext, TargetStateStartRequest], Mapping[str, object]
+]
 
 
 def parse_target_state_schedule_request(
@@ -504,8 +509,8 @@ def create_runtime_server(
     signature_verifier: SignatureVerifier = verify_rs256_signature,
     target_state_plan_reader: TargetStatePlanReader | None = None,
     target_state_approval_writer: TargetStateApprovalWriter | None = None,
-    target_state_schedule_writer=None,
-    target_state_start_writer=None,
+    target_state_schedule_writer: TargetStateScheduleWriter | None = None,
+    target_state_start_writer: TargetStateStartWriter | None = None,
 ) -> ThreadingHTTPServer:
     """Create the deployable runtime with governed read and execution surfaces."""
 
