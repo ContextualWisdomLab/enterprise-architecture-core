@@ -123,5 +123,8 @@ def test_monitoring_reader_fails_closed_on_receipt_drift_or_missing_database() -
         "postgresql://ea_runtime@db.example/ea_core",
         runner=drift_runner,
     )
-    with pytest.raises(service.PlannerExecutionError, match="invalid monitoring status"):
+    with pytest.raises(
+        service.PlannerExecutionError,
+        match="invalid monitoring status",
+    ):
         reader(_context(), monitor.parse_target_state_monitoring_request(_PATH))
