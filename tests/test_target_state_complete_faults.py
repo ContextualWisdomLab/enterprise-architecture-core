@@ -56,7 +56,9 @@ def _payload(**changes: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "decision_request_id": _DECISION_REQUEST_ID,
         "effective_at": "2027-02-01T00:00:00Z",
-        "decision_reason_text": "Confirm the governed target-state execution is complete.",
+        "decision_reason_text": (
+            "Confirm the governed target-state execution is complete."
+        ),
         "evidence_record_id": _EVIDENCE_ID,
     }
     payload.update(changes)
