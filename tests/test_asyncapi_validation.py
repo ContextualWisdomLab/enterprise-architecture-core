@@ -14,7 +14,7 @@ _SHARED_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
 def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
     """The checked-in contract defines every implemented publisher operation."""
 
-    assert validate_asyncapi_document(asyncapi_document) == 9
+    assert validate_asyncapi_document(asyncapi_document) == 11
 
 
 def test_asyncapi_rejects_wrong_version(asyncapi_document) -> None:
