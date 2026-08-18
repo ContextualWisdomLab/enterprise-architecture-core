@@ -53,10 +53,26 @@ def _strip_event_contract_members(
     )
 
 
+def _strip_event_data_contracts(repository_root: Path) -> None:
+    """Restore the type-only message generation understood by prior validators."""
+
+    asyncapi_path = repository_root / "contracts/asyncapi.json"
+    document = json.loads(asyncapi_path.read_text(encoding="utf-8"))
+    for message in document["components"]["messages"].values():
+        event_schema = message["payload"]["schema"]["allOf"][1]
+        event_schema.pop("required", None)
+        event_schema["properties"].pop("data", None)
+    asyncapi_path.write_text(
+        json.dumps(document, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _strip_data_management_event_contract(repository_root: Path) -> None:
     """Restore the previous replanning event view for compatibility validation."""
 
     _strip_event_contract_members(repository_root, _DATA_MANAGEMENT_EVENT_MEMBERS)
+    _strip_event_data_contracts(repository_root)
 
 
 def _strip_data_management_closure_event_contract(repository_root: Path) -> None:
@@ -66,6 +82,7 @@ def _strip_data_management_closure_event_contract(repository_root: Path) -> None
         repository_root,
         _DATA_MANAGEMENT_CLOSURE_EVENT_MEMBERS,
     )
+    _strip_event_data_contracts(repository_root)
 
 
 def test_repository_report_counts_current_artifacts(repository_root: Path) -> None:
