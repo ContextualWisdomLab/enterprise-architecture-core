@@ -312,12 +312,16 @@ def test_asyncapi_publishes_transformation_replanned_event(asyncapi_document) ->
     """Replanning's transactional outbox event must be discoverable by consumers."""
 
     channel = asyncapi_document["channels"]["transformationReplanEvents"]
-    assert channel["address"] == "org.contextualwisdomlab.ea.transformation.replanned.v1"
+    assert channel["address"] == (
+        "org.contextualwisdomlab.ea.transformation.replanned.v1"
+    )
     operation = asyncapi_document["operations"]["publishTransformationReplanned"]
     assert operation["action"] == "send"
     message = asyncapi_document["components"]["messages"]["TransformationReplanned"]
     event_type = message["payload"]["schema"]["allOf"][1]["properties"]["type"]
-    assert event_type["const"] == "org.contextualwisdomlab.ea.transformation.replanned.v1"
+    assert event_type["const"] == (
+        "org.contextualwisdomlab.ea.transformation.replanned.v1"
+    )
 
 
 def test_foundation_asyncapi_tracks_current_stable_minor(asyncapi_document) -> None:
