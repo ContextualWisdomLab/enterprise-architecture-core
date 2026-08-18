@@ -24,8 +24,8 @@ from .runtime import (
     SchedulingServiceHandler,
     build_schedule_authorization_config,
     build_target_state_schedule_writer,
-    create_runtime_server as create_scheduling_runtime_server,
 )
+from .runtime import create_runtime_server as create_scheduling_runtime_server
 from .service import (
     BindAddress,
     PlannerExecutionError,
