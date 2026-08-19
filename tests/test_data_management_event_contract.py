@@ -163,10 +163,9 @@ def test_event_data_validator_fails_closed_on_malformed_contract_shapes(
             data_schema["properties"] = []
         elif corruption == "required_field_drift":
             data_schema["required"] = data_schema["required"][:-1]
-        elif corruption == "allowed_field_drift":
+        else:
+            assert corruption == "allowed_field_drift"
             data_schema["properties"].pop(next(iter(data_schema["properties"])))
-        else:  # pragma: no cover - parameter table is intentionally exhaustive.
-            raise AssertionError(f"unsupported corruption: {corruption}")
 
     with pytest.raises(ContractValidationError, match=expected_message):
         closure_validation._validate_event_data_contracts(changed)
