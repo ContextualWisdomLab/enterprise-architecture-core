@@ -149,7 +149,7 @@
         "payload": {"schemaFormat": "application/schema+json;version=draft-2020-12", "schema": {"allOf": [
           {"$ref": "https://schemas.contextualwisdomlab.org/context/cloudevent-envelope.v1.schema.json"},
           {"type": "object", "required": ["type", "data"], "properties": {"type": {"const": "org.contextualwisdomlab.ea.data_management.improvement_initiative_created.v1"}, "data": {"type": "object", "required": ["assessment_result_uri", "missing_evidence_code", "target_capability_object_id", "accountable_organization_object_id", "remediation_initiative_id", "initiative_milestone_id", "decision_request_id", "due_at", "source_truth_status_code", "initiative_truth_status_code", "next_action"], "properties": {
-            "assessment_result_uri": {"type": "string", "minLength": 1, "maxLength": 2048},
+            "assessment_result_uri": {"$ref": "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json"},
             "missing_evidence_code": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
             "target_capability_object_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
             "accountable_organization_object_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
@@ -172,7 +172,7 @@
             "data_management_assessment_projection_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
             "missing_evidence_code": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
             "assessment_evidence_acceptance_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
-            "evidence_uri": {"type": "string", "minLength": 1, "maxLength": 2048},
+            "evidence_uri": {"$ref": "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json"},
             "evidence_truth_status_code": {"type": "string", "enum": ["authoritative", "observed"]},
             "evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
             "accepted_at": {"type": "string", "format": "date-time"},
