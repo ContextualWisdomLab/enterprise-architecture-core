@@ -53,7 +53,7 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     PERFORM pg_catalog.set_config(
         'app.tenant_record_id',
-        pg_catalog.coalesce(previous_tenant_setting, ''),
+        COALESCE(previous_tenant_setting, ''),
         true
     );
     RAISE;
@@ -61,7 +61,7 @@ BEGIN
 
   PERFORM pg_catalog.set_config(
       'app.tenant_record_id',
-      pg_catalog.coalesce(previous_tenant_setting, ''),
+      COALESCE(previous_tenant_setting, ''),
       true
   );
 
