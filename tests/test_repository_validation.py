@@ -31,6 +31,11 @@ _DATA_MANAGEMENT_EVENT_MEMBERS = (
         "publishDataManagementMilestoneCompleted",
         "DataManagementMilestoneCompleted",
     ),
+    (
+        "dataManagementAssessmentRecheckEvents",
+        "publishDataManagementAssessmentRecheckRequested",
+        "DataManagementAssessmentRecheckRequested",
+    ),
 )
 _DATA_MANAGEMENT_CLOSURE_EVENT_MEMBERS = _DATA_MANAGEMENT_EVENT_MEMBERS[1:]
 
@@ -94,7 +99,7 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     assert report.index_count == 17
     assert report.constraint_count == 407
     assert report.openapi_operation_count == 10
-    assert report.asyncapi_operation_count == 11
+    assert report.asyncapi_operation_count == 12
     assert report.adr_count >= 19
     assert report.connector_count == 7
 
