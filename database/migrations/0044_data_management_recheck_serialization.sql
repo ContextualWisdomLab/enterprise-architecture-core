@@ -23,7 +23,7 @@ DECLARE
   existing_request architecture_core.assessment_recheck_request%ROWTYPE;
   existing_event_id uuid;
   trigger_causation_event_id uuid;
-  latest_acceptance_id uuid;
+  trigger_next_action text;
   inserted_request_id uuid;
   inserted_event_id uuid;
 BEGIN
@@ -162,29 +162,10 @@ BEGIN
       MESSAGE = 'assessment still has projected evidence gaps without accepted evidence';
   END IF;
 
-  SELECT acceptance_record.assessment_evidence_acceptance_id
-    INTO latest_acceptance_id
-    FROM architecture_core.assessment_evidence_acceptance AS acceptance_record
-    JOIN architecture_core.assessment_improvement_plan AS plan_record
-      ON plan_record.tenant_record_id = acceptance_record.tenant_record_id
-     AND plan_record.assessment_improvement_plan_id =
-         acceptance_record.assessment_improvement_plan_id
-   WHERE acceptance_record.tenant_record_id = active_tenant_id
-     AND plan_record.data_management_assessment_projection_id =
-         requested_assessment_projection_id
-   ORDER BY
-      acceptance_record.accepted_at DESC,
-      acceptance_record.assessment_evidence_acceptance_id DESC
-   LIMIT 1;
-
-  IF latest_acceptance_id IS DISTINCT FROM requested_trigger_evidence_acceptance_id THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'reassessment must bind to the evidence acceptance that closed the final gap';
-  END IF;
-
-  SELECT event_record.outbox_event_id
-    INTO trigger_causation_event_id
+  SELECT
+      event_record.outbox_event_id,
+      event_record.event_payload_json ->> 'next_action'
+    INTO trigger_causation_event_id, trigger_next_action
     FROM architecture_core.outbox_event AS event_record
    WHERE event_record.tenant_record_id = active_tenant_id
      AND event_record.decision_request_id = trigger_acceptance.decision_request_id
@@ -195,6 +176,12 @@ BEGIN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
       MESSAGE = 'triggering evidence acceptance lacks transactional outbox provenance';
+  END IF;
+
+  IF trigger_next_action IS DISTINCT FROM 'request_assessment_recheck' THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'reassessment must bind to the evidence acceptance that causally closed the final gap';
   END IF;
 
   INSERT INTO architecture_core.assessment_recheck_request (
@@ -266,6 +253,6 @@ COMMENT ON FUNCTION architecture_core.request_data_management_assessment_recheck
     uuid,
     timestamptz
 ) IS
-'Purpose-bound reassessment-request command. It serializes callers on the tenant-local immutable assessment projection so concurrent exact decision replays converge on one request/outbox receipt, while conflicting decisions remain fail-closed. It requires an active assessment with every projected gap backed by accepted evidence, binds the latest acceptance that closed the final gap, appends immutable request evidence, and emits one causally linked privacy-minimized transactional outbox event. PUBLIC execution remains revoked; the authenticated runtime port delegates only this command.';
+'Purpose-bound reassessment-request command. It serializes callers on the tenant-local immutable assessment projection so concurrent exact decision replays converge on one request/outbox receipt, while conflicting decisions remain fail-closed. It requires an active assessment with every projected gap backed by accepted evidence, binds the evidence-accepted outbox event whose recorded next action proves that acceptance causally closed the final gap independent of business-time ordering, appends immutable request evidence, and emits one causally linked privacy-minimized transactional outbox event. PUBLIC execution remains revoked; the authenticated runtime port delegates only this command.';
 
 COMMIT;
