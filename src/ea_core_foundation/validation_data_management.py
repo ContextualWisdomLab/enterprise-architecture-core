@@ -35,13 +35,21 @@ _ALTER_ADD_COLUMN_PATTERN = re.compile(
     r"(?:uuid|text|integer|boolean|timestamptz|date|numeric|jsonb)\b",
     re.IGNORECASE,
 )
+_CONSTRAINT_COMMENT_PREFIX_PATTERN = re.compile(
+    r"\bCOMMENT\s+ON\s+CONSTRAINT\b",
+    re.IGNORECASE,
+)
 
 
 def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
-    """Validate migrations and include columns introduced by ALTER TABLE."""
+    """Validate migrations and report ALTER columns without counting SQL comments."""
 
+    inventory_text = _CONSTRAINT_COMMENT_PREFIX_PATTERN.sub(
+        "COMMENT ON documented_object",
+        sql_text,
+    )
     table_count, column_count, index_count, constraint_count = (
-        base.validate_migration_sql(sql_text)
+        base.validate_migration_sql(inventory_text)
     )
     altered_columns = [
         match.group("column").lower()
