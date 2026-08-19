@@ -90,9 +90,10 @@ def parse_data_management_recheck_request(
     """Bind strict reassessment JSON to the projection named by the route."""
 
     parsed = urlparse(path)
-    if parsed.query or parsed.fragment:
+    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment:
         raise PlannerRequestError(
-            "data-management recheck path cannot contain query or fragment data"
+            "data-management recheck path must use local origin form without "
+            "authority, query, or fragment data"
         )
     route = parsed.path
     if not route.startswith(_RECHECK_PATH_PREFIX) or not route.endswith(
