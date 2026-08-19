@@ -19,12 +19,12 @@ def _migration_text(repository_root: Path) -> str:
 def test_repository_inventory_counts_alter_added_profile_version(
     repository_root: Path,
 ) -> None:
-    """Count ALTER-added production columns in the logical schema inventory."""
+    """Count ALTER-added columns and live constraints in the logical inventory."""
 
     counts = validate_migration_sql(_migration_text(repository_root))
 
     assert counts[1] == 383
-    assert counts[3] == 401
+    assert counts[3] == 402
 
 
 def test_alter_add_column_changes_inventory_count(repository_root: Path) -> None:
@@ -39,3 +39,19 @@ def test_alter_add_column_changes_inventory_count(repository_root: Path) -> None
     )[1]
 
     assert extended == baseline + 1
+
+
+def test_constraint_comment_does_not_change_live_constraint_count(
+    repository_root: Path,
+) -> None:
+    """COMMENT ON CONSTRAINT is documentation, not another schema constraint."""
+
+    migration_text = _migration_text(repository_root)
+    baseline = validate_migration_sql(migration_text)[3]
+    extended = validate_migration_sql(
+        migration_text
+        + "\nCOMMENT ON CONSTRAINT tenant_record_primary_key "
+        + "ON architecture_core.tenant_record IS 'documented';\n"
+    )[3]
+
+    assert extended == baseline
