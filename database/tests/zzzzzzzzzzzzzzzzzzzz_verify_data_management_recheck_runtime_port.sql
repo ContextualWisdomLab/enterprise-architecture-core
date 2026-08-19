@@ -5,7 +5,7 @@
 RESET ROLE;
 SELECT set_config(
     'app.tenant_record_id',
-    '0195d145-64e8-7f4f-8a23-a0cc784cb712',
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
     false
 );
 
@@ -37,6 +37,16 @@ BEGIN
          '0195d145-64e8-7f4f-8a23-a0cc784cb711'
      AND plan_record.data_management_assessment_projection_id = projection_id;
 
+  IF projection_id IS NULL OR acceptance_id IS NULL THEN
+    RAISE EXCEPTION 'completed reassessment runtime fixture is unavailable';
+  END IF;
+
+  PERFORM set_config(
+      'app.tenant_record_id',
+      '0195d145-64e8-7f4f-8a23-a0cc784cb712',
+      false
+  );
+
   SELECT
       result.assessment_recheck_request_id,
       result.outbox_event_id,
@@ -55,6 +65,11 @@ BEGIN
      OR next_action IS DISTINCT FROM 'await_assessment_recheck' THEN
     RAISE EXCEPTION
       'runtime reassessment port did not preserve the idempotent buyer receipt';
+  END IF;
+
+  IF current_setting('app.tenant_record_id') IS DISTINCT FROM
+     '0195d145-64e8-7f4f-8a23-a0cc784cb712' THEN
+    RAISE EXCEPTION 'runtime reassessment port leaked delegated tenant context';
   END IF;
 END;
 $$;
