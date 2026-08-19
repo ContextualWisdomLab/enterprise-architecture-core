@@ -50,6 +50,7 @@ BEGIN
       'dama_dmbok2r',
       '2024',
       'baseline_data_management',
+      '1.0.0',
       '2026-08-19T00:19:58Z',
       '2026-08-19T00:19:59Z',
       7000,
