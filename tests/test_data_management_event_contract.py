@@ -54,7 +54,7 @@ def test_checked_in_contract_publishes_data_management_event(
 ) -> None:
     """Every transactional outbox event is a first-class AsyncAPI contract."""
 
-    assert validate_asyncapi_document(asyncapi_document) == 11
+    assert validate_asyncapi_document(asyncapi_document) == 12
     channel = asyncapi_document["channels"][channel_name]
     assert channel == {
         "address": event_type,
