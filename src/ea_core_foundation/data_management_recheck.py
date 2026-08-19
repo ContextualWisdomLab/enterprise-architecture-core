@@ -86,7 +86,9 @@ def parse_data_management_recheck_request(
 
     parsed = urlparse(path)
     if parsed.query or parsed.fragment:
-        raise PlannerRequestError("data-management recheck path cannot contain query or fragment data")
+        raise PlannerRequestError(
+            "data-management recheck path cannot contain query or fragment data"
+        )
     route = parsed.path
     if not route.startswith(_RECHECK_PATH_PREFIX) or not route.endswith(
         _RECHECK_PATH_SUFFIX
@@ -172,7 +174,10 @@ def build_data_management_recheck_writer(
                 f"{request.data_management_assessment_projection_id}"
             ),
             "--set",
-            f"trigger_evidence_acceptance_id={request.trigger_evidence_acceptance_id}",
+            (
+                "trigger_evidence_acceptance_id="
+                f"{request.trigger_evidence_acceptance_id}"
+            ),
             "--set",
             f"decision_request_id={request.decision_request_id}",
             "--set",
@@ -194,7 +199,9 @@ def build_data_management_recheck_writer(
                 "data-management recheck database command failed"
             ) from error
         if result.returncode != 0:
-            raise PlannerExecutionError("data-management recheck database query failed")
+            raise PlannerExecutionError(
+                "data-management recheck database query failed"
+            )
         try:
             response = json.loads(result.stdout.strip())
         except json.JSONDecodeError as error:
