@@ -31,7 +31,7 @@ FROM (
         requested.assessment_recheck_request_id,
         requested.outbox_event_id,
         requested.next_action
-    FROM architecture_core.request_data_management_assessment_recheck(
+    FROM architecture_core.request_data_management_assessment_recheck_for_tenant(
         :'tenant_record_id'::uuid,
         :'data_management_assessment_projection_id'::uuid,
         :'trigger_evidence_acceptance_id'::uuid,
