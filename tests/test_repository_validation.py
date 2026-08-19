@@ -38,6 +38,15 @@ _DATA_MANAGEMENT_EVENT_MEMBERS = (
     ),
 )
 _DATA_MANAGEMENT_CLOSURE_EVENT_MEMBERS = _DATA_MANAGEMENT_EVENT_MEMBERS[1:]
+_DATA_MANAGEMENT_RECHECK_PATH = (
+    "/v1/data-management-assessments/"
+    "{data_management_assessment_projection_id}/recheck"
+)
+_DATA_MANAGEMENT_RECHECK_SCHEMAS = (
+    "DataManagementAssessmentRecheckRequest",
+    "DataManagementAssessmentRecheckReceipt",
+)
+_DATA_MANAGEMENT_RECHECK_ROLE = "EA_DATA_MANAGEMENT_RECHECK_ROLES"
 
 
 def _strip_event_contract_members(
@@ -73,11 +82,31 @@ def _strip_event_data_contracts(repository_root: Path) -> None:
     )
 
 
+def _strip_data_management_recheck_openapi_contract(repository_root: Path) -> None:
+    """Restore the predecessor OpenAPI generation before compatibility validation."""
+
+    openapi_path = repository_root / "contracts/openapi.json"
+    document = json.loads(openapi_path.read_text(encoding="utf-8"))
+    document["paths"].pop(_DATA_MANAGEMENT_RECHECK_PATH, None)
+    schemas = document["components"]["schemas"]
+    for schema_name in _DATA_MANAGEMENT_RECHECK_SCHEMAS:
+        schemas.pop(schema_name, None)
+    configuration = document["x-keyverse-contract"]["requiredConfiguration"]
+    document["x-keyverse-contract"]["requiredConfiguration"] = [
+        value for value in configuration if value != _DATA_MANAGEMENT_RECHECK_ROLE
+    ]
+    openapi_path.write_text(
+        json.dumps(document, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _strip_data_management_event_contract(repository_root: Path) -> None:
     """Restore the previous replanning event view for compatibility validation."""
 
     _strip_event_contract_members(repository_root, _DATA_MANAGEMENT_EVENT_MEMBERS)
     _strip_event_data_contracts(repository_root)
+    _strip_data_management_recheck_openapi_contract(repository_root)
 
 
 def _strip_data_management_closure_event_contract(repository_root: Path) -> None:
@@ -88,6 +117,7 @@ def _strip_data_management_closure_event_contract(repository_root: Path) -> None
         _DATA_MANAGEMENT_CLOSURE_EVENT_MEMBERS,
     )
     _strip_event_data_contracts(repository_root)
+    _strip_data_management_recheck_openapi_contract(repository_root)
 
 
 def test_repository_report_counts_current_artifacts(repository_root: Path) -> None:
