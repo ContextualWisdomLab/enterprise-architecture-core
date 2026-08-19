@@ -142,6 +142,7 @@ DECLARE
   existing_completion architecture_core.milestone_completion_record%ROWTYPE;
   existing_evidence_event architecture_core.outbox_event%ROWTYPE;
   existing_milestone_event architecture_core.outbox_event%ROWTYPE;
+  existing_milestone_event_id uuid;
   existing_derived_event_count integer;
   inserted_acceptance_id uuid;
   inserted_completion_id uuid;
@@ -236,13 +237,28 @@ BEGIN
        AND event_record.event_type_code =
            'org.contextualwisdomlab.ea.data_management.evidence_accepted.v1';
 
-    SELECT event_record, count(*) OVER ()
-      INTO existing_milestone_event, existing_derived_event_count
-      FROM architecture_core.outbox_event AS event_record
-     WHERE event_record.tenant_record_id = active_tenant_id
-       AND event_record.causation_event_id = existing_evidence_event.outbox_event_id
-       AND event_record.event_type_code =
-           'org.contextualwisdomlab.ea.data_management.milestone_completed.v1';
+    SELECT candidate.outbox_event_id, candidate.derived_event_count
+      INTO existing_milestone_event_id, existing_derived_event_count
+      FROM (
+        SELECT
+          event_record.outbox_event_id,
+          count(*) OVER () AS derived_event_count
+        FROM architecture_core.outbox_event AS event_record
+        WHERE event_record.tenant_record_id = active_tenant_id
+          AND event_record.causation_event_id = existing_evidence_event.outbox_event_id
+          AND event_record.event_type_code =
+              'org.contextualwisdomlab.ea.data_management.milestone_completed.v1'
+        ORDER BY event_record.outbox_event_id
+        LIMIT 1
+      ) AS candidate;
+
+    IF existing_derived_event_count = 1 THEN
+      SELECT event_record.*
+        INTO existing_milestone_event
+        FROM architecture_core.outbox_event AS event_record
+       WHERE event_record.tenant_record_id = active_tenant_id
+         AND event_record.outbox_event_id = existing_milestone_event_id;
+    END IF;
 
     resolved_next_action := existing_evidence_event.event_payload_json ->> 'next_action';
     IF existing_completion.milestone_completion_record_id IS NULL
