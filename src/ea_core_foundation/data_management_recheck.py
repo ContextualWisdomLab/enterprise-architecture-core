@@ -59,7 +59,7 @@ class DataManagementRecheckRequest:
         decision_request_id: str,
         requested_at: str,
     ) -> DataManagementRecheckRequest:
-        """Validate canonical identities and request time before PostgreSQL is reachable."""
+        """Validate canonical identities and request time before storage access."""
 
         return cls(
             data_management_assessment_projection_id=_parse_uuid7(
@@ -82,7 +82,7 @@ def parse_data_management_recheck_request(
     path: str,
     payload: Mapping[str, object],
 ) -> DataManagementRecheckRequest:
-    """Bind strict reassessment JSON to the assessment projection named by the path."""
+    """Bind strict reassessment JSON to the projection named by the route."""
 
     parsed = urlparse(path)
     if parsed.query or parsed.fragment:
