@@ -182,6 +182,35 @@ def test_http_recheck_returns_retriable_failure_when_writer_raises() -> None:
     assert "retry" in body["next_action"].lower()
 
 
+def test_http_recheck_fails_closed_on_unexpected_writer_error() -> None:
+    """Unexpected command-port defects return a retriable 503 instead of dropping HTTP."""
+
+    def failing_writer(context: Any, request: Any) -> dict[str, object]:
+        del context, request
+        raise RuntimeError("unexpected adapter failure")
+
+    server, thread, host, port = _start_server(
+        data_management_recheck_authorization_config=_recheck_config(),
+        jwks_loader=_jwks_loader,
+        signature_verifier=lambda signing_input, signature, jwk: True,
+        data_management_recheck_writer=failing_writer,
+    )
+    try:
+        status, body = _post(
+            host,
+            port,
+            authorization=f"Bearer {_token(_RECHECK_ROLE)}",
+            path=_RECHECK_PATH,
+            payload=_payload(),
+        )
+    finally:
+        _stop_server(server, thread)
+
+    assert status == 503
+    assert body["error_code"] == "data_management_recheck_command_failed"
+    assert "retry" in body["next_action"].lower()
+
+
 def test_non_recheck_route_preserves_existing_runtime_routing() -> None:
     """The reassessment route cannot steal inherited readiness behavior."""
 
