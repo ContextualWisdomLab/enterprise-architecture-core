@@ -68,7 +68,7 @@ def _default_bundle_verified(approved_manifest: object) -> bool:
         verifier_module = import_module(
             "cwl_context_contracts.contract_bundle_manifest_verifier"
         )
-        verifier = getattr(verifier_module, "verify_packaged_contract_bundle_manifest")
+        verifier = verifier_module.verify_packaged_contract_bundle_manifest
         report = verifier(approved_manifest)
     except Exception:
         return False
@@ -175,11 +175,13 @@ def verify_context_graph_release(
         bundle_verified = bundle_verifier(approved_bundle_manifest)
     except Exception as error:
         raise ContextGraphReleaseError(
-            "approved bundle manifest could not be verified against the installed release"
+            "approved bundle manifest could not be verified against the installed "
+            "release"
         ) from error
     if bundle_verified is not True:
         raise ContextGraphReleaseError(
-            "approved bundle manifest does not match the installed Context Graph release"
+            "approved bundle manifest does not match the installed Context Graph "
+            "release"
         )
 
     return release_commit_sha
