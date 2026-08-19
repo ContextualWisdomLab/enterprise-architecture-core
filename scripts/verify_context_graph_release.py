@@ -55,7 +55,7 @@ def _default_resource_exists(resource_specification: str) -> bool:
         return False
     try:
         return files(package_name).joinpath(relative_path).is_file()
-    except (ImportError, ModuleNotFoundError, TypeError):
+    except (ImportError, TypeError):
         return False
 
 
