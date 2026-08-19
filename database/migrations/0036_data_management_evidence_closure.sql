@@ -86,6 +86,7 @@ ON architecture_core.milestone_completion_record
 CREATE FUNCTION architecture_core.reject_data_management_closure_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
+SET search_path = pg_catalog
 AS $$
 BEGIN
   RAISE EXCEPTION USING
@@ -235,16 +236,8 @@ BEGIN
        AND event_record.event_type_code =
            'org.contextualwisdomlab.ea.data_management.evidence_accepted.v1';
 
-    SELECT event_record.*
-      INTO existing_milestone_event
-      FROM architecture_core.outbox_event AS event_record
-     WHERE event_record.tenant_record_id = active_tenant_id
-       AND event_record.causation_event_id = existing_evidence_event.outbox_event_id
-       AND event_record.event_type_code =
-           'org.contextualwisdomlab.ea.data_management.milestone_completed.v1';
-
-    SELECT count(*)
-      INTO existing_derived_event_count
+    SELECT event_record, count(*) OVER ()
+      INTO existing_milestone_event, existing_derived_event_count
       FROM architecture_core.outbox_event AS event_record
      WHERE event_record.tenant_record_id = active_tenant_id
        AND event_record.causation_event_id = existing_evidence_event.outbox_event_id
