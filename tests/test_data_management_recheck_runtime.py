@@ -102,7 +102,7 @@ def test_http_recheck_is_purpose_authorized_and_actionable() -> None:
 def test_http_recheck_fails_closed_without_policy_and_writer(
     kwargs: dict[str, object],
 ) -> None:
-    """Reassessment is unavailable unless both Keyverse policy and command port exist."""
+    """Reject reassessment unless both policy and command port are available."""
 
     server, thread, host, port = _start_server(**kwargs)
     try:
