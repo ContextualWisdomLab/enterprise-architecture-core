@@ -203,12 +203,16 @@ def test_recheck_writer_fails_closed_on_command_transport_errors() -> None:
 
 
 def test_recheck_writer_rejects_invalid_receipt_shapes_and_semantics() -> None:
-    """Malformed JSON, non-objects, invalid IDs, and semantic drift fail closed."""
+    """Malformed JSON, expanded shapes, invalid IDs, and semantic drift fail closed."""
 
     request = parse_data_management_recheck_request(_PATH, _payload())
     cases = [
         ("not-json", "invalid JSON"),
         (json.dumps([]), "invalid reassessment receipt"),
+        (
+            json.dumps(_receipt(decision_actor_email="buyer@example.com")),
+            "invalid reassessment receipt",
+        ),
         (
             json.dumps(_receipt(outbox_event_id="not-a-uuid")),
             "invalid reassessment receipt",
