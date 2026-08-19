@@ -14,10 +14,14 @@ from pathlib import Path
 _EXPECTED_REPOSITORY = "ContextualWisdomLab/context-graph-contracts"
 _EXPECTED_DISTRIBUTION = "cwl-context-contracts"
 _EXPECTED_SCHEMA_IDS = (
-    "https://schemas.contextualwisdomlab.org/context/canonical-authority-uri.v1.schema.json",
-    "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json",
-    "https://schemas.contextualwisdomlab.org/context/cloudevent-envelope.v1.schema.json",
-    "https://schemas.contextualwisdomlab.org/context/data-management-assessment.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "canonical-authority-uri.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "canonical-asset-uri.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "cloudevent-envelope.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "data-management-assessment.v1.schema.json",
 )
 _EXPECTED_PROFILE_IDS = (
     "urn:cwl:context-contracts:data-management-assessment-semantics:v1",
@@ -75,10 +79,12 @@ def verify_context_graph_release(
     version_reader: VersionReader = distribution_version,
     resource_exists: ResourceProbe = _default_resource_exists,
 ) -> str:
-    """Verify exact released identity and packaged resources; return source commit SHA."""
+    """Verify exact released identity and packaged resources; return source SHA."""
 
     if manifest.get("contract_repository") != _EXPECTED_REPOSITORY:
-        raise ContextGraphReleaseError("contract_repository is not the Context Graph authority")
+        raise ContextGraphReleaseError(
+            "contract_repository is not the Context Graph authority"
+        )
     _require_exact_list(manifest, "required_schema_ids", _EXPECTED_SCHEMA_IDS)
     _require_exact_list(
         manifest,
@@ -90,28 +96,41 @@ def verify_context_graph_release(
         raise ContextGraphReleaseError("required_before_merge contract has drifted")
     if manifest.get("state") != "immutable-release":
         raise ContextGraphReleaseError(
-            "Context Graph dependency state must be immutable-release before protected integration"
+            "Context Graph dependency state must be immutable-release before "
+            "protected integration"
         )
     if manifest.get("distribution_name") != _EXPECTED_DISTRIBUTION:
-        raise ContextGraphReleaseError("distribution_name must be cwl-context-contracts")
+        raise ContextGraphReleaseError(
+            "distribution_name must be cwl-context-contracts"
+        )
 
     release_version = manifest.get("release_version")
-    if not isinstance(release_version, str) or _VERSION_PATTERN.fullmatch(release_version) is None:
-        raise ContextGraphReleaseError("release_version must be an exact semantic version")
+    if (
+        not isinstance(release_version, str)
+        or _VERSION_PATTERN.fullmatch(release_version) is None
+    ):
+        raise ContextGraphReleaseError(
+            "release_version must be an exact semantic version"
+        )
     if manifest.get("release_tag") != f"v{release_version}":
-        raise ContextGraphReleaseError("release_tag must exactly bind the declared release_version")
+        raise ContextGraphReleaseError(
+            "release_tag must exactly bind the declared release_version"
+        )
     release_commit_sha = manifest.get("release_commit_sha")
     if (
         not isinstance(release_commit_sha, str)
         or _COMMIT_PATTERN.fullmatch(release_commit_sha) is None
     ):
-        raise ContextGraphReleaseError("release_commit_sha must be a lowercase 40-hex commit")
+        raise ContextGraphReleaseError(
+            "release_commit_sha must be a lowercase 40-hex commit"
+        )
 
     try:
         installed_version = version_reader(_EXPECTED_DISTRIBUTION)
     except PackageNotFoundError as error:
         raise ContextGraphReleaseError(
-            "cwl-context-contracts immutable release is not installed from the reviewed lock"
+            "cwl-context-contracts immutable release is not installed from "
+            "the reviewed lock"
         ) from error
     except Exception as error:
         raise ContextGraphReleaseError(
@@ -125,19 +144,22 @@ def verify_context_graph_release(
     for resource_specification in _EXPECTED_RESOURCES:
         if not resource_exists(resource_specification):
             raise ContextGraphReleaseError(
-                f"missing packaged resource from immutable release: {resource_specification}"
+                "missing packaged resource from immutable release: "
+                f"{resource_specification}"
             )
     return release_commit_sha
 
 
 def main() -> int:
-    """Validate the repository dependency manifest for a protected integration job."""
+    """Validate the dependency manifest for a protected integration job."""
 
     manifest_path = Path("contracts/context-graph-dependency.json")
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if not isinstance(manifest, dict):
-            raise ContextGraphReleaseError("Context Graph dependency manifest must be an object")
+            raise ContextGraphReleaseError(
+                "Context Graph dependency manifest must be an object"
+            )
         release_commit_sha = verify_context_graph_release(manifest)
     except (OSError, json.JSONDecodeError, ContextGraphReleaseError) as error:
         print(f"Context Graph release gate failed: {error}", file=sys.stderr)

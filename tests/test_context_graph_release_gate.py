@@ -11,6 +11,16 @@ from scripts.verify_context_graph_release import (
     verify_context_graph_release,
 )
 
+_SCHEMA_IDS = (
+    "https://schemas.contextualwisdomlab.org/context/"
+    "canonical-authority-uri.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "canonical-asset-uri.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "cloudevent-envelope.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "data-management-assessment.v1.schema.json",
+)
 _REQUIRED_RESOURCES = (
     "cwl_context_contracts.schemas:canonical-authority-uri.schema.json",
     "cwl_context_contracts.schemas:canonical-asset-uri.schema.json",
@@ -30,12 +40,7 @@ def _released_manifest() -> dict[str, object]:
         "release_version": "0.2.0",
         "release_tag": "v0.2.0",
         "release_commit_sha": "a" * 40,
-        "required_schema_ids": [
-            "https://schemas.contextualwisdomlab.org/context/canonical-authority-uri.v1.schema.json",
-            "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json",
-            "https://schemas.contextualwisdomlab.org/context/cloudevent-envelope.v1.schema.json",
-            "https://schemas.contextualwisdomlab.org/context/data-management-assessment.v1.schema.json",
-        ],
+        "required_schema_ids": list(_SCHEMA_IDS),
         "required_conformance_profile_ids": [
             "urn:cwl:context-contracts:data-management-assessment-semantics:v1"
         ],
@@ -75,7 +80,7 @@ def test_context_graph_release_gate_rejects_unlocked_distribution_version() -> N
 
 
 def test_context_graph_release_gate_requires_every_consumed_packaged_artifact() -> None:
-    """The released wheel must contain every schema/profile that EA actually consumes."""
+    """Require every consumed schema/profile to exist in the released wheel."""
 
     manifest = _released_manifest()
     missing_resource = _REQUIRED_RESOURCES[-1]
@@ -103,7 +108,7 @@ def test_context_graph_release_gate_rejects_release_identity_drift() -> None:
 
 
 def test_context_graph_release_gate_accepts_exact_locked_artifact_set() -> None:
-    """Exact release identity, installed version, and packaged artifacts satisfy the gate."""
+    """Accept an exact release identity, installed version, and packaged artifacts."""
 
     assert (
         verify_context_graph_release(
