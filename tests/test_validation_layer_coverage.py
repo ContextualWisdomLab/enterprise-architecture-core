@@ -104,7 +104,7 @@ def test_closure_repository_orchestration_rejects_missing_contract(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A retained validation layer fails closed when required contract evidence is absent."""
+    """Reject a retained validation layer when required contract evidence is absent."""
 
     root = _repository_fixture(tmp_path)
     _stub_closure_artifact_validators(monkeypatch)
