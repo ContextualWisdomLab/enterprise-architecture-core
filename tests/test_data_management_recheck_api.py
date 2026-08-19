@@ -132,7 +132,7 @@ def test_recheck_authority_is_separate_and_fail_closed() -> None:
 
 
 def test_recheck_writer_uses_bounded_command_and_validates_receipt() -> None:
-    """The adapter calls only the command function and validates buyer receipt meaning."""
+    """The adapter calls the command port and validates buyer receipt meaning."""
 
     captured: dict[str, object] = {}
 
