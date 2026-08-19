@@ -143,6 +143,7 @@ DO $$
 DECLARE
   projection_id uuid;
   acceptance_id uuid;
+  trigger_causation_event_id uuid;
   recheck_id uuid;
   outbox_id uuid;
   replay_recheck_id uuid;
@@ -174,6 +175,22 @@ BEGIN
 
   IF projection_id IS NULL OR acceptance_id IS NULL THEN
     RAISE EXCEPTION 'completed reassessment fixture is unavailable';
+  END IF;
+
+  SELECT event_record.outbox_event_id
+    INTO trigger_causation_event_id
+    FROM architecture_core.outbox_event AS event_record
+    JOIN architecture_core.assessment_evidence_acceptance AS acceptance_record
+      ON acceptance_record.tenant_record_id = event_record.tenant_record_id
+     AND acceptance_record.decision_request_id = event_record.decision_request_id
+   WHERE acceptance_record.tenant_record_id =
+         '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND acceptance_record.assessment_evidence_acceptance_id = acceptance_id
+     AND event_record.event_type_code =
+         'org.contextualwisdomlab.ea.data_management.evidence_accepted.v1';
+
+  IF trigger_causation_event_id IS NULL THEN
+    RAISE EXCEPTION 'completed reassessment fixture lacks causal acceptance event';
   END IF;
 
   SELECT
@@ -214,6 +231,25 @@ BEGIN
     RAISE EXCEPTION 'immutable reassessment request evidence is incomplete';
   END IF;
 
+  BEGIN
+    UPDATE architecture_core.assessment_recheck_request
+       SET requested_at = '2026-08-19T00:30:01Z'
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND assessment_recheck_request_id = recheck_id;
+    RAISE EXCEPTION 'reassessment request evidence was mutable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    DELETE FROM architecture_core.assessment_recheck_request
+     WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+       AND assessment_recheck_request_id = recheck_id;
+    RAISE EXCEPTION 'reassessment request evidence was hard-deletable';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
   SELECT count(*)
     INTO event_count
     FROM architecture_core.outbox_event AS event_record
@@ -222,6 +258,7 @@ BEGIN
      AND event_record.outbox_event_id = outbox_id
      AND event_record.event_type_code =
          'org.contextualwisdomlab.ea.data_management.assessment_recheck_requested.v1'
+     AND event_record.causation_event_id = trigger_causation_event_id
      AND event_record.decision_request_id =
          '0196f300-1111-7111-8111-111111111169'
      AND event_record.event_payload_json ->> 'assessment_recheck_request_id' =
