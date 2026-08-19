@@ -31,12 +31,7 @@ def _without_recheck_role(document: dict[str, Any]) -> dict[str, Any]:
     """Return the evidence-closure contract view without reassessment authority."""
 
     changed = deepcopy(document)
-    try:
-        configuration = changed["x-keyverse-contract"]["requiredConfiguration"]
-    except (KeyError, TypeError):
-        return changed
-    if not isinstance(configuration, list):
-        return changed
+    configuration = changed["x-keyverse-contract"]["requiredConfiguration"]
     if _DATA_MANAGEMENT_RECHECK_ROLE_CONFIGURATION not in configuration:
         raise ContractValidationError(
             "x-keyverse-contract requiredConfiguration must include "
@@ -53,21 +48,21 @@ def _without_recheck_role(document: dict[str, Any]) -> dict[str, Any]:
 def validate_openapi_document(document: dict[str, Any]) -> int:
     """Validate OpenAPI plus the distinct reassessment authorization role."""
 
-    return base.validate_openapi_document(_without_recheck_role(document))
+    try:
+        changed = _without_recheck_role(document)
+    except (KeyError, TypeError):
+        return base.validate_openapi_document(document)
+    return base.validate_openapi_document(changed)
 
 
 def _without_recheck_openapi(document: dict[str, Any]) -> dict[str, Any]:
     """Return the evidence-closure runtime view without reassessment additions."""
 
     changed = deepcopy(document)
-    paths = changed.get("paths")
-    if isinstance(paths, dict):
-        paths.pop(_DATA_MANAGEMENT_RECHECK_RUNTIME_PATH, None)
-    components = changed.get("components")
-    schemas = components.get("schemas") if isinstance(components, dict) else None
-    if isinstance(schemas, dict):
-        schemas.pop(_DATA_MANAGEMENT_RECHECK_REQUEST_SCHEMA, None)
-        schemas.pop(_DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA, None)
+    changed["paths"].pop(_DATA_MANAGEMENT_RECHECK_RUNTIME_PATH, None)
+    schemas = changed["components"]["schemas"]
+    schemas.pop(_DATA_MANAGEMENT_RECHECK_REQUEST_SCHEMA, None)
+    schemas.pop(_DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA, None)
     return changed
 
 
@@ -138,7 +133,12 @@ def _validate_recheck_operation(paths: dict[str, Any]) -> None:
 def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
     """Require reassessment behavior in addition to every preceding runtime route."""
 
-    base.validate_openapi_runtime_surface(_without_recheck_openapi(document))
+    try:
+        legacy_document = _without_recheck_openapi(document)
+    except (KeyError, TypeError):
+        base.validate_openapi_runtime_surface(document)
+        return
+    base.validate_openapi_runtime_surface(legacy_document)
     paths = core._require_mapping(document.get("paths"), "paths")
     schemas = core._require_mapping(
         core._require_mapping(document.get("components"), "components").get("schemas"),
