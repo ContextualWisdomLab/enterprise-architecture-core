@@ -28,6 +28,19 @@ _REQUIRED_RESOURCES = (
     "cwl_context_contracts.schemas:data-management-assessment.schema.json",
     "cwl_context_contracts.conformance:data-management-assessment-semantics.v1.json",
 )
+_APPROVED_BUNDLE_MANIFEST = {
+    "manifest_format": "cwl-context-bundle-manifest/v1",
+    "distribution_name": "cwl-context-contracts",
+    "distribution_version": "0.2.0",
+    "algorithm": "sha256",
+    "resource_count": 1,
+    "resources": [
+        {
+            "resource_path": "schemas/data-management-assessment.schema.json",
+            "sha256": "b" * 64,
+        }
+    ],
+}
 
 
 def _released_manifest() -> dict[str, object]:
@@ -40,6 +53,7 @@ def _released_manifest() -> dict[str, object]:
         "release_version": "0.2.0",
         "release_tag": "v0.2.0",
         "release_commit_sha": "a" * 40,
+        "approved_bundle_manifest": deepcopy(_APPROVED_BUNDLE_MANIFEST),
         "required_schema_ids": list(_SCHEMA_IDS),
         "required_conformance_profile_ids": [
             "urn:cwl:context-contracts:data-management-assessment-semantics:v1"
@@ -51,6 +65,12 @@ def _released_manifest() -> dict[str, object]:
     }
 
 
+def _bundle_verified(_approved_manifest: object) -> bool:
+    """Return deterministic installed-bundle agreement for focused gate tests."""
+
+    return True
+
+
 def test_provisional_context_graph_head_cannot_satisfy_release_gate() -> None:
     """An open PR head is never accepted as protected-integration provenance."""
 
@@ -59,12 +79,14 @@ def test_provisional_context_graph_head_cannot_satisfy_release_gate() -> None:
     manifest["release_version"] = None
     manifest["release_tag"] = None
     manifest["release_commit_sha"] = None
+    manifest["approved_bundle_manifest"] = None
 
     with pytest.raises(ContextGraphReleaseError, match="immutable-release"):
         verify_context_graph_release(
             manifest,
             version_reader=lambda _name: "0.2.0",
             resource_exists=lambda _resource: True,
+            bundle_verifier=_bundle_verified,
         )
 
 
@@ -76,6 +98,7 @@ def test_context_graph_release_gate_rejects_unlocked_distribution_version() -> N
             _released_manifest(),
             version_reader=lambda _name: "0.1.0",
             resource_exists=lambda _resource: True,
+            bundle_verifier=_bundle_verified,
         )
 
 
@@ -90,6 +113,7 @@ def test_context_graph_release_gate_requires_every_consumed_packaged_artifact() 
             manifest,
             version_reader=lambda _name: "0.2.0",
             resource_exists=lambda resource: resource != missing_resource,
+            bundle_verifier=_bundle_verified,
         )
 
 
@@ -104,17 +128,46 @@ def test_context_graph_release_gate_rejects_release_identity_drift() -> None:
             manifest,
             version_reader=lambda _name: "0.2.0",
             resource_exists=lambda _resource: True,
+            bundle_verifier=_bundle_verified,
+        )
+
+
+def test_context_graph_release_gate_requires_approved_bundle_manifest() -> None:
+    """A release identity without approved complete bundle evidence is insufficient."""
+
+    manifest = _released_manifest()
+    manifest["approved_bundle_manifest"] = None
+
+    with pytest.raises(ContextGraphReleaseError, match="approved bundle manifest"):
+        verify_context_graph_release(
+            manifest,
+            version_reader=lambda _name: "0.2.0",
+            resource_exists=lambda _resource: True,
+            bundle_verifier=_bundle_verified,
+        )
+
+
+def test_context_graph_release_gate_rejects_installed_bundle_digest_drift() -> None:
+    """Installed package bytes must match the independently approved bundle evidence."""
+
+    with pytest.raises(ContextGraphReleaseError, match="approved bundle manifest"):
+        verify_context_graph_release(
+            _released_manifest(),
+            version_reader=lambda _name: "0.2.0",
+            resource_exists=lambda _resource: True,
+            bundle_verifier=lambda _manifest: False,
         )
 
 
 def test_context_graph_release_gate_accepts_exact_locked_artifact_set() -> None:
-    """Accept an exact release identity, installed version, and packaged artifacts."""
+    """Accept exact release identity, installed version, resources, and bundle bytes."""
 
     assert (
         verify_context_graph_release(
             _released_manifest(),
             version_reader=lambda _name: "0.2.0",
             resource_exists=lambda _resource: True,
+            bundle_verifier=_bundle_verified,
         )
         == "a" * 40
     )

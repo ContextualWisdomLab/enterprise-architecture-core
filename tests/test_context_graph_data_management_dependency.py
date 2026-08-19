@@ -30,7 +30,7 @@ _REQUIRED_RESOURCES = [
 def test_data_management_projection_declares_release_artifacts(
     repository_root: Path,
 ) -> None:
-    """The merge gate names the exact assessment grammar it actually consumes."""
+    """The merge gate names exact grammar and pending approved bundle evidence."""
 
     dependency_path = repository_root / "contracts/context-graph-dependency.json"
     document = json.loads(dependency_path.read_text(encoding="utf-8"))
@@ -42,6 +42,7 @@ def test_data_management_projection_declares_release_artifacts(
         "release_version": None,
         "release_tag": None,
         "release_commit_sha": None,
+        "approved_bundle_manifest": None,
         "required_schema_ids": _SCHEMA_IDS,
         "required_conformance_profile_ids": [_ASSESSMENT_PROFILE_ID],
         "required_package_resources": _REQUIRED_RESOURCES,

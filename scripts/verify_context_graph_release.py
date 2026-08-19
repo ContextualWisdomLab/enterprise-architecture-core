@@ -6,6 +6,7 @@ import json
 import re
 import sys
 from collections.abc import Callable, Mapping
+from importlib import import_module
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as distribution_version
 from importlib.resources import files
@@ -41,6 +42,7 @@ _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 VersionReader = Callable[[str], str]
 ResourceProbe = Callable[[str], bool]
+BundleVerifier = Callable[[object], bool]
 
 
 class ContextGraphReleaseError(RuntimeError):
@@ -57,6 +59,20 @@ def _default_resource_exists(resource_specification: str) -> bool:
         return files(package_name).joinpath(relative_path).is_file()
     except (ImportError, TypeError):
         return False
+
+
+def _default_bundle_verified(approved_manifest: object) -> bool:
+    """Verify approved complete bundle evidence using the installed provider SDK."""
+
+    try:
+        verifier_module = import_module(
+            "cwl_context_contracts.contract_bundle_manifest_verifier"
+        )
+        verifier = verifier_module.verify_packaged_contract_bundle_manifest
+        report = verifier(approved_manifest)
+    except Exception:
+        return False
+    return getattr(report, "verified", False) is True
 
 
 def _require_exact_list(
@@ -78,6 +94,7 @@ def verify_context_graph_release(
     *,
     version_reader: VersionReader = distribution_version,
     resource_exists: ResourceProbe = _default_resource_exists,
+    bundle_verifier: BundleVerifier = _default_bundle_verified,
 ) -> str:
     """Verify exact released identity and packaged resources; return source SHA."""
 
@@ -125,6 +142,12 @@ def verify_context_graph_release(
             "release_commit_sha must be a lowercase 40-hex commit"
         )
 
+    approved_bundle_manifest = manifest.get("approved_bundle_manifest")
+    if not isinstance(approved_bundle_manifest, Mapping):
+        raise ContextGraphReleaseError(
+            "approved bundle manifest is required for immutable release evidence"
+        )
+
     try:
         installed_version = version_reader(_EXPECTED_DISTRIBUTION)
     except PackageNotFoundError as error:
@@ -147,6 +170,20 @@ def verify_context_graph_release(
                 "missing packaged resource from immutable release: "
                 f"{resource_specification}"
             )
+
+    try:
+        bundle_verified = bundle_verifier(approved_bundle_manifest)
+    except Exception as error:
+        raise ContextGraphReleaseError(
+            "approved bundle manifest could not be verified against the installed "
+            "release"
+        ) from error
+    if bundle_verified is not True:
+        raise ContextGraphReleaseError(
+            "approved bundle manifest does not match the installed Context Graph "
+            "release"
+        )
+
     return release_commit_sha
 
 
