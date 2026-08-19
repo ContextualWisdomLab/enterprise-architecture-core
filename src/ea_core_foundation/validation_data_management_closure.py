@@ -106,10 +106,6 @@ _EVENT_DATA_FIELDS: dict[str, frozenset[str]] = {
     ),
     "TransformationVerificationRecorded": frozenset(
         {
-            "architecture_object_id"
-        }
-    ) if False else frozenset(
-        {
             "architecture_transformation_id",
             "transformation_history_record_id",
             "decision_request_id",
