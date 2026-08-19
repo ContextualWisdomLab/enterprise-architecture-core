@@ -155,7 +155,9 @@ def test_recheck_writer_uses_bounded_command_and_validates_receipt() -> None:
     result = writer(_context(), request)
 
     command_text = " ".join(captured["command"])
-    assert "request_data_management_assessment_recheck_for_tenant" in command_text
+    assert (
+        "request_data_management_assessment_recheck_for_tenant" in command_text
+    )
     assert "assessment_recheck_request " not in command_text
     assert "data-governance-lead-123" not in command_text
     assert "secret" not in command_text
