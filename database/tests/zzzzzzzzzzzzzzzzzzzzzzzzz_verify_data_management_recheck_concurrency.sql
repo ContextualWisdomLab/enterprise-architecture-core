@@ -116,6 +116,14 @@ SELECT dblink_exec(
     'SET app.tenant_record_id = ''0195d145-64e8-7f4f-8a23-a0cc784cb711'''
 );
 
+CREATE TEMP TABLE recheck_backend_session (
+    source_code text PRIMARY KEY,
+    backend_pid integer NOT NULL
+);
+INSERT INTO recheck_backend_session
+SELECT 'session_b', result.backend_pid
+FROM dblink('recheck_b', 'SELECT pg_backend_pid()') AS result(backend_pid integer);
+
 -- Hold the target projection row in an explicit transaction before either
 -- command races. This makes the old defect deterministic: session B can finish
 -- its pre-lock replay lookup while A's new request is still uncommitted, then
@@ -247,9 +255,38 @@ SELECT dblink_send_query(
     $query$
 );
 
--- Give B time to reach the held projection lock, then make A's exact receipt
--- visible. B must resume and return that same receipt, not fail uniqueness.
-SELECT pg_sleep(0.5);
+-- Prove B reached the held projection row instead of relying on a timing-only
+-- sleep. Both the RED implementation and the repaired implementation block on
+-- this row, but only the repaired one takes that lock before its replay lookup.
+DO $$
+DECLARE
+  session_b_pid integer;
+  is_blocked boolean := false;
+BEGIN
+  SELECT backend_pid
+    INTO session_b_pid
+    FROM recheck_backend_session
+   WHERE source_code = 'session_b';
+
+  FOR attempt_number IN 1..100 LOOP
+    SELECT EXISTS (
+        SELECT 1
+          FROM pg_catalog.pg_stat_activity AS activity_record
+         WHERE activity_record.pid = session_b_pid
+           AND activity_record.wait_event_type = 'Lock'
+    ) INTO is_blocked;
+
+    EXIT WHEN is_blocked;
+    PERFORM pg_catalog.pg_sleep(0.05);
+  END LOOP;
+
+  IF NOT is_blocked THEN
+    RAISE EXCEPTION
+      'concurrent reassessment session did not reach the held projection lock';
+  END IF;
+END;
+$$;
+
 SELECT dblink_exec('recheck_a', 'COMMIT');
 
 INSERT INTO concurrent_recheck_receipt
