@@ -116,64 +116,31 @@ SELECT dblink_exec(
     'SET app.tenant_record_id = ''0195d145-64e8-7f4f-8a23-a0cc784cb711'''
 );
 
-SELECT dblink_send_query(
+-- Hold the target projection row in an explicit transaction before either
+-- command races. This makes the old defect deterministic: session B can finish
+-- its pre-lock replay lookup while A's new request is still uncommitted, then
+-- it waits at the projection lock. The repaired command instead waits before
+-- that replay lookup and therefore sees A's durable receipt after COMMIT.
+SELECT dblink_exec('recheck_a', 'BEGIN');
+SELECT dblink_exec(
     'recheck_a',
-    $query$
-      WITH first_recheck AS MATERIALIZED (
-        SELECT
-          result.assessment_recheck_request_id::text AS recheck_id,
-          result.outbox_event_id::text AS outbox_id,
-          result.next_action
-        FROM architecture_core.request_data_management_assessment_recheck(
-          (
-            SELECT projection_record.data_management_assessment_projection_id
-              FROM architecture_core.data_management_assessment_projection AS projection_record
-             WHERE projection_record.tenant_record_id =
-                   '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-               AND projection_record.assessment_result_uri =
-                   'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
-          ),
-          (
-            SELECT acceptance_record.assessment_evidence_acceptance_id
-              FROM architecture_core.assessment_evidence_acceptance AS acceptance_record
-              JOIN architecture_core.assessment_improvement_plan AS plan_record
-                ON plan_record.tenant_record_id = acceptance_record.tenant_record_id
-               AND plan_record.assessment_improvement_plan_id =
-                   acceptance_record.assessment_improvement_plan_id
-             WHERE acceptance_record.tenant_record_id =
-                   '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-               AND plan_record.data_management_assessment_projection_id = (
-                 SELECT projection_record.data_management_assessment_projection_id
-                   FROM architecture_core.data_management_assessment_projection AS projection_record
-                  WHERE projection_record.tenant_record_id =
-                        '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-                    AND projection_record.assessment_result_uri =
-                        'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
-               )
-             ORDER BY acceptance_record.accepted_at DESC,
-                      acceptance_record.assessment_evidence_acceptance_id DESC
-             LIMIT 1
-          ),
-          '0196f300-1111-7111-8111-111111111176',
-          '2026-08-19T00:40:00Z'
-        ) AS result
-      )
-      SELECT
-        first_recheck.recheck_id,
-        first_recheck.outbox_id,
-        first_recheck.next_action,
-        pg_sleep(2)::text AS hold_open
-      FROM first_recheck;
-    $query$
+    $lock$
+      DO $remote$
+      BEGIN
+        PERFORM 1
+          FROM architecture_core.data_management_assessment_projection AS projection_record
+         WHERE projection_record.tenant_record_id =
+               '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+           AND projection_record.assessment_result_uri =
+               'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
+         FOR UPDATE;
+      END;
+      $remote$;
+    $lock$
 );
 
--- Let session A enter the command and hold the projection row lock before the
--- second exact replay starts. Session B must wait, then observe A's committed
--- request and return the identical receipt rather than raising unique_violation.
-SELECT pg_sleep(0.5);
-
 SELECT dblink_send_query(
-    'recheck_b',
+    'recheck_a',
     $query$
       SELECT
         result.assessment_recheck_request_id::text AS recheck_id,
@@ -222,6 +189,8 @@ CREATE TEMP TABLE concurrent_recheck_receipt (
     next_action text NOT NULL
 );
 
+-- Session A owns the projection lock, so its command completes while remaining
+-- uncommitted in the explicit transaction.
 INSERT INTO concurrent_recheck_receipt
 SELECT
     'session_a',
@@ -231,9 +200,57 @@ SELECT
 FROM dblink_get_result('recheck_a') AS result(
     recheck_id text,
     outbox_id text,
-    next_action text,
-    hold_open text
+    next_action text
 );
+
+-- Start the exact replay while A's request/outbox pair is still uncommitted.
+SELECT dblink_send_query(
+    'recheck_b',
+    $query$
+      SELECT
+        result.assessment_recheck_request_id::text AS recheck_id,
+        result.outbox_event_id::text AS outbox_id,
+        result.next_action
+      FROM architecture_core.request_data_management_assessment_recheck(
+        (
+          SELECT projection_record.data_management_assessment_projection_id
+            FROM architecture_core.data_management_assessment_projection AS projection_record
+           WHERE projection_record.tenant_record_id =
+                 '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+             AND projection_record.assessment_result_uri =
+                 'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
+        ),
+        (
+          SELECT acceptance_record.assessment_evidence_acceptance_id
+            FROM architecture_core.assessment_evidence_acceptance AS acceptance_record
+            JOIN architecture_core.assessment_improvement_plan AS plan_record
+              ON plan_record.tenant_record_id = acceptance_record.tenant_record_id
+             AND plan_record.assessment_improvement_plan_id =
+                 acceptance_record.assessment_improvement_plan_id
+           WHERE acceptance_record.tenant_record_id =
+                 '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+             AND plan_record.data_management_assessment_projection_id = (
+               SELECT projection_record.data_management_assessment_projection_id
+                 FROM architecture_core.data_management_assessment_projection AS projection_record
+                WHERE projection_record.tenant_record_id =
+                      '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+                  AND projection_record.assessment_result_uri =
+                      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
+             )
+           ORDER BY acceptance_record.accepted_at DESC,
+                    acceptance_record.assessment_evidence_acceptance_id DESC
+           LIMIT 1
+        ),
+        '0196f300-1111-7111-8111-111111111176',
+        '2026-08-19T00:40:00Z'
+      ) AS result;
+    $query$
+);
+
+-- Give B time to reach the held projection lock, then make A's exact receipt
+-- visible. B must resume and return that same receipt, not fail uniqueness.
+SELECT pg_sleep(0.5);
+SELECT dblink_exec('recheck_a', 'COMMIT');
 
 INSERT INTO concurrent_recheck_receipt
 SELECT
