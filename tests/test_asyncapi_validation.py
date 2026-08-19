@@ -141,13 +141,24 @@ _EVENT_CONTRACTS = {
             "next_action",
         },
     ),
+    "DataManagementAssessmentRecheckRequested": (
+        "org.contextualwisdomlab.ea.data_management."
+        "assessment_recheck_requested.v1",
+        {
+            "assessment_recheck_request_id",
+            "data_management_assessment_projection_id",
+            "trigger_evidence_acceptance_id",
+            "assessment_result_uri",
+            "next_action",
+        },
+    ),
 }
 
 
 def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
     """The checked-in contract defines every implemented publisher operation."""
 
-    assert validate_asyncapi_document(asyncapi_document) == 11
+    assert validate_asyncapi_document(asyncapi_document) == 12
 
 
 def test_asyncapi_rejects_wrong_version(asyncapi_document) -> None:
