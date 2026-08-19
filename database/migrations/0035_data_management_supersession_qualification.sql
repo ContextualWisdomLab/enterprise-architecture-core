@@ -341,4 +341,271 @@ COMMENT ON FUNCTION architecture_core.record_data_management_assessment_result_i
 ) IS
 'Preserves the contract-validated data-management assessment result and supersession history. Supersession updates explicitly qualify projection columns so PL/pgSQL output variables cannot shadow persisted identity fields.';
 
+ALTER TABLE architecture_core.data_management_assessment_projection
+    ADD COLUMN profile_version text;
+
+DO $$
+BEGIN
+  IF EXISTS (
+      SELECT 1
+        FROM architecture_core.data_management_assessment_projection
+  ) THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'profile_version migration cannot infer meaning for pre-existing unreleased assessment projections';
+  END IF;
+END;
+$$;
+
+ALTER TABLE architecture_core.data_management_assessment_projection
+    ADD CONSTRAINT data_management_assessment_profile_version_format
+    CHECK (
+        profile_version ~ '^[0-9]+\.[0-9]+\.[0-9]+$'
+        AND length(profile_version) <= 64
+    );
+ALTER TABLE architecture_core.data_management_assessment_projection
+    ALTER COLUMN profile_version SET NOT NULL;
+
+CREATE FUNCTION architecture_core.assign_data_management_profile_version()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog
+AS $$
+DECLARE
+  requested_profile_version text;
+BEGIN
+  requested_profile_version := current_setting(
+      'app.data_management_profile_version',
+      true
+  );
+  IF requested_profile_version IS NULL
+     OR requested_profile_version !~ '^[0-9]+\.[0-9]+\.[0-9]+$'
+     OR length(requested_profile_version) > 64 THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'assessment profile_version requires an exact semantic version';
+  END IF;
+  NEW.profile_version := requested_profile_version;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER data_management_profile_version_insert_guard
+BEFORE INSERT ON architecture_core.data_management_assessment_projection
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.assign_data_management_profile_version();
+
+CREATE FUNCTION architecture_core.reject_data_management_profile_version_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog
+AS $$
+BEGIN
+  RAISE EXCEPTION USING
+    ERRCODE = '23514',
+    MESSAGE = 'assessment profile_version is immutable after projection';
+END;
+$$;
+
+CREATE TRIGGER data_management_profile_version_update_guard
+BEFORE UPDATE OF profile_version
+ON architecture_core.data_management_assessment_projection
+FOR EACH ROW
+EXECUTE FUNCTION architecture_core.reject_data_management_profile_version_mutation();
+
+CREATE OR REPLACE FUNCTION architecture_core.record_data_management_assessment_result(
+    requested_projection_receipt_id uuid,
+    requested_assessment_result_uri text,
+    requested_subject_ref text,
+    requested_framework_code text,
+    requested_framework_version text,
+    requested_profile_code text,
+    requested_knowledge_cutoff_at timestamptz,
+    requested_source_recorded_at timestamptz,
+    requested_overall_score_basis_points integer,
+    requested_readiness_code text,
+    requested_truth_status_code text,
+    requested_provenance_evidence_uri text,
+    requested_provenance_sha256 text,
+    requested_provenance_source_locator text,
+    requested_supersedes_result_ref text,
+    requested_missing_evidence_codes text[]
+)
+RETURNS TABLE (
+    data_management_assessment_projection_id uuid
+)
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+BEGIN
+  RAISE EXCEPTION USING
+    ERRCODE = '23514',
+    MESSAGE = 'assessment profile_version is required by the versioned contract';
+END;
+$$;
+
+CREATE FUNCTION architecture_core.record_data_management_assessment_result(
+    requested_projection_receipt_id uuid,
+    requested_assessment_result_uri text,
+    requested_subject_ref text,
+    requested_framework_code text,
+    requested_framework_version text,
+    requested_profile_code text,
+    requested_profile_version text,
+    requested_knowledge_cutoff_at timestamptz,
+    requested_source_recorded_at timestamptz,
+    requested_overall_score_basis_points integer,
+    requested_readiness_code text,
+    requested_truth_status_code text,
+    requested_provenance_evidence_uri text,
+    requested_provenance_sha256 text,
+    requested_provenance_source_locator text,
+    requested_supersedes_result_ref text,
+    requested_missing_evidence_codes text[]
+)
+RETURNS TABLE (
+    data_management_assessment_projection_id uuid
+)
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+DECLARE
+  requested_code_count integer;
+  distinct_code_count integer;
+  inserted_projection_id uuid;
+  stored_profile_version text;
+BEGIN
+  IF requested_profile_version IS NULL
+     OR requested_profile_version !~ '^[0-9]+\.[0-9]+\.[0-9]+$'
+     OR length(requested_profile_version) > 64 THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'profile_version must be an exact semantic version';
+  END IF;
+
+  IF requested_missing_evidence_codes IS NULL THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'missing_evidence_codes is required by the data-management assessment contract';
+  END IF;
+
+  requested_code_count := pg_catalog.cardinality(requested_missing_evidence_codes);
+  IF requested_code_count > 256 THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'missing_evidence_codes exceeds the contract maximum of 256 items';
+  END IF;
+
+  IF EXISTS (
+      SELECT 1
+        FROM pg_catalog.unnest(requested_missing_evidence_codes) AS missing_code
+       WHERE missing_code IS NULL
+          OR missing_code !~ '^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$'
+          OR pg_catalog.length(missing_code) NOT BETWEEN 2 AND 128
+  ) THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'missing_evidence_codes must contain canonical code strings without normalization';
+  END IF;
+
+  SELECT count(DISTINCT missing_code)
+    INTO distinct_code_count
+    FROM pg_catalog.unnest(requested_missing_evidence_codes) AS missing_code;
+
+  IF distinct_code_count <> requested_code_count THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'missing_evidence_codes must be unique; duplicate source values are not normalized';
+  END IF;
+
+  PERFORM pg_catalog.set_config(
+      'app.data_management_profile_version',
+      requested_profile_version,
+      true
+  );
+
+  SELECT result.data_management_assessment_projection_id
+    INTO inserted_projection_id
+    FROM architecture_core.record_data_management_assessment_result_internal(
+      requested_projection_receipt_id,
+      requested_assessment_result_uri,
+      requested_subject_ref,
+      requested_framework_code,
+      requested_framework_version,
+      requested_profile_code,
+      requested_knowledge_cutoff_at,
+      requested_source_recorded_at,
+      requested_overall_score_basis_points,
+      requested_readiness_code,
+      requested_truth_status_code,
+      requested_provenance_evidence_uri,
+      requested_provenance_sha256,
+      requested_provenance_source_locator,
+      requested_supersedes_result_ref,
+      requested_missing_evidence_codes
+    ) AS result;
+
+  SELECT projection.profile_version
+    INTO stored_profile_version
+    FROM architecture_core.data_management_assessment_projection AS projection
+   WHERE projection.tenant_record_id = architecture_core.current_tenant_id()
+     AND projection.data_management_assessment_projection_id = inserted_projection_id;
+
+  IF stored_profile_version IS DISTINCT FROM requested_profile_version THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23505',
+      MESSAGE = 'assessment result identity already represents a different profile_version';
+  END IF;
+
+  RETURN QUERY SELECT inserted_projection_id;
+END;
+$$;
+
+REVOKE ALL
+ON FUNCTION architecture_core.record_data_management_assessment_result(
+    uuid,
+    text,
+    text,
+    text,
+    text,
+    text,
+    text,
+    timestamptz,
+    timestamptz,
+    integer,
+    text,
+    text,
+    text,
+    text,
+    text,
+    text,
+    text[]
+)
+FROM PUBLIC;
+
+COMMENT ON FUNCTION architecture_core.record_data_management_assessment_result(
+    uuid,
+    text,
+    text,
+    text,
+    text,
+    text,
+    text,
+    timestamptz,
+    timestamptz,
+    integer,
+    text,
+    text,
+    text,
+    text,
+    text,
+    text,
+    text[]
+) IS
+'Projects a versioned Data/AI Context assessment only when profile_code and exact profile_version are both supplied. Exact result replay must retain the same profile version; omission and semantic-version drift fail closed.';
+
 COMMIT;
