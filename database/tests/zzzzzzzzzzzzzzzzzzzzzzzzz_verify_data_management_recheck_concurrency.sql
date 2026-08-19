@@ -107,6 +107,14 @@ SELECT dblink_connect(
     'recheck_b',
     pg_catalog.format('dbname=%s user=%s', current_database(), current_user)
 );
+SELECT dblink_exec(
+    'recheck_a',
+    'SET app.tenant_record_id = ''0195d145-64e8-7f4f-8a23-a0cc784cb711'''
+);
+SELECT dblink_exec(
+    'recheck_b',
+    'SET app.tenant_record_id = ''0195d145-64e8-7f4f-8a23-a0cc784cb711'''
+);
 
 SELECT dblink_send_query(
     'recheck_a',
