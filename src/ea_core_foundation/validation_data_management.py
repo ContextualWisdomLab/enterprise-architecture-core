@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
 from . import validation as execution_validation
+from . import validation_core as core
 from . import validation_replan as base
 
 ContractValidationError = base.ContractValidationError
 RepositoryReport = base.RepositoryReport
 validate_connector_catalog = base.validate_connector_catalog
 validate_migration_inventory = base.validate_migration_inventory
-validate_migration_sql = base.validate_migration_sql
 validate_openapi_document = base.validate_openapi_document
 validate_openapi_runtime_surface = base.validate_openapi_runtime_surface
 
@@ -28,6 +29,32 @@ _DATA_MANAGEMENT_IMPROVEMENT_OPERATION_NAME = (
 _DATA_MANAGEMENT_IMPROVEMENT_EVENT_TYPE = (
     "org.contextualwisdomlab.ea.data_management.improvement_initiative_created.v1"
 )
+_ALTER_ADD_COLUMN_PATTERN = re.compile(
+    r"\bADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?"
+    r"(?P<column>[a-z][a-z0-9_]*)\s+"
+    r"(?:uuid|text|integer|boolean|timestamptz|date|numeric|jsonb)\b",
+    re.IGNORECASE,
+)
+
+
+def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
+    """Validate migrations and include columns introduced by ALTER TABLE."""
+
+    table_count, column_count, index_count, constraint_count = (
+        base.validate_migration_sql(sql_text)
+    )
+    altered_columns = [
+        match.group("column").lower()
+        for match in _ALTER_ADD_COLUMN_PATTERN.finditer(sql_text)
+    ]
+    for column_name in altered_columns:
+        core._require_two_word_name(column_name, "column")
+    return (
+        table_count,
+        column_count + len(altered_columns),
+        index_count,
+        constraint_count,
+    )
 
 
 def _without_data_management_asyncapi(document: dict[str, Any]) -> dict[str, Any]:
