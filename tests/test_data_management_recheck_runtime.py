@@ -153,6 +153,47 @@ def test_http_recheck_rejects_invalid_request_before_write() -> None:
     assert writes == []
 
 
+@pytest.mark.parametrize(
+    "request_target",
+    [
+        f"https://attacker.example{_RECHECK_PATH}",
+        f"//attacker.example{_RECHECK_PATH}",
+    ],
+)
+def test_http_recheck_rejects_authority_bearing_request_target(
+    request_target: str,
+) -> None:
+    """Absolute and network-path request targets cannot alias the local command."""
+
+    writes: list[str] = []
+
+    def writer(context: Any, request: Any) -> dict[str, object]:
+        del context, request
+        writes.append("write")
+        return _receipt()
+
+    server, thread, host, port = _start_server(
+        data_management_recheck_authorization_config=_recheck_config(),
+        jwks_loader=_jwks_loader,
+        signature_verifier=lambda signing_input, signature, jwk: True,
+        data_management_recheck_writer=writer,
+    )
+    try:
+        status, body = _post(
+            host,
+            port,
+            authorization=f"Bearer {_token(_RECHECK_ROLE)}",
+            path=request_target,
+            payload=_payload(),
+        )
+    finally:
+        _stop_server(server, thread)
+
+    assert status == 400
+    assert body["error_code"] == "invalid_data_management_recheck_request"
+    assert writes == []
+
+
 def test_http_recheck_returns_retriable_failure_when_writer_raises() -> None:
     """Database command failure remains non-success with an explicit retry action."""
 
