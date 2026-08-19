@@ -94,7 +94,9 @@ def parse_data_management_recheck_request(
         _RECHECK_PATH_SUFFIX
     ):
         raise PlannerRequestError("data-management recheck path is invalid")
-    assessment_id = route[len(_RECHECK_PATH_PREFIX) : -len(_RECHECK_PATH_SUFFIX)]
+    assessment_id = route[
+        len(_RECHECK_PATH_PREFIX) : -len(_RECHECK_PATH_SUFFIX)
+    ]
     if not assessment_id or "/" in assessment_id:
         raise PlannerRequestError("data-management recheck requires one assessment UUID")
     required_names = {
