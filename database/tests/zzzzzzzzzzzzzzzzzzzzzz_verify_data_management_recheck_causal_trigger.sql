@@ -183,6 +183,22 @@ BEGIN
     NULL;
   END;
 
+  BEGIN
+    PERFORM *
+      FROM architecture_core.request_data_management_assessment_recheck(
+        projection_id,
+        final_acceptance_id,
+        '0196f400-1111-7111-8111-111111111194',
+        '2026-08-19T01:00:08Z'
+      );
+    RAISE EXCEPTION 'backdated reassessment request was accepted';
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM IS DISTINCT FROM
+       'assessment reassessment request cannot predate triggering evidence acceptance' THEN
+      RAISE;
+    END IF;
+  END;
+
   SELECT
       result.assessment_recheck_request_id,
       result.outbox_event_id,
