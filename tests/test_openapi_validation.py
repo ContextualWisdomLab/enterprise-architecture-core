@@ -10,7 +10,7 @@ from ea_core_foundation import ContractValidationError, validate_openapi_documen
 def test_checked_in_openapi_contract_is_valid(openapi_document) -> None:
     """The checked-in OpenAPI document exposes only implemented operations."""
 
-    assert validate_openapi_document(openapi_document) == 10
+    assert validate_openapi_document(openapi_document) == 11
 
 
 def test_openapi_rejects_wrong_version(openapi_document) -> None:
