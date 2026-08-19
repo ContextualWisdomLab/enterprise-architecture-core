@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
 
 import ea_core_foundation.replan_runtime as replan_runtime
 from ea_core_foundation.service import PlannerExecutionError
@@ -30,6 +32,7 @@ from tests.test_target_state_replan_runtime import (
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 _RECHECK_PATH = f"/v1/data-management-assessments/{_ASSESSMENT_ID}/recheck"
 _RECHECK_ROLE = "ea_data_management_rechecker"
+_NON_V7_UUID = "550e8400-e29b-41d4-a716-446655440000"
 
 
 def _recheck_config():
@@ -316,3 +319,31 @@ def test_recheck_route_role_and_openapi_contract_are_published() -> None:
     assert pyproject["project"]["scripts"]["ea-core"] == (
         "ea_core_foundation.replan_runtime:main"
     )
+
+
+def test_recheck_openapi_enforces_canonical_uuid7_identifiers() -> None:
+    """Published identifier schemas reject UUID versions/runtime spellings we reject."""
+
+    openapi = json.loads((_REPOSITORY_ROOT / "contracts/openapi.json").read_text())
+    operation = openapi["paths"][
+        "/v1/data-management-assessments/"
+        "{data_management_assessment_projection_id}/recheck"
+    ]["post"]
+    schemas = openapi["components"]["schemas"]
+    request_properties = schemas["DataManagementAssessmentRecheckRequest"]["properties"]
+    receipt_properties = schemas["DataManagementAssessmentRecheckReceipt"]["properties"]
+    identifier_schemas = [
+        operation["parameters"][0]["schema"],
+        request_properties["trigger_evidence_acceptance_id"],
+        request_properties["decision_request_id"],
+        receipt_properties["assessment_recheck_request_id"],
+        receipt_properties["outbox_event_id"],
+    ]
+
+    for schema in identifier_schemas:
+        validator = Draft202012Validator(schema)
+        validator.validate(_ASSESSMENT_ID)
+        with pytest.raises(ValidationError):
+            validator.validate(_NON_V7_UUID)
+        with pytest.raises(ValidationError):
+            validator.validate(_ASSESSMENT_ID.upper())
