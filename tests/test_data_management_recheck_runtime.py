@@ -330,7 +330,9 @@ def test_recheck_openapi_enforces_canonical_uuid7_identifiers() -> None:
         "{data_management_assessment_projection_id}/recheck"
     ]["post"]
     schemas = openapi["components"]["schemas"]
-    request_properties = schemas["DataManagementAssessmentRecheckRequest"]["properties"]
+    request_properties = schemas["DataManagementAssessmentRecheckRequest"][
+        "properties"
+    ]
     receipt_properties = schemas["DataManagementAssessmentRecheckReceipt"]["properties"]
     identifier_schemas = [
         operation["parameters"][0]["schema"],
