@@ -1,8 +1,7 @@
 \set ON_ERROR_STOP on
 
--- Buyer acceptance for closing an assessment gap only after Semantic Data Portal
--- evidence with an acceptable truth status is received. This test intentionally
--- precedes migration 0036 so the first candidate is RED at the missing command.
+-- Regression acceptance for closing an assessment gap only after Semantic Data
+-- Portal evidence with an acceptable truth status is received through migration 0036.
 
 RESET ROLE;
 SELECT set_config(
