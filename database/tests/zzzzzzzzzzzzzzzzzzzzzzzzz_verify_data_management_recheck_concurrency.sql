@@ -211,6 +211,29 @@ FROM dblink_get_result('recheck_a') AS result(
     next_action text
 );
 
+-- PostgreSQL's asynchronous dblink protocol requires one additional empty
+-- result read after every sent query before the connection may be reused. Keep
+-- A's transaction open while draining only the protocol terminator.
+DO $$
+DECLARE
+  trailing_result_count integer;
+BEGIN
+  SELECT count(*)
+    INTO trailing_result_count
+    FROM dblink_get_result('recheck_a') AS result(
+      recheck_id text,
+      outbox_id text,
+      next_action text
+    );
+
+  IF trailing_result_count <> 0 THEN
+    RAISE EXCEPTION
+      'session A returned an unexpected trailing asynchronous result: %',
+      trailing_result_count;
+  END IF;
+END;
+$$;
+
 -- Start the exact replay while A's request/outbox pair is still uncommitted.
 SELECT dblink_send_query(
     'recheck_b',
@@ -300,6 +323,27 @@ FROM dblink_get_result('recheck_b') AS result(
     outbox_id text,
     next_action text
 );
+
+-- Drain B's mandatory empty protocol result before disconnecting the session.
+DO $$
+DECLARE
+  trailing_result_count integer;
+BEGIN
+  SELECT count(*)
+    INTO trailing_result_count
+    FROM dblink_get_result('recheck_b') AS result(
+      recheck_id text,
+      outbox_id text,
+      next_action text
+    );
+
+  IF trailing_result_count <> 0 THEN
+    RAISE EXCEPTION
+      'session B returned an unexpected trailing asynchronous result: %',
+      trailing_result_count;
+  END IF;
+END;
+$$;
 
 DO $$
 DECLARE
