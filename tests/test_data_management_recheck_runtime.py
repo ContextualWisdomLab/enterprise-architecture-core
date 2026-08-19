@@ -227,7 +227,10 @@ def test_http_recheck_returns_retriable_failure_when_writer_raises() -> None:
 
 
 def test_http_recheck_fails_closed_on_unexpected_writer_error() -> None:
-    """Unexpected command-port defects return a retriable 503 instead of dropping HTTP."""
+    """Unexpected command-port defects return a retriable 503.
+
+    The HTTP boundary remains intact instead of dropping the connection.
+    """
 
     def failing_writer(context: Any, request: Any) -> dict[str, object]:
         del context, request
