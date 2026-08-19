@@ -859,7 +859,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
             }
           }
         ],
@@ -1182,8 +1183,8 @@
         "additionalProperties": false,
         "required": ["trigger_evidence_acceptance_id", "decision_request_id", "requested_at"],
         "properties": {
-          "trigger_evidence_acceptance_id": {"type": "string", "format": "uuid"},
-          "decision_request_id": {"type": "string", "format": "uuid"},
+          "trigger_evidence_acceptance_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "decision_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
           "requested_at": {"type": "string", "format": "date-time"}
         }
       },
@@ -1192,8 +1193,8 @@
         "additionalProperties": false,
         "required": ["assessment_recheck_request_id", "outbox_event_id", "next_action"],
         "properties": {
-          "assessment_recheck_request_id": {"type": "string", "format": "uuid"},
-          "outbox_event_id": {"type": "string", "format": "uuid"},
+          "assessment_recheck_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "outbox_event_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
           "next_action": {"type": "string", "const": "await_assessment_recheck"}
         }
       },
