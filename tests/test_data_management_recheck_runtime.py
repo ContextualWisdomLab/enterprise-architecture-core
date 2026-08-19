@@ -11,7 +11,11 @@ import pytest
 
 import ea_core_foundation.replan_runtime as replan_runtime
 from ea_core_foundation.service import PlannerExecutionError
-from tests.test_data_management_recheck_api import _ASSESSMENT_ID, _payload, _receipt
+from tests.test_data_management_recheck_api import (
+    _ASSESSMENT_ID,
+    _payload,
+    _receipt,
+)
 from tests.test_target_state_replan_runtime import (
     _config,
     _get,
@@ -80,7 +84,9 @@ def test_http_recheck_is_purpose_authorized_and_actionable() -> None:
     assert denied["error_code"] == "forbidden"
     assert ok_status == 200
     assert ok["next_action"] == "await_assessment_recheck"
-    assert writes == ["target-state-replanner-123:0196f300-1111-7111-8111-111111111173"]
+    assert writes == [
+        "target-state-replanner-123:0196f300-1111-7111-8111-111111111173"
+    ]
 
 
 @pytest.mark.parametrize(
@@ -225,13 +231,15 @@ def test_recheck_route_role_and_openapi_contract_are_published() -> None:
     pyproject = tomllib.loads((_REPOSITORY_ROOT / "pyproject.toml").read_text())
 
     operation = openapi["paths"][
-        "/v1/data-management-assessments/{data_management_assessment_projection_id}/recheck"
+        "/v1/data-management-assessments/"
+        "{data_management_assessment_projection_id}/recheck"
     ]["post"]
     assert operation["operationId"] == "requestDataManagementAssessmentRecheck"
     assert operation["requestBody"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/DataManagementAssessmentRecheckRequest"
     }
-    assert operation["responses"]["200"]["content"]["application/json"]["schema"] == {
+    response_schema = operation["responses"]["200"]["content"]["application/json"]
+    assert response_schema["schema"] == {
         "$ref": "#/components/schemas/DataManagementAssessmentRecheckReceipt"
     }
     assert "EA_DATA_MANAGEMENT_RECHECK_ROLES=" in environment_example
