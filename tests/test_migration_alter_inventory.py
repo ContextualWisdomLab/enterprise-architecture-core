@@ -23,8 +23,8 @@ def test_repository_inventory_counts_alter_added_profile_version(
 
     counts = validate_migration_sql(_migration_text(repository_root))
 
-    assert counts[1] == 364
-    assert counts[3] == 385
+    assert counts[1] == 383
+    assert counts[3] == 401
 
 
 def test_alter_add_column_changes_inventory_count(repository_root: Path) -> None:
