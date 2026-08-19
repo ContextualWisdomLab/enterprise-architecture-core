@@ -98,7 +98,9 @@ def parse_data_management_recheck_request(
         len(_RECHECK_PATH_PREFIX) : -len(_RECHECK_PATH_SUFFIX)
     ]
     if not assessment_id or "/" in assessment_id:
-        raise PlannerRequestError("data-management recheck requires one assessment UUID")
+        raise PlannerRequestError(
+            "data-management recheck requires one assessment UUID"
+        )
     required_names = {
         "trigger_evidence_acceptance_id",
         "decision_request_id",
