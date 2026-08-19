@@ -60,6 +60,16 @@ def _receipt(**changes: object) -> dict[str, object]:
     return receipt
 
 
+def _stdout_runner(stdout: str):
+    """Return a deterministic successful command runner with the supplied output."""
+
+    def runner(command, **kwargs):
+        del command, kwargs
+        return SimpleNamespace(returncode=0, stdout=stdout, stderr="")
+
+    return runner
+
+
 def test_parse_recheck_binds_assessment_and_only_documented_fields() -> None:
     """The route owns assessment identity while the body owns decision evidence."""
 
@@ -194,33 +204,22 @@ def test_recheck_writer_rejects_invalid_receipt_shapes_and_semantics() -> None:
     """Malformed JSON, non-objects, invalid IDs, and semantic drift fail closed."""
 
     request = parse_data_management_recheck_request(_PATH, _payload())
-
-    @pytest.mark.parametrize
-    def unused_marker() -> None:
-        """Keep pytest import semantics explicit for static tooling."""
-
-    del unused_marker
-
-    responses = [
-        "not-json",
-        json.dumps([]),
-        json.dumps(_receipt(outbox_event_id="not-a-uuid")),
-        json.dumps(_receipt(next_action="assessment_complete")),
-    ]
-    messages = [
-        "invalid JSON",
-        "invalid reassessment receipt",
-        "invalid reassessment receipt",
-        "invalid reassessment receipt",
+    cases = [
+        ("not-json", "invalid JSON"),
+        (json.dumps([]), "invalid reassessment receipt"),
+        (
+            json.dumps(_receipt(outbox_event_id="not-a-uuid")),
+            "invalid reassessment receipt",
+        ),
+        (
+            json.dumps(_receipt(next_action="assessment_complete")),
+            "invalid reassessment receipt",
+        ),
     ]
 
-    for stdout, message in zip(responses, messages, strict=True):
-        def runner(command, **kwargs):
-            del command, kwargs
-            return SimpleNamespace(returncode=0, stdout=stdout, stderr="")
-
+    for stdout, message in cases:
         with pytest.raises(PlannerExecutionError, match=message):
             build_data_management_recheck_writer(
                 "postgresql://ea_runtime@db.example/ea_core",
-                runner=runner,
+                runner=_stdout_runner(stdout),
             )(_context(), request)
