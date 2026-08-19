@@ -83,7 +83,7 @@ The monitoring read is tested as an executable authority and evidence boundary r
 
 The assessment-improvement loop is tested at the authoritative PostgreSQL command boundary as well as the authenticated HTTP/runtime port:
 
-- reassessment is available only after every projected missing-evidence gap has accepted evidence and the request binds to the latest acceptance that closed the final gap;
+- reassessment is available only after every projected missing-evidence gap has accepted evidence and the request binds to the acceptance whose transactional evidence proves it causally closed the final gap; business-time ordering of `accepted_at` cannot substitute for that recorded causation;
 - exact decision replay must return the original immutable reassessment-request and transactional-outbox identities, while changed meaning for the same decision or a second decision for the same assessment fails closed;
 - concurrent exact replay is exercised with two independent PostgreSQL sessions and an explicitly observed row-lock wait, proving callers serialize before replay-state inspection and converge on one durable request/outbox pair instead of racing unique constraints;
 - the serialization lock is tenant-local to the immutable assessment projection and does not make Semantic Data Portal evidence authoritative inside EA Core;
