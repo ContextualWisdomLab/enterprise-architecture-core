@@ -24,9 +24,9 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
     )
     counts = validate_migration_sql(migration_text)
     assert counts[0] == 45
-    assert counts[1] == 379
+    assert counts[1] == 380
     assert counts[2] == 17
-    assert counts[3] == 400
+    assert counts[3] == 401
 
 
 def test_migration_constraint_count_tracks_replacements_not_ddl_mentions(
