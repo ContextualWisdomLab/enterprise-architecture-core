@@ -90,7 +90,7 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
 
     report = validate_repository(repository_root)
     assert report.table_count == 45
-    assert report.column_count == 380
+    assert report.column_count == 383
     assert report.index_count == 17
     assert report.constraint_count == 401
     assert report.openapi_operation_count == 10
@@ -219,7 +219,7 @@ def test_prior_replan_validator_requires_decision_evidence(
 
     target = tmp_path / "replan-missing-adrs"
     shutil.copytree(repository_root, target)
-    _strip_data_management_event_contract(target)
+    _strip_data_management_event_contract(repository_root=target)
     for adr_path in (target / "docs/adr").glob("*.md"):
         adr_path.unlink()
 
