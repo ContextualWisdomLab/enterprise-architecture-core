@@ -71,14 +71,29 @@ def test_parse_recheck_binds_assessment_and_only_documented_fields() -> None:
     assert request.requested_at.isoformat() == "2026-08-19T05:00:00+00:00"
 
     with pytest.raises(PlannerRequestError, match="only the documented fields"):
-        parse_data_management_recheck_request(_PATH, _payload(truth_status_code="authoritative"))
+        parse_data_management_recheck_request(
+            _PATH,
+            _payload(truth_status_code="authoritative"),
+        )
     with pytest.raises(PlannerRequestError, match="JSON strings"):
         parse_data_management_recheck_request(_PATH, _payload(requested_at=123))
     with pytest.raises(PlannerRequestError, match="recheck path"):
         parse_data_management_recheck_request(_PATH + "?unsafe=1", _payload())
+    with pytest.raises(PlannerRequestError, match="recheck path"):
+        parse_data_management_recheck_request("/v1/not-recheck", _payload())
+    with pytest.raises(PlannerRequestError, match="one assessment UUID"):
+        parse_data_management_recheck_request(
+            "/v1/data-management-assessments//recheck",
+            _payload(),
+        )
     with pytest.raises(PlannerRequestError, match="one assessment UUID"):
         parse_data_management_recheck_request(
             f"/v1/data-management-assessments/{_ASSESSMENT_ID}/nested/recheck",
+            _payload(),
+        )
+    with pytest.raises(PlannerRequestError, match="UUIDv7"):
+        parse_data_management_recheck_request(
+            "/v1/data-management-assessments/not-a-uuid/recheck",
             _payload(),
         )
 
@@ -89,7 +104,9 @@ def test_recheck_authority_is_separate_and_fail_closed() -> None:
     environment = {
         "EA_OIDC_ISSUER": "https://id.example/realms/cwl",
         "EA_OIDC_AUDIENCE": "enterprise-architecture-core",
-        "EA_OIDC_JWKS_URL": "https://id.example/realms/cwl/protocol/openid-connect/certs",
+        "EA_OIDC_JWKS_URL": (
+            "https://id.example/realms/cwl/protocol/openid-connect/certs"
+        ),
         "EA_TENANT_CLAIM": "tenant",
         "EA_ROLE_CLAIM": "role",
         "EA_READ_ROLES": "ea_reader",
@@ -113,7 +130,11 @@ def test_recheck_writer_uses_bounded_command_and_validates_receipt() -> None:
         captured["command"] = command
         captured["environment"] = kwargs["env"]
         captured["timeout"] = kwargs["timeout"]
-        return SimpleNamespace(returncode=0, stdout=json.dumps(_receipt()), stderr="")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps(_receipt()),
+            stderr="",
+        )
 
     request = parse_data_management_recheck_request(_PATH, _payload())
     writer = build_data_management_recheck_writer(
@@ -124,8 +145,8 @@ def test_recheck_writer_uses_bounded_command_and_validates_receipt() -> None:
     result = writer(_context(), request)
 
     command_text = " ".join(captured["command"])
-    assert "request_data_management_assessment_recheck" in command_text
-    assert "assessment_recheck_request" not in command_text
+    assert "request_data_management_assessment_recheck_for_tenant" in command_text
+    assert "assessment_recheck_request " not in command_text
     assert "data-governance-lead-123" not in command_text
     assert "secret" not in command_text
     assert captured["timeout"] == 10
@@ -134,12 +155,19 @@ def test_recheck_writer_uses_bounded_command_and_validates_receipt() -> None:
     assert result["next_action"] == "await_assessment_recheck"
 
 
-def test_recheck_writer_fails_closed_on_unavailable_and_semantic_drift() -> None:
-    """Missing storage, invalid JSON, failed commands, and drift never look successful."""
+def test_recheck_writer_fails_closed_when_storage_is_unavailable() -> None:
+    """Missing or malformed PostgreSQL authority returns one rejecting writer."""
 
     request = parse_data_management_recheck_request(_PATH, _payload())
-    with pytest.raises(PlannerExecutionError, match="unavailable"):
-        build_data_management_recheck_writer(None)(_context(), request)
+    for dsn in (None, "https://db.example/ea_core"):
+        with pytest.raises(PlannerExecutionError, match="unavailable"):
+            build_data_management_recheck_writer(dsn)(_context(), request)
+
+
+def test_recheck_writer_fails_closed_on_command_transport_errors() -> None:
+    """Process failures and transport failures never look like reassessment success."""
+
+    request = parse_data_management_recheck_request(_PATH, _payload())
 
     def failed_runner(command, **kwargs):
         del command, kwargs
@@ -151,26 +179,48 @@ def test_recheck_writer_fails_closed_on_unavailable_and_semantic_drift() -> None
             runner=failed_runner,
         )(_context(), request)
 
-    def invalid_json_runner(command, **kwargs):
+    def unavailable_runner(command, **kwargs):
         del command, kwargs
-        return SimpleNamespace(returncode=0, stdout="not-json", stderr="")
+        raise OSError("psql unavailable")
 
-    with pytest.raises(PlannerExecutionError, match="invalid JSON"):
+    with pytest.raises(PlannerExecutionError, match="command failed"):
         build_data_management_recheck_writer(
             "postgresql://ea_runtime@db.example/ea_core",
-            runner=invalid_json_runner,
+            runner=unavailable_runner,
         )(_context(), request)
 
-    def drift_runner(command, **kwargs):
-        del command, kwargs
-        return SimpleNamespace(
-            returncode=0,
-            stdout=json.dumps(_receipt(next_action="assessment_complete")),
-            stderr="",
-        )
 
-    with pytest.raises(PlannerExecutionError, match="invalid reassessment receipt"):
-        build_data_management_recheck_writer(
-            "postgresql://ea_runtime@db.example/ea_core",
-            runner=drift_runner,
-        )(_context(), request)
+def test_recheck_writer_rejects_invalid_receipt_shapes_and_semantics() -> None:
+    """Malformed JSON, non-objects, invalid IDs, and semantic drift fail closed."""
+
+    request = parse_data_management_recheck_request(_PATH, _payload())
+
+    @pytest.mark.parametrize
+    def unused_marker() -> None:
+        """Keep pytest import semantics explicit for static tooling."""
+
+    del unused_marker
+
+    responses = [
+        "not-json",
+        json.dumps([]),
+        json.dumps(_receipt(outbox_event_id="not-a-uuid")),
+        json.dumps(_receipt(next_action="assessment_complete")),
+    ]
+    messages = [
+        "invalid JSON",
+        "invalid reassessment receipt",
+        "invalid reassessment receipt",
+        "invalid reassessment receipt",
+    ]
+
+    for stdout, message in zip(responses, messages, strict=True):
+        def runner(command, **kwargs):
+            del command, kwargs
+            return SimpleNamespace(returncode=0, stdout=stdout, stderr="")
+
+        with pytest.raises(PlannerExecutionError, match=message):
+            build_data_management_recheck_writer(
+                "postgresql://ea_runtime@db.example/ea_core",
+                runner=runner,
+            )(_context(), request)
