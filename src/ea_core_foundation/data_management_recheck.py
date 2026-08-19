@@ -218,7 +218,10 @@ def build_data_management_recheck_writer(
             raise PlannerExecutionError(
                 "data-management recheck returned invalid JSON"
             ) from error
-        if not isinstance(response, Mapping) or set(response) != _RECHECK_RECEIPT_FIELDS:
+        if (
+            not isinstance(response, Mapping)
+            or set(response) != _RECHECK_RECEIPT_FIELDS
+        ):
             raise PlannerExecutionError(
                 "data-management recheck returned invalid reassessment receipt"
             )
