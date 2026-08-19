@@ -12,6 +12,13 @@ _ASSESSMENT_SCHEMA_ID = (
 _ASSESSMENT_PROFILE_ID = (
     "urn:cwl:context-contracts:data-management-assessment-semantics:v1"
 )
+_REQUIRED_RESOURCES = [
+    "cwl_context_contracts.schemas:canonical-authority-uri.schema.json",
+    "cwl_context_contracts.schemas:canonical-asset-uri.schema.json",
+    "cwl_context_contracts.schemas:cloudevent-envelope.schema.json",
+    "cwl_context_contracts.schemas:data-management-assessment.schema.json",
+    "cwl_context_contracts.conformance:data-management-assessment-semantics.v1.json",
+]
 
 
 def test_data_management_projection_declares_release_artifacts(
@@ -25,6 +32,10 @@ def test_data_management_projection_declares_release_artifacts(
     assert document == {
         "contract_repository": "ContextualWisdomLab/context-graph-contracts",
         "state": "provisional-pr-head",
+        "distribution_name": "cwl-context-contracts",
+        "release_version": None,
+        "release_tag": None,
+        "release_commit_sha": None,
         "required_schema_ids": [
             "https://schemas.contextualwisdomlab.org/context/canonical-authority-uri.v1.schema.json",
             "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json",
@@ -32,5 +43,8 @@ def test_data_management_projection_declares_release_artifacts(
             _ASSESSMENT_SCHEMA_ID,
         ],
         "required_conformance_profile_ids": [_ASSESSMENT_PROFILE_ID],
-        "required_before_merge": "immutable released dependency containing every declared artifact",
+        "required_package_resources": _REQUIRED_RESOURCES,
+        "required_before_merge": (
+            "immutable released dependency containing every declared artifact"
+        ),
     }
