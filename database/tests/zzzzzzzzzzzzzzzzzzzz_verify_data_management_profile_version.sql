@@ -159,3 +159,32 @@ BEGIN
   END;
 END;
 $$;
+
+DO $$
+BEGIN
+  BEGIN
+    PERFORM *
+      FROM architecture_core.record_data_management_assessment_result(
+        '0196f100-1111-7111-8111-111111111130',
+        'urn:cwl:tenant_001:data_context:data_management_assessment:0196f101-1111-7111-8111-111111111133',
+        'urn:cwl:tenant_001:ea_core:business_capability:0195d145-64e8-7f4f-8a23-a0cc784cb901',
+        'dama_dmbok2r',
+        '2024',
+        'baseline_data_management',
+        '2026-10-20T00:00:00Z',
+        '2026-10-20T00:00:01Z',
+        7300,
+        'evidence_gap',
+        'observed',
+        'urn:cwl:tenant_001:data_context:assessment_evidence:0196f102-1111-7111-8111-111111111133',
+        repeat('6', 64),
+        NULL,
+        NULL,
+        ARRAY['profile_version_evidence']::text[]
+      );
+    RAISE EXCEPTION 'assessment profile version omission was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
