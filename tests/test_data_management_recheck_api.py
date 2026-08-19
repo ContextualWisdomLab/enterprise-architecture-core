@@ -90,7 +90,10 @@ def test_parse_recheck_binds_assessment_and_only_documented_fields() -> None:
     with pytest.raises(PlannerRequestError, match="recheck path"):
         parse_data_management_recheck_request(_PATH + "?unsafe=1", _payload())
     with pytest.raises(PlannerRequestError, match="recheck path"):
-        parse_data_management_recheck_request("https://attacker.example" + _PATH, _payload())
+        parse_data_management_recheck_request(
+            "https://attacker.example" + _PATH,
+            _payload(),
+        )
     with pytest.raises(PlannerRequestError, match="recheck path"):
         parse_data_management_recheck_request("//attacker.example" + _PATH, _payload())
     with pytest.raises(PlannerRequestError, match="recheck path"):
