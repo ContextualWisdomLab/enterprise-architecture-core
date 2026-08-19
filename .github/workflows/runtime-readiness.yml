@@ -47,6 +47,14 @@ jobs:
           uv venv .runtime-smoke --python 3.14
           uv pip install --python .runtime-smoke/bin/python \
             --no-index --find-links dist enterprise-architecture-core
+      - name: Enforce immutable Context Graph release before protected integration
+        if: >-
+          github.event_name == 'push' ||
+          github.base_ref == 'develop' ||
+          github.base_ref == 'main'
+        run: >-
+          uv run --frozen --extra dev --python 3.14
+          python scripts/verify_context_graph_release.py
       - name: Prove healthy database and absent immutable contract fail closed independently
         env:
           EA_BIND_HOST: 127.0.0.1
