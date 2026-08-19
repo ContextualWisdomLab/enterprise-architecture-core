@@ -1,9 +1,10 @@
 \set ON_ERROR_STOP on
 
--- Reassessment commands and immutable-history guards are security-sensitive
--- integration boundaries. They must not expose PUBLIC EXECUTE, and both must
--- pin search_path so later function-body maintenance cannot resolve attacker-
--- controlled objects through a mutable session path.
+-- Reassessment commands and immutable-history/temporal guards are
+-- security-sensitive integration boundaries. They must not expose PUBLIC
+-- EXECUTE, and every function in this boundary must pin search_path so later
+-- function-body maintenance cannot resolve attacker-controlled objects through
+-- a mutable session path.
 
 DO $$
 DECLARE
@@ -24,7 +25,8 @@ BEGIN
    WHERE namespace_record.nspname = 'architecture_core'
      AND procedure_record.proname IN (
        'request_data_management_assessment_recheck',
-       'reject_assessment_recheck_request_mutation'
+       'reject_assessment_recheck_request_mutation',
+       'enforce_assessment_recheck_temporal_order'
      )
      AND privilege_record.grantee = 0
      AND privilege_record.privilege_type = 'EXECUTE';
@@ -47,7 +49,8 @@ BEGIN
    WHERE namespace_record.nspname = 'architecture_core'
      AND procedure_record.proname IN (
        'request_data_management_assessment_recheck',
-       'reject_assessment_recheck_request_mutation'
+       'reject_assessment_recheck_request_mutation',
+       'enforce_assessment_recheck_temporal_order'
      )
      AND NOT (
        coalesce(procedure_record.proconfig, ARRAY[]::text[]) @>
