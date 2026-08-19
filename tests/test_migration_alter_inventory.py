@@ -19,7 +19,7 @@ def _migration_text(repository_root: Path) -> str:
 def test_repository_inventory_counts_alter_added_profile_version(
     repository_root: Path,
 ) -> None:
-    """An ALTER-added production column is part of the exact logical schema inventory."""
+    """Count ALTER-added production columns in the logical schema inventory."""
 
     counts = validate_migration_sql(_migration_text(repository_root))
 
