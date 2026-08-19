@@ -333,7 +333,9 @@ def test_recheck_openapi_enforces_canonical_uuid7_identifiers() -> None:
     request_properties = schemas["DataManagementAssessmentRecheckRequest"][
         "properties"
     ]
-    receipt_properties = schemas["DataManagementAssessmentRecheckReceipt"]["properties"]
+    receipt_properties = schemas["DataManagementAssessmentRecheckReceipt"][
+        "properties"
+    ]
     identifier_schemas = [
         operation["parameters"][0]["schema"],
         request_properties["trigger_evidence_acceptance_id"],
