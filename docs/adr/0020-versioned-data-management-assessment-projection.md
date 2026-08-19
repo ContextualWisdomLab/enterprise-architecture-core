@@ -1,6 +1,7 @@
 # ADR 0020: Preserve exact data-management assessment profile versions
 
 - **Status:** Accepted for active PR #27; not protected-main shipped truth.
+- **Date:** 2026-08-19
 - **Scope:** Enterprise Architecture Core inbound projection only.
 - **Dependency:** `ContextualWisdomLab/context-graph-contracts#14` remains a provisional read-only contract dependency until an immutable release is available.
 
