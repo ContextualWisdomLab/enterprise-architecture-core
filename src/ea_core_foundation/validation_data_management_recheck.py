@@ -25,6 +25,14 @@ _DATA_MANAGEMENT_RECHECK_OPERATION_ID = "requestDataManagementAssessmentRecheck"
 _DATA_MANAGEMENT_RECHECK_ROLE_CONFIGURATION = "EA_DATA_MANAGEMENT_RECHECK_ROLES"
 _DATA_MANAGEMENT_RECHECK_REQUEST_SCHEMA = "DataManagementAssessmentRecheckRequest"
 _DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA = "DataManagementAssessmentRecheckReceipt"
+_CANONICAL_UUID7_SCHEMA = {
+    "type": "string",
+    "format": "uuid",
+    "pattern": (
+        "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-"
+        "[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    ),
+}
 
 
 def _without_recheck_role(document: dict[str, Any]) -> dict[str, Any]:
@@ -96,7 +104,7 @@ def _validate_recheck_operation(paths: dict[str, Any]) -> None:
         parameters,
         parameter_identity,
         required=True,
-        schema={"type": "string", "format": "uuid"},
+        schema=_CANONICAL_UUID7_SCHEMA,
     )
     expected_request_body = {
         "required": True,
