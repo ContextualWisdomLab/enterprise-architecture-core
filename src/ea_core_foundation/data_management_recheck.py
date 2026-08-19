@@ -40,6 +40,11 @@ FROM (
     ) AS requested
 ) AS recheck_receipt;
 """.strip()
+_RECHECK_RECEIPT_FIELDS = {
+    "assessment_recheck_request_id",
+    "outbox_event_id",
+    "next_action",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -212,7 +217,7 @@ def build_data_management_recheck_writer(
             raise PlannerExecutionError(
                 "data-management recheck returned invalid JSON"
             ) from error
-        if not isinstance(response, Mapping):
+        if not isinstance(response, Mapping) or set(response) != _RECHECK_RECEIPT_FIELDS:
             raise PlannerExecutionError(
                 "data-management recheck returned invalid reassessment receipt"
             )
