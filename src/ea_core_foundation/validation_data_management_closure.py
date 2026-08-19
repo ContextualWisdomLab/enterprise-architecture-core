@@ -204,13 +204,17 @@ def _validate_event_data_contracts(document: dict[str, Any]) -> None:
             )
         event_schema = all_of[1]
         if not isinstance(event_schema, dict):
-            raise ContractValidationError(f"{message_name} event schema must be an object")
+            raise ContractValidationError(
+                f"{message_name} event schema must be an object"
+            )
         if set(event_schema.get("required", ())) != {"type", "data"}:
             raise ContractValidationError(f"{message_name} must require type and data")
         properties = event_schema.get("properties")
         data_schema = properties.get("data") if isinstance(properties, dict) else None
         if not isinstance(data_schema, dict):
-            raise ContractValidationError(f"{message_name} requires an explicit data schema")
+            raise ContractValidationError(
+                f"{message_name} requires an explicit data schema"
+            )
         if data_schema.get("type") != "object":
             raise ContractValidationError(f"{message_name} data must be an object")
         if data_schema.get("additionalProperties") is not False:
@@ -219,9 +223,13 @@ def _validate_event_data_contracts(document: dict[str, Any]) -> None:
             )
         data_properties = data_schema.get("properties")
         if not isinstance(data_properties, dict):
-            raise ContractValidationError(f"{message_name} data properties must be an object")
+            raise ContractValidationError(
+                f"{message_name} data properties must be an object"
+            )
         if set(data_schema.get("required", ())) != required_fields:
-            raise ContractValidationError(f"{message_name} required data fields drifted")
+            raise ContractValidationError(
+                f"{message_name} required data fields drifted"
+            )
         if set(data_properties) != required_fields:
             raise ContractValidationError(f"{message_name} allowed data fields drifted")
 
