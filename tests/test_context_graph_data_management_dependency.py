@@ -5,10 +5,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-_ASSESSMENT_SCHEMA_ID = (
+_SCHEMA_IDS = [
     "https://schemas.contextualwisdomlab.org/context/"
-    "data-management-assessment.v1.schema.json"
-)
+    "canonical-authority-uri.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "canonical-asset-uri.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "cloudevent-envelope.v1.schema.json",
+    "https://schemas.contextualwisdomlab.org/context/"
+    "data-management-assessment.v1.schema.json",
+]
 _ASSESSMENT_PROFILE_ID = (
     "urn:cwl:context-contracts:data-management-assessment-semantics:v1"
 )
@@ -36,12 +42,7 @@ def test_data_management_projection_declares_release_artifacts(
         "release_version": None,
         "release_tag": None,
         "release_commit_sha": None,
-        "required_schema_ids": [
-            "https://schemas.contextualwisdomlab.org/context/canonical-authority-uri.v1.schema.json",
-            "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json",
-            "https://schemas.contextualwisdomlab.org/context/cloudevent-envelope.v1.schema.json",
-            _ASSESSMENT_SCHEMA_ID,
-        ],
+        "required_schema_ids": _SCHEMA_IDS,
         "required_conformance_profile_ids": [_ASSESSMENT_PROFILE_ID],
         "required_package_resources": _REQUIRED_RESOURCES,
         "required_before_merge": (
