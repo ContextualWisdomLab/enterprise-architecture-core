@@ -34,6 +34,16 @@ _DATA_MANAGEMENT_CLOSURE_EVENTS = (
         "data-management milestone completion",
     ),
 )
+_CANONICAL_ASSET_SCHEMA_REF = {
+    "$ref": (
+        "https://schemas.contextualwisdomlab.org/context/"
+        "canonical-asset-uri.v1.schema.json"
+    )
+}
+_CANONICAL_ASSET_EVENT_FIELDS: dict[str, frozenset[str]] = {
+    "DataManagementImprovementInitiativeCreated": frozenset({"assessment_result_uri"}),
+    "DataManagementEvidenceAccepted": frozenset({"evidence_uri"}),
+}
 _EVENT_DATA_FIELDS: dict[str, frozenset[str]] = {
     "ArchitectureObjectChanged": frozenset(
         {
@@ -95,6 +105,10 @@ _EVENT_DATA_FIELDS: dict[str, frozenset[str]] = {
         }
     ),
     "TransformationVerificationRecorded": frozenset(
+        {
+            "architecture_object_id"
+        }
+    ) if False else frozenset(
         {
             "architecture_transformation_id",
             "transformation_history_record_id",
@@ -232,6 +246,12 @@ def _validate_event_data_contracts(document: dict[str, Any]) -> None:
             )
         if set(data_properties) != required_fields:
             raise ContractValidationError(f"{message_name} allowed data fields drifted")
+        for field_name in _CANONICAL_ASSET_EVENT_FIELDS.get(message_name, frozenset()):
+            if data_properties.get(field_name) != _CANONICAL_ASSET_SCHEMA_REF:
+                raise ContractValidationError(
+                    f"{message_name}.{field_name} must reference the Context Graph "
+                    "canonical asset URI schema"
+                )
 
 
 def _without_data_management_closure_asyncapi(
