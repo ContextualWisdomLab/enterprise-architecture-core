@@ -171,8 +171,10 @@ def test_event_data_validator_fails_closed_on_malformed_contract_shapes(
         closure_validation._validate_event_data_contracts(changed)
 
 
-def test_type_only_projection_skips_non_object_event_schema(asyncapi_document) -> None:
-    """Layered validation leaves an unusable event schema for the validator to reject."""
+def test_type_only_projection_skips_non_object_event_schema(
+    asyncapi_document,
+) -> None:
+    """Layered validation leaves an unusable event schema for rejection."""
 
     changed = deepcopy(asyncapi_document)
     message_name = "DataManagementEvidenceAccepted"
@@ -190,8 +192,10 @@ def test_type_only_projection_skips_non_object_event_schema(asyncapi_document) -
     )
 
 
-def test_type_only_projection_preserves_non_object_properties(asyncapi_document) -> None:
-    """Layered validation removes only fields it can safely strip from an event schema."""
+def test_type_only_projection_preserves_non_object_properties(
+    asyncapi_document,
+) -> None:
+    """Layered validation strips only fields safe to remove from an event schema."""
 
     changed = deepcopy(asyncapi_document)
     event_schema = _event_schema(changed)
