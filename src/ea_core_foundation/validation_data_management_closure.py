@@ -259,7 +259,6 @@ def _without_data_management_closure_asyncapi(
 def validate_asyncapi_document(document: dict[str, Any]) -> int:
     """Validate improvement creation plus receipt-bound closure publications."""
 
-    _validate_event_data_contracts(document)
     type_only_document = _without_event_data_contracts(document)
     legacy_operation_count = base.validate_asyncapi_document(
         _without_data_management_closure_asyncapi(type_only_document)
@@ -275,6 +274,7 @@ def validate_asyncapi_document(document: dict[str, Any]) -> int:
             event_type=event_type,
             command_name=command_name,
         )
+    _validate_event_data_contracts(document)
     return legacy_operation_count + len(_DATA_MANAGEMENT_CLOSURE_EVENTS)
 
 
