@@ -94,7 +94,9 @@ def test_recheck_status_authority_is_distinct_and_fail_closed() -> None:
         "EA_TENANT_CLAIM": "tenant",
         "EA_ROLE_CLAIM": "role",
         "EA_DATA_MANAGEMENT_RECHECK_ROLES": "ea_data_management_rechecker",
-        "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES": "ea_data_management_recheck_reader",
+        "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES": (
+            "ea_data_management_recheck_reader"
+        ),
     }
     config = build_data_management_recheck_status_authorization_config(environment)
     assert config is not None
