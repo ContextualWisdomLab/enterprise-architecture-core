@@ -60,4 +60,3 @@ International Organization for Standardization, International Electrotechnical
 Commission, & Institute of Electrical and Electronics Engineers. (2022).
 *Software, systems and enterprise — Architecture description* (ISO/IEC/IEEE
 Standard No. 42010:2022). https://doi.org/10.1109/IEEESTD.2022.9938446
-

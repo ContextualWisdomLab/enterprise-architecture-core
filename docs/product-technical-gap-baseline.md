@@ -1,7 +1,7 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-20, GitHub API and repository inspection  
-**Repository:** `ContextualWisdomLab/enterprise-architecture-core`  
+**Snapshot:** 2026-08-20, GitHub API and repository inspection<br>
+**Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
 This is an evidence snapshot, not a claim that every open branch is shipped.
@@ -134,4 +134,3 @@ The baseline uses the following current or governing sources:
 All references in implementation ADRs and this baseline use APA 7th form. A
 standard is not a conformance claim: the corresponding row must point to
 current executable, runtime, or audit evidence.
-
