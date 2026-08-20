@@ -19,6 +19,10 @@ _PORTFOLIO_PATH = (
     "/v1/architecture-objects/"
     "{architecture_object_id}/portfolio-assessments"
 )
+_PORTFOLIO_SUMMARY_PATH = (
+    "/v1/architecture-objects/"
+    "{architecture_object_id}/portfolio-assessment-summary"
+)
 
 
 def _repository_fixture(tmp_path: Path, *, adr_count: int = 10) -> Path:
@@ -261,6 +265,10 @@ def test_recheck_runtime_requires_both_reassessment_schemas(
 
 
 @pytest.mark.parametrize(
+    "path",
+    [_PORTFOLIO_PATH, _PORTFOLIO_SUMMARY_PATH],
+)
+@pytest.mark.parametrize(
     ("field_name", "invalid_value", "message"),
     [
         ("operationId", "getSomethingElse", "operationId must be"),
@@ -270,6 +278,7 @@ def test_recheck_runtime_requires_both_reassessment_schemas(
 )
 def test_portfolio_read_operation_fails_closed_when_published_boundary_drifts(
     openapi_document: dict[str, object],
+    path: str,
     field_name: str,
     invalid_value: object,
     message: str,
@@ -277,7 +286,7 @@ def test_portfolio_read_operation_fails_closed_when_published_boundary_drifts(
     """Portfolio read metadata must stay identical to its strict parser."""
 
     changed = deepcopy(openapi_document)
-    changed["paths"][_PORTFOLIO_PATH]["get"][field_name] = invalid_value
+    changed["paths"][path]["get"][field_name] = invalid_value
 
     with pytest.raises(recheck_validation.ContractValidationError, match=message):
         recheck_validation.validate_openapi_runtime_surface(changed)
@@ -288,7 +297,12 @@ def test_portfolio_read_runtime_requires_its_response_schemas(
 ) -> None:
     """The portfolio wrapper and row schemas are inseparable from the GET route."""
 
-    for schema_name in ("PortfolioAssessmentResponse", "PortfolioAssessment"):
+    for schema_name in (
+        "PortfolioAssessmentResponse",
+        "PortfolioAssessment",
+        "PortfolioAssessmentSummaryResponse",
+        "PortfolioAssessmentSummary",
+    ):
         changed = deepcopy(openapi_document)
         changed["components"]["schemas"].pop(schema_name)
         with pytest.raises(

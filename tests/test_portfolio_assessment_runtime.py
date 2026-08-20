@@ -10,7 +10,7 @@ import pytest
 
 import ea_core_foundation.replan_runtime as replan_runtime
 from ea_core_foundation.service import PlannerExecutionError
-from tests.test_portfolio_assessment_api import _PATH, _row
+from tests.test_portfolio_assessment_api import _PATH, _SUMMARY_PATH, _row
 from tests.test_target_state_replan_runtime import (
     _config,
     _jwks_loader,
@@ -21,6 +21,7 @@ from tests.test_target_state_replan_runtime import (
 )
 
 _ROLE = "ea_portfolio_assessment_reader"
+_SUMMARY_ROLE = "ea_portfolio_assessment_summary_reader"
 
 
 def _get(
@@ -48,6 +49,12 @@ def _portfolio_config():
     """Return the test profile restricted to the portfolio read role."""
 
     return _config(frozenset({_ROLE}))
+
+
+def _portfolio_summary_config():
+    """Return the test profile restricted to the summary read role."""
+
+    return _config(frozenset({_SUMMARY_ROLE}))
 
 
 def test_http_portfolio_assessment_is_purpose_authorized_and_actionable() -> None:
@@ -126,6 +133,139 @@ def test_http_portfolio_assessment_fails_closed_without_policy_and_reader(
     assert body["error_code"] == "portfolio_assessment_unavailable"
 
 
+def test_http_portfolio_assessment_summary_is_purpose_authorized() -> None:
+    """The summary projection has its own role and returns buyer next actions."""
+
+    def reader(context: Any, request: Any) -> dict[str, object]:
+        del context, request
+        return {
+            "architecture_object_id": "0196f300-1111-7111-8111-111111111174",
+            "valid_at": "2026-08-20T00:00:00Z",
+            "recorded_at": "2026-08-20T01:00:00Z",
+            "assessment_count": 0,
+            "group_count": 0,
+            "assessment_state_code": "no_assessments",
+            "next_action": "collect_portfolio_assessments",
+            "groups": [],
+        }
+
+    server, thread, host, port = _start_server(
+        portfolio_assessment_summary_authorization_config=_portfolio_summary_config(),
+        portfolio_assessment_summary_reader=reader,
+        jwks_loader=_jwks_loader,
+        signature_verifier=lambda signing_input, signature, jwk: True,
+    )
+    try:
+        denied_status, denied = _get(
+            host,
+            port,
+            authorization=f"Bearer {_token(_ROLE)}",
+            path=_SUMMARY_PATH,
+        )
+        ok_status, ok = _get(
+            host,
+            port,
+            authorization=f"Bearer {_token(_SUMMARY_ROLE)}",
+            path=_SUMMARY_PATH,
+        )
+    finally:
+        _stop_server(server, thread)
+
+    assert denied_status == 403
+    assert denied["error_code"] == "forbidden"
+    assert ok_status == 200
+    assert ok["next_action"] == "collect_portfolio_assessments"
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {},
+        {
+            "portfolio_assessment_summary_authorization_config": "not-a-config",
+            "portfolio_assessment_summary_reader": "not-a-reader",
+        },
+    ],
+)
+def test_http_portfolio_assessment_summary_fails_closed_without_policy_and_reader(
+    kwargs: dict[str, object],
+) -> None:
+    """Reject summary reads unless both the dedicated policy and read port exist."""
+
+    server, thread, host, port = _start_server(**kwargs)
+    try:
+        status, body = _get(
+            host,
+            port,
+            authorization=f"Bearer {_token(_SUMMARY_ROLE)}",
+            path=_SUMMARY_PATH,
+        )
+    finally:
+        _stop_server(server, thread)
+
+    assert status == 503
+    assert body["error_code"] == "portfolio_assessment_summary_unavailable"
+
+
+def test_http_portfolio_assessment_summary_rejects_invalid_target_before_read() -> None:
+    """Summary requests preserve the raw read port's local-origin boundary."""
+
+    reads: list[str] = []
+
+    def reader(context: Any, request: Any) -> dict[str, object]:
+        del context, request
+        reads.append("read")
+        return {}
+
+    server, thread, host, port = _start_server(
+        portfolio_assessment_summary_authorization_config=_portfolio_summary_config(),
+        portfolio_assessment_summary_reader=reader,
+        jwks_loader=_jwks_loader,
+        signature_verifier=lambda signing_input, signature, jwk: True,
+    )
+    try:
+        status, body = _get(
+            host,
+            port,
+            authorization=f"Bearer {_token(_SUMMARY_ROLE)}",
+            path=f"https://attacker.example{_SUMMARY_PATH}",
+        )
+    finally:
+        _stop_server(server, thread)
+
+    assert status == 400
+    assert body["error_code"] == "invalid_portfolio_assessment_summary_request"
+    assert reads == []
+
+
+def test_http_portfolio_assessment_summary_reader_failure_is_retriable() -> None:
+    """Summary storage failure remains an explicit retriable 503."""
+
+    def failing_reader(context: Any, request: Any) -> dict[str, object]:
+        del context, request
+        raise PlannerExecutionError("database unavailable")
+
+    server, thread, host, port = _start_server(
+        portfolio_assessment_summary_authorization_config=_portfolio_summary_config(),
+        portfolio_assessment_summary_reader=failing_reader,
+        jwks_loader=_jwks_loader,
+        signature_verifier=lambda signing_input, signature, jwk: True,
+    )
+    try:
+        status, body = _get(
+            host,
+            port,
+            authorization=f"Bearer {_token(_SUMMARY_ROLE)}",
+            path=_SUMMARY_PATH,
+        )
+    finally:
+        _stop_server(server, thread)
+
+    assert status == 503
+    assert body["error_code"] == "portfolio_assessment_summary_read_failed"
+    assert "retry" in body["next_action"].lower()
+
+
 def test_http_portfolio_assessment_rejects_invalid_target_before_read() -> None:
     """Authority-bearing and malformed targets cannot alias a portfolio resource."""
 
@@ -200,6 +340,16 @@ def test_main_wires_portfolio_assessment_policy_and_reader(
         "build_portfolio_assessment_reader",
         lambda value: "build_portfolio_assessment_reader",
     )
+    monkeypatch.setattr(
+        replan_runtime,
+        "build_portfolio_assessment_summary_authorization_config",
+        lambda value: "build_portfolio_assessment_summary_authorization_config",
+    )
+    monkeypatch.setattr(
+        replan_runtime,
+        "build_portfolio_assessment_summary_reader",
+        lambda value: "build_portfolio_assessment_summary_reader",
+    )
     monkeypatch.setattr(replan_runtime, "serve_forever", lambda current: None)
 
     assert replan_runtime.main([]) == 0
@@ -208,4 +358,10 @@ def test_main_wires_portfolio_assessment_policy_and_reader(
     )
     assert server.captured["portfolio_assessment_reader"] == (
         "build_portfolio_assessment_reader"
+    )
+    assert server.captured["portfolio_assessment_summary_authorization_config"] == (
+        "build_portfolio_assessment_summary_authorization_config"
+    )
+    assert server.captured["portfolio_assessment_summary_reader"] == (
+        "build_portfolio_assessment_summary_reader"
     )

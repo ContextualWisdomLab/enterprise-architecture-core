@@ -26,6 +26,8 @@ Start the `ea-core` process, call `GET /health`, then call `GET /ready`. Use the
 
 `GET /v1/data-management-assessment-rechecks/{assessment_recheck_request_id}` follows one reassessment request and returns `await_assessment_recheck`, `plan_remaining_assessment_gap`, `close_assessment_improvement_loop`, or `review_assessment_recheck_evidence` according to the unique tenant-local successor and its explicit truth origin. It is read-only and uses `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES`.
 
+`GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessment-summary` projects the same explicit cutoffs and optional selectors into deterministic same-framework, same-version, same-scale, same-dimension, and same-cycle groups. It returns assessment counts, score bounds within each scale, labels, truth statuses, evidence counts, and `collect_assessment_evidence`, `review_assessment_truth`, or `use_assessment_evidence` next actions. It uses `EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES` and never averages scores across scales.
+
 `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessments` exposes the first buyer-facing application-portfolio slice. Supply explicit `valid_at` and `recorded_at` cutoffs and optionally filter by lower-snake `framework_code` or `cycle_code`. The purpose-bound SQL read returns normalized framework, scale, dimension, cycle, score, truth-origin, and evidence identities; superseded and rejected facts are excluded, while inferred and proposed facts remain labeled for review. The route uses the dedicated `EA_PORTFOLIO_ASSESSMENT_READ_ROLES` Keyverse allow-list and does not provide a portfolio scoring mutation or UI.
 
 All target-state mutation commands use UUIDv7 decision/evidence/transformation identities, explicit business-effective time, bounded human reason, actor derivation from verified identity, exact idempotency-key receipt binding, and fail-closed conflicting replay. Outbound events omit the private decision actor and reason. The data-management reassessment command is separately purpose-authorized and receipt-bound; it reuses the established immutable assessment projection/evidence history instead of manufacturing source truth.
@@ -57,6 +59,7 @@ No direct runtime privilege is granted to this overload in `database/init/003_gr
 - Data-management reassessment requests use `EA_DATA_MANAGEMENT_RECHECK_ROLES`.
 - Data-management reassessment status reads use `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES`.
 - Portfolio assessment reads use `EA_PORTFOLIO_ASSESSMENT_READ_ROLES`.
+- Portfolio assessment summary reads use `EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES`.
 - Mutation and monitoring roles are purpose-bound and do not inherit authority from read or sibling roles.
 - Keyverse configuration is fail-closed and includes `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and every operation-specific role allow-list above.
 - JWKS retrieval remains HTTPS, same-origin, redirect-denied, bounded, timeout-limited, and fail-closed.

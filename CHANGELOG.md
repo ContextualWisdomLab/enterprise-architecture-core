@@ -1,6 +1,6 @@
 # Changelog
 
-- Added the first buyer-facing application-portfolio read slice through `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessments`, with explicit valid/system cutoffs, optional framework/cycle selectors, dedicated `EA_PORTFOLIO_ASSESSMENT_READ_ROLES`, a purpose-bound PostgreSQL read port, truth-origin labels, and fail-closed runtime/OpenAPI validation. Scoring mutations, aggregate portfolio views, and presentation UI remain outside this slice.
+- Added buyer-facing application-portfolio reads through `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessments` and the deterministic same-scale `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessment-summary`, with explicit valid/system cutoffs, dedicated purpose-bound roles, truth/evidence next actions, and fail-closed runtime/OpenAPI validation. Cross-scale score normalization, scoring mutations, portfolio-wide list workflow, and presentation UI remain outside this slice.
 
 ## [Unreleased]
 
