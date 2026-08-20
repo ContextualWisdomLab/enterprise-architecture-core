@@ -26,6 +26,16 @@ All mutation commands use UUIDv7 decision/evidence/transformation identities, ex
 
 The read and command surfaces remain Enterprise Architecture authority. pg-erd-cloud physical-schema evidence, Semantic Data Portal Data/AI Context, and LineageWeave inferred/proposed lineage remain foreign authority reached only through governed receipt/canonical-reference projection. No API performs cross-service application-table SQL or promotes foreign inferred evidence to authoritative truth.
 
+## Active stacked assessment-improvement database contract
+
+PR #27 contains an active, unreleased database decision slice for converting receipt-bound Data/AI Context assessment gaps into proposed EA remediation work. This section describes code on that stacked branch only; it is **not an implemented HTTP endpoint**, does not amend `contracts/openapi.json`, and is not protected-main shipped truth.
+
+The dependency-aware improvement command is the 13-argument overload of `architecture_core.create_data_management_improvement_plan(...)`. In addition to the source assessment projection, missing-evidence code, decision UUIDv7, target capability, accountable organization, initiative/milestone fields, due time, and optional funding reference, it accepts aligned `uuid[]` values for prerequisite remediation initiatives and their evidence records. Arrays are explicit and required; two empty arrays mean “no dependencies.” Cardinalities must match, prerequisite identities must be unique, and one decision is bounded to 32 dependencies.
+
+The command accepts only active same-tenant prerequisite initiatives that are not rejected or superseded and only same-tenant evidence records. It creates or exactly replays the proposed remediation plan through the existing purpose-bound database command, then commits the explicit dependency-set header plus normalized prerequisite/evidence relations in the same transaction. Reusing one decision UUID with a different dependency/evidence set fails closed. The source Semantic Data Portal assessment remains a read-only foreign projection and never gains EA authority merely because it triggered proposed remediation.
+
+No direct runtime privilege is granted to this overload in `database/init/003_grant_runtime_access.sql`. A future service/HTTP surface must add a purpose-bound Keyverse authorization wrapper, strict request/receipt contract, privacy-minimized error/event behavior, and exact integration tests before this database capability becomes an externally implemented API. Callers must not bypass that boundary with direct application-table SQL.
+
 ## Authorization rules
 
 - Liveness and readiness remain unauthenticated.
