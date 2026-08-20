@@ -142,6 +142,10 @@ BEGIN
       true
   );
 
+  -- Preserve fast sequential replay. On a replay miss, serialize on the
+  -- immutable transformation aggregate and repeat the replay lookup after the
+  -- lock. This makes concurrent exact delivery converge on the first committed
+  -- schedule/outbox receipt instead of racing uniqueness constraints.
   SELECT
       schedule_record.transformation_schedule_record_id,
       schedule_record.architecture_transformation_id,
@@ -168,6 +172,48 @@ BEGIN
      AND milestone_record.initiative_milestone_id = schedule_record.initiative_milestone_id
    WHERE schedule_record.tenant_record_id = requested_tenant_record_id
      AND schedule_record.decision_request_id = requested_decision_request_id;
+
+  IF existing_schedule_id IS NULL THEN
+    PERFORM 1
+      FROM architecture_core.architecture_transformation AS transformation_record
+     WHERE transformation_record.tenant_record_id = requested_tenant_record_id
+       AND transformation_record.architecture_transformation_id =
+           requested_transformation_id
+     FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '23514',
+        MESSAGE = 'authoritative transformation is unavailable for the verified tenant';
+    END IF;
+
+    SELECT
+        schedule_record.transformation_schedule_record_id,
+        schedule_record.architecture_transformation_id,
+        schedule_record.initiative_milestone_id,
+        schedule_record.effective_at,
+        schedule_record.decision_actor_ref,
+        schedule_record.decision_reason_text,
+        schedule_record.evidence_record_id,
+        schedule_record.recorded_at,
+        milestone_record.target_at
+      INTO
+        existing_schedule_id,
+        existing_transformation_id,
+        existing_milestone_id,
+        existing_effective_at,
+        existing_actor_ref,
+        existing_reason_text,
+        existing_evidence_id,
+        existing_recorded_at,
+        existing_target_at
+      FROM architecture_core.transformation_schedule_record AS schedule_record
+      JOIN architecture_core.initiative_milestone AS milestone_record
+        ON milestone_record.tenant_record_id = schedule_record.tenant_record_id
+       AND milestone_record.initiative_milestone_id = schedule_record.initiative_milestone_id
+     WHERE schedule_record.tenant_record_id = requested_tenant_record_id
+       AND schedule_record.decision_request_id = requested_decision_request_id;
+  END IF;
 
   IF existing_schedule_id IS NOT NULL THEN
     IF existing_transformation_id IS DISTINCT FROM requested_transformation_id
@@ -209,14 +255,15 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Fresh decisions already hold the aggregate lock. Recheck current authority
+  -- after serialization so a waited caller cannot act on stale eligibility.
   SELECT transformation_record.remediation_initiative_id
     INTO transformation_initiative_id
     FROM architecture_core.architecture_transformation AS transformation_record
    WHERE transformation_record.tenant_record_id = requested_tenant_record_id
      AND transformation_record.architecture_transformation_id = requested_transformation_id
      AND transformation_record.superseded_at IS NULL
-     AND transformation_record.truth_status_code = 'authoritative'
-   FOR UPDATE;
+     AND transformation_record.truth_status_code = 'authoritative';
 
   IF transformation_initiative_id IS NULL THEN
     RAISE EXCEPTION USING
@@ -381,6 +428,6 @@ COMMENT ON FUNCTION architecture_core.schedule_transformation(
     text,
     uuid
 ) IS
-'Purpose-bound command that binds an approved authoritative EA transformation to an authoritative milestone of its remediation initiative. One UUIDv7 decision request is idempotent; exact replay returns the original schedule/outbox receipt, conflicting meaning is rejected, and the authoritative schedule record and privacy-minimized outbox event commit atomically.';
+'Purpose-bound command that binds an approved authoritative EA transformation to an authoritative milestone of its remediation initiative. One UUIDv7 decision request is concurrency-safe and idempotent; exact concurrent or sequential replay returns the original schedule/outbox receipt, conflicting meaning is rejected, fresh decisions serialize on the transformation aggregate before current-state evaluation, and the authoritative schedule record and privacy-minimized outbox event commit atomically.';
 
 COMMIT;
