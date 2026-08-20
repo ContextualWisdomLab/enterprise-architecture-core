@@ -15,8 +15,15 @@ A feature is not considered releasable merely because its happy-path code
 exists.
 
 The primary exact-head package SBOM remains SPDX 3.0.1. The pinned GitHub
-`actions/attest` v4.2.2 parser currently accepts SPDX JSON documents identified
-by `spdxVersion` and `SPDXID`, so protected-main attestation uses a separately
-generated, checksummed SPDX 2.3 predicate while retaining the SPDX 3.0.1
-artifact as the canonical package evidence. The two artifacts must never be
-treated as interchangeable or left outside the exact-head checksum manifest.
+`actions/attest` v4.2.2 automatic SBOM detector accepts SPDX JSON documents
+identified by the SPDX 2.x `spdxVersion` and `SPDXID` fields, while the canonical
+SPDX 3.0.1 JSON-LD uses `@context` and `@graph`. Rather than generate a second,
+weaker-format compatibility SBOM, protected `main` uses the action's explicit
+custom-predicate mode to sign the canonical SPDX 3.0.1 document directly with
+in-toto predicate type `https://spdx.dev/Document/v3`. The same job then verifies
+both SLSA provenance and SPDX 3 attestations against the exact repository,
+`refs/heads/main`, source SHA, signer-workflow path, signer digest, GitHub OIDC
+issuer, and GitHub-hosted runner policy, and retains the machine-readable
+verification results under an exact-SHA artifact name. Attestation verification
+remains release evidence only; it does not replace independent review, package
+identity, migration/rollback acceptance, or publication authorization.
