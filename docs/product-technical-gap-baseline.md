@@ -9,6 +9,13 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
+**Live refresh:** `2026-08-20T13:17:51Z` — PR #18 is currently at exact head
+`a5d8550a722106acde49ccd57143932a2ae74bf4` with no formal review and hosted
+required checks pending. PR #14 remains a draft at exact head
+`ca6889497728e1a3f09d68790a9096576e13a3ff`; its latest `gh pr checks` result
+passes the required runtime and supply-chain checks. Two older failed runs are
+historical evidence only and do not transfer to a new head.
+
 ## Executive decision
 
 The product has a credible headless decision-plane foundation and a growing
@@ -74,11 +81,11 @@ recollected after any push or base change.
 | [22](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/22) | Complete started target-state transformation | `target-state-start-v1` → `target-state-complete-v1` | Draft; visible repository gates green | Verify only an authoritative started transformation can complete. |
 | [21](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/21) | Run repository acceptance on protected `develop` pushes | `main` → `fix/develop-push-acceptance` | Ready; exact current head `4ada32a811c2f5ba7ac2138c0826229c5d62e78b`; repository Checks terminal green; no qualifying independent current-head approval | Obtain a formal same-head approval, then re-fetch and re-check before merge. |
 | [19](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/19) | Start scheduled target-state transformation | `target-state-schedule-v1` → `target-state-start-v1` | Draft; visible repository gates green | Review the schedule-to-start authority boundary before advancing. |
-| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` → `cursor/ea-core-customer-docs-609e` | Ready; exact head `e31309e7ed2e33ed0a05c368a8ffe96869bd7a58`; no formal review; hosted required-workflow and security/provenance evidence remains queued | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
+| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` → `cursor/ea-core-customer-docs-609e` | Ready; exact head `a5d8550a722106acde49ccd57143932a2ae74bf4`; no formal review; hosted required-workflow and security/provenance evidence remains queued | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
 | [17](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/17) | Schedule approved target-state transformation | `target-state-approval-v1` → `target-state-schedule-v1` | Draft; visible repository gates green | Review milestone binding and exact replay semantics. |
 | [16](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/16) | Govern target-state approval command | `target-state-planner-api-v1` → `target-state-approval-v1` | Draft; visible repository gates green | Require operation-specific Keyverse authority and immutable evidence. |
 | [15](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/15) | Expose authenticated target-state planner query | `target-state-planner-v1` → `target-state-planner-api-v1` | Draft; visible repository gates green | Verify issuer, audience, tenant, role, bitemporal cutoff, and no direct-table access. |
-| [14](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/14) | Synchronize `main` into protected `develop` | `develop` ← `main` | Draft; blocked by review and base-sensitive integration evidence | Rebuild after prerequisite merges; do not transfer predecessor checks or reviews. |
+| [14](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/14) | Synchronize `main` into protected `develop` | `develop` ← `main` | Draft; exact head `ca6889497728e1a3f09d68790a9096576e13a3ff`; latest required Checks pass; older attestation/runtime failures are stale; still blocked by review and base-sensitive integration evidence | Rebuild after prerequisite merges; do not transfer predecessor checks or reviews. |
 | [12](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/12) | Joined technology target-state planner projection | `cross-domain-impact-projection-v1` → `target-state-planner-v1` | Draft; visible repository gates green | Preserve receipt-bound foreign evidence and deterministic next actions. |
 | [11](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/11) | Cross-domain technology impact evidence | `main` → `cross-domain-impact-projection-v1` | Draft; visible repository gates green | Obtain review, then re-check exact base after integration changes. |
 
