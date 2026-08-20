@@ -197,6 +197,75 @@ def test_recheck_runtime_legacy_fallback_delegates_on_malformed_shape(
     assert delegated == [malformed_document]
 
 
+def test_recheck_repository_orchestration_reports_all_artifact_counts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment layer validates its complete repository boundary."""
+
+    root = _repository_fixture(tmp_path)
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_migration_inventory",
+        lambda paths: None,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_migration_sql",
+        lambda text: (1, 2, 3, 4),
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_openapi_document",
+        lambda document: 8,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_openapi_runtime_surface",
+        lambda document: None,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_asyncapi_document",
+        lambda document: 9,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_connector_catalog",
+        lambda document: 7,
+    )
+
+    report = recheck_validation.validate_repository(root)
+
+    assert (
+        report.table_count,
+        report.column_count,
+        report.index_count,
+        report.constraint_count,
+        report.openapi_operation_count,
+        report.asyncapi_operation_count,
+        report.adr_count,
+        report.connector_count,
+    ) == (1, 2, 3, 4, 8, 9, 10, 7)
+
+    asyncapi_path = root / "contracts/asyncapi.json"
+    asyncapi_path.unlink()
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="missing required file",
+    ):
+        recheck_validation.validate_repository(root)
+    asyncapi_path.write_text("{}", encoding="utf-8")
+
+    for adr_path in (root / "docs/adr").glob("*.md"):
+        adr_path.unlink()
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="at least ten ADRs",
+    ):
+        recheck_validation.validate_repository(root)
+
+
 def test_recheck_role_is_mandatory_when_keyverse_configuration_is_present(
     openapi_document: dict[str, object],
 ) -> None:
