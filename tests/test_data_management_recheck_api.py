@@ -54,6 +54,7 @@ def _receipt(**changes: object) -> dict[str, object]:
     receipt: dict[str, object] = {
         "assessment_recheck_request_id": _RECHECK_ID,
         "outbox_event_id": _OUTBOX_ID,
+        "replayed": False,
         "next_action": "await_assessment_recheck",
     }
     receipt.update(changes)
@@ -171,6 +172,7 @@ def test_recheck_writer_uses_bounded_command_and_validates_receipt() -> None:
     assert captured["timeout"] == 10
     assert result["assessment_recheck_request_id"] == _RECHECK_ID
     assert result["outbox_event_id"] == _OUTBOX_ID
+    assert result["replayed"] is False
     assert result["next_action"] == "await_assessment_recheck"
 
 
@@ -222,6 +224,10 @@ def test_recheck_writer_rejects_invalid_receipt_shapes_and_semantics() -> None:
         ),
         (
             json.dumps(_receipt(outbox_event_id="not-a-uuid")),
+            "invalid reassessment receipt",
+        ),
+        (
+            json.dumps(_receipt(replayed="false")),
             "invalid reassessment receipt",
         ),
         (
