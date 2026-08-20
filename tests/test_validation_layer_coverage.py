@@ -191,6 +191,39 @@ def test_recheck_repository_orchestration_retains_all_evidence_dimensions(
     ) == (1, 2, 3, 4, 5, 6, 10, 7)
 
 
+def test_recheck_repository_orchestration_rejects_missing_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment layer rejects a missing required contract artifact."""
+
+    root = _repository_fixture(tmp_path)
+    _stub_recheck_artifact_validators(monkeypatch)
+    (root / "contracts/asyncapi.json").unlink()
+
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="missing required file",
+    ):
+        recheck_validation.validate_repository(root)
+
+
+def test_recheck_repository_orchestration_requires_decision_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment layer requires the accepted ADR evidence set."""
+
+    root = _repository_fixture(tmp_path, adr_count=9)
+    _stub_recheck_artifact_validators(monkeypatch)
+
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="at least ten ADRs",
+    ):
+        recheck_validation.validate_repository(root)
+
+
 def test_closure_repository_orchestration_requires_decision_evidence(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
