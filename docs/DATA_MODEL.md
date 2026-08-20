@@ -66,6 +66,19 @@ Authoritative and observed strategy facts require evidence. Current authoritativ
 
 Strategy meaning is immutable after insertion. Semantic correction uses one-time `superseded_at` plus a newly appended fact, preserving historical system-time queries. Forced RLS and composite tenant foreign keys protect all four relations. These milestones describe architecture decision targets only; project tasks, staffing, sprint state, and delivery telemetry remain external execution-system responsibilities.
 
+## Assessment-driven improvement dependencies
+
+Migrations 0031-0036 consume a versioned Data/AI Context assessment as receipt-bound foreign evidence and create proposed EA remediation work without taking ownership of the source assessment. Migration 0036 adds two normalized relations for the dependency portion of that decision:
+
+- `assessment_improvement_dependency_set`: immutable declaration that one `assessment_improvement_plan` was created through the dependency-aware contract and supplied an explicit bounded dependency set. `dependency_count = 0` is meaningful and distinguishes an explicit empty set from a legacy call that did not provide dependency semantics.
+- `assessment_improvement_dependency_relation`: one prerequisite `remediation_initiative` plus one tenant-scoped `evidence_record` supporting that prerequisite for the plan. The primary key permits at most one evidence binding per prerequisite in one plan.
+
+The dependency-aware improvement command accepts aligned prerequisite-initiative and evidence-record UUIDv7 arrays. Both arrays are required, cardinalities must match, prerequisite identities must be unique, and one decision is bounded to 32 prerequisites. Each prerequisite must already be an active same-tenant remediation initiative whose truth is not rejected or superseded; every paired evidence identity must exist in the same tenant. The command serializes same-source assessment decisions before replay evaluation, delegates creation of the proposed initiative/milestone/plan/outbox receipt to the existing improvement command, and persists the dependency-set header and normalized prerequisite/evidence rows in the same transaction. A failure rolls back the entire decision.
+
+Exact replay under one decision-request UUID must present the same dependency/evidence set. A changed set fails closed instead of silently changing execution prerequisites. Dependency rows are immutable after commit, protected by forced RLS, and linked with composite tenant foreign keys to the plan, prerequisite initiative, and evidence record. The plan's milestone is separately constrained to belong to the same remediation initiative recorded by the plan.
+
+These rows are EA-owned decision evidence, not a copy of the foreign assessment and not a project-management dependency graph. They preserve why proposed architecture work is blocked while keeping the Semantic Data Portal assessment read-only and keeping inferred/proposed foreign evidence from becoming authoritative through projection.
+
 ## Scenarios and target-state projection
 
 Migration 0012 implements the immutable object baseline of ADR 0008 with three normalized tenant-owned relations and one deterministic database projector:
