@@ -100,7 +100,9 @@ def test_recheck_status_authority_is_distinct_and_fail_closed() -> None:
     }
     config = build_data_management_recheck_status_authorization_config(environment)
     assert config is not None
-    assert config.allowed_roles == frozenset({"ea_data_management_recheck_reader"})
+    assert config.allowed_roles == frozenset(
+        {"ea_data_management_recheck_reader"}
+    )
 
     environment.pop("EA_DATA_MANAGEMENT_RECHECK_READ_ROLES")
     assert build_data_management_recheck_status_authorization_config(environment) is None
