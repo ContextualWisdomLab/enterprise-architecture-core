@@ -14,9 +14,11 @@ BEGIN
 END;
 $$;
 
--- The preceding foundation fixture ends its first object revision before the
--- assessment cycle begins. Add the next immutable revision so this read test
--- exercises the object and assessment valid-time intersection as well.
+-- The foundation fixture ends its first authoritative object revision before
+-- the assessment cycle begins, while verify_review_integrity.sql deliberately
+-- persists proposed revision 2. Add authoritative revision 3 so this read test
+-- exercises the object/assessment valid-time intersection without colliding
+-- with the cumulative review-integrity fixture.
 INSERT INTO architecture_core.object_revision (
     tenant_record_id,
     object_revision_id,
@@ -31,7 +33,7 @@ INSERT INTO architecture_core.object_revision (
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
     '0196a009-1111-7111-8111-111111111111',
     '0195d145-64e8-7f4f-8a23-a0cc784cb902',
-    2,
+    3,
     'Legacy Order Platform',
     '2026-07-01T00:00:00Z',
     'authoritative',
