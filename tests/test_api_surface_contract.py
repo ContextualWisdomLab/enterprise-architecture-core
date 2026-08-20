@@ -40,6 +40,10 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         "/v1/data-management-assessments/"
         "{data_management_assessment_projection_id}/recheck"
     )
+    reassessment_status_path = (
+        "/v1/data-management-assessment-rechecks/"
+        "{assessment_recheck_request_id}"
+    )
     assert set(openapi_document["paths"]) == {
         "/health",
         "/ready",
@@ -52,6 +56,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         monitoring_path,
         replan_path,
         reassessment_path,
+        reassessment_status_path,
     }
     assert set(openapi_document["paths"]["/health"]) == {"get"}
     assert set(openapi_document["paths"]["/ready"]) == {"get"}
@@ -64,6 +69,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
     assert set(openapi_document["paths"][monitoring_path]) == {"get"}
     assert set(openapi_document["paths"][replan_path]) == {"post"}
     assert set(openapi_document["paths"][reassessment_path]) == {"post"}
+    assert set(openapi_document["paths"][reassessment_status_path]) == {"get"}
 
 
 def test_openapi_binds_governed_approval_request_receipt_and_role(
@@ -268,6 +274,56 @@ def test_openapi_binds_governed_replan_request_receipt_and_role(
         "type": "string",
         "const": "approve_target_state",
     }
+
+
+def test_openapi_binds_reassessment_status_read_and_role(openapi_document) -> None:
+    """The published read contract follows reassessment evidence without mutation."""
+
+    status_path = (
+        "/v1/data-management-assessment-rechecks/"
+        "{assessment_recheck_request_id}"
+    )
+    operation = openapi_document["paths"][status_path]["get"]
+    assert operation["operationId"] == "getDataManagementAssessmentRecheckStatus"
+    assert operation["security"] == [{"keyverseBearer": []}]
+    assert set(operation["responses"]) == {"200", "400", "401", "403", "503"}
+    assert "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES" in openapi_document[
+        "x-keyverse-contract"
+    ]["requiredConfiguration"]
+
+    parameter = operation["parameters"][0]
+    assert parameter["name"] == "assessment_recheck_request_id"
+    assert parameter["required"] is True
+    assert parameter["schema"]["format"] == "uuid"
+    assert parameter["schema"]["pattern"].startswith("^[0-9a-f]{8}")
+    assert operation["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/DataManagementAssessmentRecheckStatus"
+    }
+
+    status = openapi_document["components"]["schemas"][
+        "DataManagementAssessmentRecheckStatus"
+    ]
+    assert status["additionalProperties"] is False
+    assert set(status["required"]) == {
+        "assessment_recheck_request_id",
+        "data_management_assessment_projection_id",
+        "successor_assessment_projection_id",
+        "recheck_state_code",
+        "successor_readiness_code",
+        "successor_overall_score_basis_points",
+        "successor_missing_evidence_count",
+        "next_action",
+    }
+    assert status["properties"]["recheck_state_code"]["enum"] == [
+        "awaiting_result",
+        "evidence_gap",
+        "evidence_complete",
+    ]
+    assert status["properties"]["next_action"]["enum"] == [
+        "await_assessment_recheck",
+        "plan_remaining_assessment_gap",
+        "close_assessment_improvement_loop",
+    ]
 
 
 def test_asyncapi_publishes_transformation_schedule_event(asyncapi_document) -> None:
