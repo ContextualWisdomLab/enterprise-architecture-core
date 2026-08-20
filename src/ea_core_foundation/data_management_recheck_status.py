@@ -32,12 +32,21 @@ _RECHECK_STATUS_FIELDS = {
     "assessment_recheck_request_id",
     "data_management_assessment_projection_id",
     "successor_assessment_projection_id",
+    "successor_truth_status_code",
     "recheck_state_code",
     "successor_readiness_code",
     "successor_overall_score_basis_points",
     "successor_missing_evidence_count",
     "next_action",
 }
+_TRUSTED_SUCCESSOR_TRUTH = {"authoritative", "observed"}
+_REVIEW_REQUIRED_SUCCESSOR_TRUTH = {
+    "inferred",
+    "proposed",
+    "superseded",
+    "rejected",
+}
+_ALL_SUCCESSOR_TRUTH = _TRUSTED_SUCCESSOR_TRUTH | _REVIEW_REQUIRED_SUCCESSOR_TRUTH
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,7 +138,7 @@ def _validate_recheck_status_response(
     response: object,
     request: DataManagementRecheckStatusRequest,
 ) -> Mapping[str, object]:
-    """Validate exact shape plus state/action invariants for one buyer status receipt."""
+    """Validate exact shape, truth origin, and buyer action for one status receipt."""
 
     if not isinstance(response, Mapping) or set(response) != _RECHECK_STATUS_FIELDS:
         raise PlannerExecutionError(
@@ -146,6 +155,7 @@ def _validate_recheck_status_response(
     _parse_response_uuid(response, "data_management_assessment_projection_id")
 
     state = response.get("recheck_state_code")
+    truth = response.get("successor_truth_status_code")
     readiness = response.get("successor_readiness_code")
     action = response.get("next_action")
     successor = response.get("successor_assessment_projection_id")
@@ -155,7 +165,7 @@ def _validate_recheck_status_response(
     if state == "awaiting_result":
         if any(
             value is not None
-            for value in (successor, readiness, score, missing_count)
+            for value in (successor, truth, readiness, score, missing_count)
         ):
             raise PlannerExecutionError(
                 "data-management recheck status returned invalid status evidence"
@@ -166,15 +176,19 @@ def _validate_recheck_status_response(
             )
         return response
 
-    if state not in {"evidence_gap", "evidence_complete"}:
-        raise PlannerExecutionError(
-            "data-management recheck status returned invalid status evidence"
-        )
     if successor is None:
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
         )
     _parse_response_uuid(response, "successor_assessment_projection_id")
+    if truth not in _ALL_SUCCESSOR_TRUTH:
+        raise PlannerExecutionError(
+            "data-management recheck status returned invalid status evidence"
+        )
+    if readiness not in {"evidence_gap", "evidence_complete"}:
+        raise PlannerExecutionError(
+            "data-management recheck status returned invalid status evidence"
+        )
     if type(score) is not int or not 0 <= cast(int, score) <= 10000:
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
@@ -183,25 +197,35 @@ def _validate_recheck_status_response(
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
         )
+    if readiness == "evidence_gap":
+        if cast(int, missing_count) == 0:
+            raise PlannerExecutionError(
+                "data-management recheck status returned invalid status evidence"
+            )
+    elif cast(int, missing_count) != 0:
+        raise PlannerExecutionError(
+            "data-management recheck status returned invalid status evidence"
+        )
 
-    expected = {
-        "evidence_gap": (
-            "evidence_gap",
-            "plan_remaining_assessment_gap",
-            lambda count: count > 0,
-        ),
-        "evidence_complete": (
-            "evidence_complete",
-            "close_assessment_improvement_loop",
-            lambda count: count == 0,
-        ),
-    }
-    expected_readiness, expected_action, count_rule = expected[cast(str, state)]
-    if (
-        readiness != expected_readiness
-        or action != expected_action
-        or not count_rule(cast(int, missing_count))
-    ):
+    if state == "review_required":
+        if (
+            truth not in _REVIEW_REQUIRED_SUCCESSOR_TRUTH
+            or action != "review_assessment_recheck_evidence"
+        ):
+            raise PlannerExecutionError(
+                "data-management recheck status returned invalid status evidence"
+            )
+        return response
+
+    if truth not in _TRUSTED_SUCCESSOR_TRUTH:
+        raise PlannerExecutionError(
+            "data-management recheck status returned invalid status evidence"
+        )
+    expected_action = {
+        "evidence_gap": "plan_remaining_assessment_gap",
+        "evidence_complete": "close_assessment_improvement_loop",
+    }[cast(str, readiness)]
+    if state != readiness or action != expected_action:
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
         )
