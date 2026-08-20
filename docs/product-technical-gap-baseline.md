@@ -1,6 +1,6 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-20T21:36:39Z, GitHub inspection and repository inspection<br>
+**Snapshot:** 2026-08-20T21:41:07Z, GitHub inspection and repository inspection<br>
 **Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
@@ -9,10 +9,10 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-20T21:36:39Z` — PR #18 was inspected at exact head
-`ee287b77accd0ecfff7424800871c3d82e540960`, based on protected
-`develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks show one
-pending OpenCode review job after an exact-head dispatch and no formal approval.
+**Live refresh:** `2026-08-20T21:41:07Z` — PR #18 was inspected at exact head
+`2141533a584d0d8fd2fee21b89420b63dfa59011`, based on protected
+`develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks are
+queued after an exact-head dispatch and no formal approval is observed.
 The synchronized stack is current at
 PR #31 `01f9c0c2ba976f3e4f05d2e8c5263ae14aab77c9`, PR #32
 `8729c49a00b6cadd0c124534f9ad47fb7a9ca522`, PR #33
@@ -21,10 +21,11 @@ PR #31 `01f9c0c2ba976f3e4f05d2e8c5263ae14aab77c9`, PR #32
 below, hosted required Checks remain queued, and no formal same-head approval is
 observed. PR #34 is an independent `main` candidate at exact head
 `b6160bdf1ac9c7f9511c9261b7032f853d591f15` with hosted Checks queued. Local
-PR35 evidence passes 697 tests, branch coverage 100%, Ruff, repository
-validation, clean PostgreSQL 18 SQL acceptance, and runtime privilege
-acceptance; these local results do not prove hosted Checks, merge, release, or
-deployment.
+PR34 evidence passes 121 tests, 100% statement-and-branch coverage (436
+statements/162 branches), Ruff, and repository validation; PR35 evidence passes
+697 tests, branch coverage 100%, Ruff, repository validation, clean PostgreSQL
+18 SQL acceptance, and runtime privilege acceptance. These local results do
+not prove hosted Checks, merge, release, or deployment.
 
 ## Executive decision
 
@@ -80,7 +81,7 @@ recollected after any push or base change.
 | PR | Scope | Base → head | Observed state | Customer-safe next action |
 | ---: | --- | --- | --- | --- |
 | [35](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/35) | Prepare append-only write boundaries for hot partitioning | `portfolio-assessment-summary` at current base `79eb87c7f4573abe56a967356181ed6801329ab5` → `hot-write-capacity` | Ready; exact head `2ec89f05650668e320c02abd2af78e8957d00286`; docs-only ancestry refresh after the changelog cleanup; prior 697-test/100%-branch-coverage, Ruff, repository, clean PostgreSQL 18 SQL, and runtime privilege evidence remain applicable; hosted required Checks are queued; no formal approval | Wait for terminal Checks and an independent same-head review; merge only after PR #33 and its ancestors are current and protected. |
-| [34](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/34) | Repair protected-main SPDX attestation compatibility | `main` at current base `ca6889497728e1a3f09d68790a9096576e13a3ff` → `codex/supply-chain-sbom-attestation` | Ready; exact head `b6160bdf1ac9c7f9511c9261b7032f853d591f15`; hosted Checks are queued; no current-head local evidence or formal approval is claimed | Wait for terminal hosted Checks and an independent same-head review; merge only after the exact-head protected gate passes. |
+| [34](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/34) | Repair protected-main SPDX attestation compatibility | `main` at current base `ca6889497728e1a3f09d68790a9096576e13a3ff` → `codex/supply-chain-sbom-attestation` | Ready; exact head `b6160bdf1ac9c7f9511c9261b7032f853d591f15`; local current-head evidence passes 121 tests, 100% statement-and-branch coverage (436 statements/162 branches), Ruff, and repository validation; hosted Checks are queued; no formal approval | Wait for terminal hosted Checks and an independent same-head review; merge only after the exact-head protected gate passes. |
 | [33](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/33) | Publish deterministic portfolio assessment summary | `portfolio-assessment-api` at current base `8729c49a00b6cadd0c124534f9ad47fb7a9ca522` → `portfolio-assessment-summary` | Ready; exact head `79eb87c7f4573abe56a967356181ed6801329ab5`; duplicate changelog entry removed; current PR35 aggregate evidence covers the synchronized chain; hosted Checks are queued; no formal approval | Wait for terminal Checks and obtain an independent same-head review; merge only after the synchronized parent and descendant gates are current. |
 | [32](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/32) | Expose portfolio assessment read port | `data-management-recheck-status-v1` at current base `01f9c0c2ba976f3e4f05d2e8c5263ae14aab77c9` → `portfolio-assessment-api` | Ready; exact head `8729c49a00b6cadd0c124534f9ad47fb7a9ca522`; changelog structure finding repaired; current PR35 aggregate evidence covers the synchronized chain; hosted Checks are queued; no formal approval | Wait for terminal Checks and obtain an independent same-head review; repair and revalidate before merge. |
 | [31](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/31) | Expose data-management reassessment status | `data-management-recheck-v1` at current base `c5b1b78ba3690104f7de32ce76b20bae77c3227b` → `data-management-recheck-status-v1` | Ready; exact head `01f9c0c2ba976f3e4f05d2e8c5263ae14aab77c9`; current PR35 aggregate evidence covers the status contract and PostgreSQL fixture; hosted Checks are queued; no formal approval | Wait for terminal Checks, inspect the independent review, then merge only with current-head evidence. |
@@ -113,7 +114,7 @@ after any push or base-branch change.
 | PR | Full head SHA | Collected | Delivery truth | Current evidence boundary |
 | ---: | --- | --- | --- | --- |
 | 35 | `2ec89f05650668e320c02abd2af78e8957d00286` | `2026-08-20T21:31:38Z` | `implementation_candidate` | Docs-only ancestry refresh after changelog cleanup; prior exact chain evidence remains: 697 tests, 100% statement-and-branch coverage (3250 statements/900 branches), Ruff, repository validation, clean PostgreSQL 18 migrations 0001–0050, every SQL acceptance file, and runtime privilege acceptance; hosted Checks queued; no formal approval. |
-| 34 | `b6160bdf1ac9c7f9511c9261b7032f853d591f15` | `2026-08-20T21:13:04Z` | `implementation_candidate` | Current head differs from the earlier local SPDX evidence; hosted Checks are queued and no current-head local evidence or formal approval is claimed. |
+| 34 | `b6160bdf1ac9c7f9511c9261b7032f853d591f15` | `2026-08-20T21:41:07Z` | `implementation_candidate` | Current-head local evidence passes 121 tests, 100% statement-and-branch coverage (436 statements/162 branches), Ruff, and repository validation; workflow-specific hosted SBOM/attestation Checks are queued; no formal approval, merge, release, or live deployment is claimed. |
 | 33 | `79eb87c7f4573abe56a967356181ed6801329ab5` | `2026-08-20T21:31:38Z` | `implementation_candidate` | Docs-only changelog cleanup; current PR35 aggregate local evidence covers this exact chain; hosted Checks queued; no formal approval. |
 | 32 | `8729c49a00b6cadd0c124534f9ad47fb7a9ca522` | `2026-08-20T21:28:30Z` | `implementation_candidate` | Changelog structure finding repaired and pushed; current PR35 aggregate local evidence covers this exact chain; hosted Checks queued; no formal approval. |
 | 31 | `01f9c0c2ba976f3e4f05d2e8c5263ae14aab77c9` | `2026-08-20T21:13:04Z` | `implementation_candidate` | Synchronized status parent of PR32; current PR35 aggregate local evidence covers the status contract and PostgreSQL fixture; hosted Checks queued; no formal approval. |
