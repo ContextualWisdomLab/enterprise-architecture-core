@@ -100,7 +100,7 @@ BEGIN
 
   SELECT pg_catalog.count(*)::integer
     INTO missing_evidence_count
-    FROM architecture_core.data_management_missing_evidence AS evidence_record
+    FROM architecture_core.assessment_missing_evidence_projection AS evidence_record
    WHERE evidence_record.tenant_record_id = requested_tenant_record_id
      AND evidence_record.data_management_assessment_projection_id =
          successor_projection.data_management_assessment_projection_id;
