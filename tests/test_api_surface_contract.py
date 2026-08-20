@@ -24,6 +24,10 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         "/v1/architecture-transformations/"
         "{architecture_transformation_id}/complete"
     )
+    verification_path = (
+        "/v1/architecture-transformations/"
+        "{architecture_transformation_id}/verification"
+    )
     assert set(openapi_document["paths"]) == {
         "/health",
         "/ready",
@@ -32,6 +36,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         schedule_path,
         start_path,
         complete_path,
+        verification_path,
     }
     assert set(openapi_document["paths"]["/health"]) == {"get"}
     assert set(openapi_document["paths"]["/ready"]) == {"get"}
@@ -40,6 +45,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
     assert set(openapi_document["paths"][schedule_path]) == {"post"}
     assert set(openapi_document["paths"][start_path]) == {"post"}
     assert set(openapi_document["paths"][complete_path]) == {"post"}
+    assert set(openapi_document["paths"][verification_path]) == {"post"}
 
 
 def test_openapi_binds_governed_approval_request_receipt_and_role(

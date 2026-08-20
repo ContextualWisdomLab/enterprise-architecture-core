@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from collections import Counter
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -13,8 +15,13 @@ ContractValidationError = core.ContractValidationError
 RepositoryReport = core.RepositoryReport
 validate_connector_catalog = core.validate_connector_catalog
 validate_migration_inventory = core.validate_migration_inventory
-validate_migration_sql = core.validate_migration_sql
 
+_CONSTRAINT_DDL_PATTERN = re.compile(
+    r"\b(?:(?P<drop>DROP)\s+CONSTRAINT(?:\s+IF\s+EXISTS)?|"
+    r"(?:(?:ADD)\s+)?CONSTRAINT)\s+"
+    r"(?P<constraint>[a-z][a-z0-9_]*)",
+    re.IGNORECASE,
+)
 _TARGET_STATE_SCHEDULE_RUNTIME_PATH = (
     "/v1/architecture-transformations/{architecture_transformation_id}/schedule"
 )
@@ -43,9 +50,47 @@ _TARGET_STATE_COMPLETE_OPERATION_NAME = "publishTransformationCompleted"
 _TARGET_STATE_COMPLETE_EVENT_TYPE = (
     "org.contextualwisdomlab.ea.transformation.completed.v1"
 )
-_EXECUTION_ROLE_CONFIGURATION = frozenset(
-    {"EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES"}
+_TARGET_STATE_VERIFY_RUNTIME_PATH = (
+    "/v1/architecture-transformations/{architecture_transformation_id}/verification"
 )
+_TARGET_STATE_VERIFY_OPERATION_ID = "verifyTechnologyTargetState"
+_TARGET_STATE_VERIFY_MESSAGE_NAME = "TransformationVerificationRecorded"
+_TARGET_STATE_VERIFY_CHANNEL_NAME = "transformationVerificationEvents"
+_TARGET_STATE_VERIFY_OPERATION_NAME = "publishTransformationVerificationRecorded"
+_TARGET_STATE_VERIFY_EVENT_TYPE = (
+    "org.contextualwisdomlab.ea.transformation.verification_recorded.v1"
+)
+_EXECUTION_ROLE_CONFIGURATION = frozenset(
+    {"EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES", "EA_VERIFY_ROLES"}
+)
+
+
+def _current_constraint_count(sql_text: str) -> int:
+    """Count the constraints that remain after ordered DROP/ADD replacement DDL."""
+
+    active_counts: Counter[str] = Counter()
+    for match in _CONSTRAINT_DDL_PATTERN.finditer(sql_text):
+        constraint_name = match.group("constraint").lower()
+        if match.group("drop") is None:
+            active_counts[constraint_name] += 1
+        else:
+            active_counts[constraint_name] = max(
+                0,
+                active_counts[constraint_name] - 1,
+            )
+    return sum(active_counts.values())
+
+
+def validate_migration_sql(sql_text: str) -> tuple[int, int, int, int]:
+    """Validate migrations and report current logical schema inventory counts."""
+
+    table_count, column_count, index_count, _ = core.validate_migration_sql(sql_text)
+    return (
+        table_count,
+        column_count,
+        index_count,
+        _current_constraint_count(sql_text),
+    )
 
 
 def _without_execution_roles(document: dict[str, Any]) -> dict[str, Any]:
@@ -92,18 +137,14 @@ def _validate_execution_operation(
         paths.get(runtime_path),
         f"path {runtime_path}",
     )
-    operation = core._require_mapping(
-        path_item.get("post"),
-        f"{runtime_path} post",
-    )
+    operation = core._require_mapping(path_item.get("post"), f"{runtime_path} post")
     if operation.get("operationId") != operation_id:
         raise ContractValidationError(
             f"target-state {command_name} operationId must be {operation_id}"
         )
     if operation.get("security") != [{"keyverseBearer": []}]:
         raise ContractValidationError(
-            f"target-state {command_name} must require "
-            "Keyverse bearer authorization"
+            f"target-state {command_name} must require Keyverse bearer authorization"
         )
     parameters = core._parameter_index(operation)
     if set(parameters) != {("architecture_transformation_id", "path")}:
@@ -172,14 +213,17 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
             "TargetStateCompleteRequest",
             "TargetStateCompleteReceipt",
         ),
+        (
+            _TARGET_STATE_VERIFY_RUNTIME_PATH,
+            _TARGET_STATE_VERIFY_OPERATION_ID,
+            "verification",
+            "TargetStateVerificationRequest",
+            "TargetStateVerificationReceipt",
+        ),
     )
-    for (
-        runtime_path,
-        operation_id,
-        command_name,
-        request_schema,
-        receipt_schema,
-    ) in execution_operations:
+    for runtime_path, operation_id, command_name, request_schema, receipt_schema in (
+        execution_operations
+    ):
         _validate_execution_operation(
             paths,
             runtime_path=runtime_path,
@@ -199,6 +243,8 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
         "TargetStateStartReceipt",
         "TargetStateCompleteRequest",
         "TargetStateCompleteReceipt",
+        "TargetStateVerificationRequest",
+        "TargetStateVerificationReceipt",
     }
     missing_schemas = required_execution_schemas.difference(schemas)
     if missing_schemas:
@@ -257,6 +303,11 @@ def _without_execution_asyncapi(document: dict[str, Any]) -> dict[str, Any]:
             _TARGET_STATE_COMPLETE_OPERATION_NAME,
             _TARGET_STATE_COMPLETE_MESSAGE_NAME,
         ),
+        (
+            _TARGET_STATE_VERIFY_CHANNEL_NAME,
+            _TARGET_STATE_VERIFY_OPERATION_NAME,
+            _TARGET_STATE_VERIFY_MESSAGE_NAME,
+        ),
     ):
         if isinstance(channels, dict):
             channels.pop(channel_name, None)
@@ -308,13 +359,13 @@ def _validate_execution_event(
     message = core._require_mapping(messages.get(message_name), message_name)
     if message != _expected_event_message(event_type):
         raise ContractValidationError(
-            f"transformation {command_name} event must reuse the shared "
-            "Context Graph envelope"
+            f"transformation {command_name} event must reuse "
+            "the shared Context Graph envelope"
         )
 
 
 def validate_asyncapi_document(document: dict[str, Any]) -> int:
-    """Validate existing publishers plus schedule/start/complete execution events."""
+    """Validate existing publishers plus all governed execution decision events."""
 
     legacy_operation_count = core.validate_asyncapi_document(
         _without_execution_asyncapi(document)
@@ -341,6 +392,13 @@ def validate_asyncapi_document(document: dict[str, Any]) -> int:
             _TARGET_STATE_COMPLETE_EVENT_TYPE,
             "complete",
         ),
+        (
+            _TARGET_STATE_VERIFY_CHANNEL_NAME,
+            _TARGET_STATE_VERIFY_OPERATION_NAME,
+            _TARGET_STATE_VERIFY_MESSAGE_NAME,
+            _TARGET_STATE_VERIFY_EVENT_TYPE,
+            "verification",
+        ),
     ):
         _validate_execution_event(
             document,
@@ -350,7 +408,7 @@ def validate_asyncapi_document(document: dict[str, Any]) -> int:
             event_type=event_type,
             command_name=command_name,
         )
-    return legacy_operation_count + 3
+    return legacy_operation_count + 4
 
 
 def validate_repository(repository_root: Path) -> RepositoryReport:
