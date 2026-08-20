@@ -93,15 +93,22 @@ FROM dblink(
 ) AS result(backend_pid integer);
 
 SELECT dblink_exec('dependency_race_a', 'BEGIN');
+-- dblink_exec rejects statements that return tuples. Hold the source row through
+-- a DO/PERFORM block so session A owns the same serialization lock without
+-- weakening the race acceptance.
 SELECT dblink_exec(
     'dependency_race_a',
     $lock$
-      SELECT 1
-        FROM architecture_core.data_management_assessment_projection
-       WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-         AND assessment_result_uri =
-             'urn:cwl:tenant_001:data_context:data_management_assessment:0196f101-1111-7111-8111-111111111111'
-       FOR UPDATE
+      DO $dependency_lock$
+      BEGIN
+        PERFORM 1
+          FROM architecture_core.data_management_assessment_projection
+         WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+           AND assessment_result_uri =
+               'urn:cwl:tenant_001:data_context:data_management_assessment:0196f101-1111-7111-8111-111111111111'
+         FOR UPDATE;
+      END
+      $dependency_lock$;
     $lock$
 );
 
