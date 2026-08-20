@@ -144,6 +144,7 @@ DO $$
 DECLARE
   projection_id uuid;
   acceptance_id uuid;
+  acceptance_time timestamptz;
   trigger_causation_event_id uuid;
   recheck_id uuid;
   outbox_id uuid;
@@ -163,8 +164,10 @@ BEGIN
          'urn:cwl:tenant_001:data_context:data_management_assessment:0196f200-1111-7111-8111-111111111142'
      AND projection_record.superseded_at IS NULL;
 
-  SELECT acceptance_record.assessment_evidence_acceptance_id
-    INTO acceptance_id
+  SELECT
+      acceptance_record.assessment_evidence_acceptance_id,
+      acceptance_record.accepted_at
+    INTO acceptance_id, acceptance_time
     FROM architecture_core.assessment_evidence_acceptance AS acceptance_record
     JOIN architecture_core.assessment_improvement_plan AS plan_record
       ON plan_record.tenant_record_id = acceptance_record.tenant_record_id
@@ -177,7 +180,7 @@ BEGIN
             acceptance_record.assessment_evidence_acceptance_id DESC
    LIMIT 1;
 
-  IF projection_id IS NULL OR acceptance_id IS NULL THEN
+  IF projection_id IS NULL OR acceptance_id IS NULL OR acceptance_time IS NULL THEN
     RAISE EXCEPTION 'completed reassessment fixture is unavailable';
   END IF;
 
@@ -196,6 +199,21 @@ BEGIN
   IF trigger_causation_event_id IS NULL THEN
     RAISE EXCEPTION 'completed reassessment fixture lacks causal acceptance event';
   END IF;
+
+  -- A reassessment request cannot be valid in business time before the causal
+  -- evidence acceptance that closed the final gap.
+  BEGIN
+    PERFORM *
+      FROM architecture_core.request_data_management_assessment_recheck(
+        projection_id,
+        acceptance_id,
+        '0196f300-1111-7111-8111-111111111176',
+        acceptance_time - interval '1 second'
+      );
+    RAISE EXCEPTION 'reassessment request predating causal acceptance was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
 
   SELECT
       result.assessment_recheck_request_id,
