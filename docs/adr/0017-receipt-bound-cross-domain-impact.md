@@ -15,7 +15,7 @@ The existing `projection_receipt` table already provides tenant-scoped event ide
 
 ## Decision
 
-Migrations `0016_cross_domain_impact_projection.sql`, `0017_cross_domain_projection_replay_guard.sql`, `0018_projection_source_uri_contract.sql`, and `0019_projection_receipt_history_guard.sql` add the bounded cross-domain projection boundary and harden its receipt evidence.
+Migrations `0016_cross_domain_impact_projection.sql`, `0017_cross_domain_projection_replay_guard.sql`, `0018_projection_source_uri_contract.sql`, and `0019_projection_receipt_history_guard.sql` add the bounded cross-domain projection boundary and harden its receipt evidence. Migration 0018 promotes the existing 0005 source grammar guard to the explicit cross-domain contract name rather than layering an identical check.
 
 `external_context_reference` stores only immutable foreign canonical identity: tenant, UUIDv7 local reference identifier, owning product code, canonical object URI, object kind, and recording time. It does not store foreign titles, descriptions, schema definitions, glossary content, certification, lineage graphs, credentials, or other source-of-truth payloads. The canonical URI must encode the same tenant, authority, and kind as the row. The current accepted authority/kind boundary is deliberately narrow:
 
@@ -24,7 +24,7 @@ Migrations `0016_cross_domain_impact_projection.sql`, `0017_cross_domain_project
 
 `application_context_projection` records a receipt-bound assertion between one EA `application_record` and one external reference. It carries the projection relation code, explicit truth status, independent valid-time interval, system recording time, and optional supersession time. Composite tenant foreign keys, forced RLS, immutable projection meaning, one-time supersession, no hard delete, and active-interval exclusion preserve tenant and history semantics.
 
-The projection source is derived from the referenced `projection_receipt.event_source_uri`; it is not copied into a second column. Migration 0018 requires that source to satisfy the exact Context Graph canonical-authority URI grammar, closing the legacy possibility that a forged prefix or appended segment could preserve the tenant/product positions consumed by `split_part`. Only processed receipts whose process time is no later than the projection recording time may create projection facts. Source responsibility is enforced at insertion:
+The projection source is derived from the referenced `projection_receipt.event_source_uri`; it is not copied into a second column. The existing 0005 guard already enforces the exact Context Graph canonical-authority URI grammar, and migration 0018 promotes that guard to `projection_receipt_source_uri_format` without a second equivalent check. This closes the legacy possibility that a forged prefix or appended segment could preserve the tenant/product positions consumed by `split_part`. Only processed receipts whose process time is no later than the projection recording time may create projection facts. Source responsibility is enforced at insertion:
 
 - pg-erd-cloud may project only its physical-schema canonical references and only as `observed` evidence;
 - Semantic Data Portal may project only its own canonical Data/AI references;
@@ -61,4 +61,4 @@ A LineageWeave event may identify a relationship involving canonical references 
 
 `database/tests/zz_verify_cross_domain_impact_replay.sql` replays the same LineageWeave receipt-bound inferred fact and requires a uniqueness failure rather than a duplicate projection row. `database/tests/zz_verify_projection_source_uri_guard.sql` proves a forged source string that preserves legacy split positions is rejected by the canonical-authority URI contract. `database/tests/zz_verify_projection_receipt_history.sql` proves a processed receipt cannot have its status, digest, or row history rewritten after it has supplied decision evidence and proves a failed receipt cannot regress to the initial `received` state before a retry.
 
-Repository validation binds the resulting schema inventory to 38 tables, 381 validator-visible typed column declarations, 12 indexes, and 320 named constraints. The PostgreSQL CI lane must prove clean install, dynamic upgrade through migration 0019, migration-ledger integrity, all SQL invariants, and runtime RLS acceptance before this branch may be considered green.
+Repository validation binds the resulting schema inventory to 38 tables, 411 validator-visible typed column declarations, 12 indexes, and 320 named constraints. The PostgreSQL CI lane must prove clean install, dynamic upgrade through migration 0020, migration-ledger integrity, all SQL invariants, and runtime RLS acceptance before this branch may be considered green.

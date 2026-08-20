@@ -134,6 +134,9 @@ DECLARE
   requested_dependency_count integer;
   requested_evidence_count integer;
   existing_plan_id uuid;
+  existing_plan architecture_core.assessment_improvement_plan%ROWTYPE;
+  existing_initiative architecture_core.remediation_initiative%ROWTYPE;
+  existing_milestone architecture_core.initiative_milestone%ROWTYPE;
   stored_dependency_count integer;
   result_plan_id uuid;
   result_initiative_id uuid;
@@ -209,61 +212,51 @@ BEGIN
       MESSAGE = 'every prerequisite requires tenant-scoped dependency evidence';
   END IF;
 
-  -- Own the source-assessment serialization point before checking mutable
-  -- prerequisite liveness. This makes the decision linearizable with concurrent
-  -- assessment deliveries and prevents a prerequisite from being superseded
-  -- while this command waits to acquire the source aggregate.
-  PERFORM 1
-    FROM architecture_core.data_management_assessment_projection AS projection_record
-   WHERE projection_record.tenant_record_id = active_tenant_id
-     AND projection_record.data_management_assessment_projection_id =
-         requested_assessment_projection_id
-   FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'assessment projection is unavailable for the verified tenant';
-  END IF;
-
-  -- Lock every existing requested prerequisite in deterministic UUID order before
-  -- evaluating supersession. Different source assessments can share prerequisites;
-  -- deterministic lock order prevents dependency-set lock cycles while FOR UPDATE
-  -- prevents a concurrent supersession from invalidating the accepted decision.
-  PERFORM initiative_record.remediation_initiative_id
-    FROM architecture_core.remediation_initiative AS initiative_record
-    JOIN pg_catalog.unnest(requested_prerequisite_initiative_ids)
-         AS requested_prerequisite(prerequisite_initiative_id)
-      ON requested_prerequisite.prerequisite_initiative_id =
-         initiative_record.remediation_initiative_id
-   WHERE initiative_record.tenant_record_id = active_tenant_id
-   ORDER BY initiative_record.remediation_initiative_id
-   FOR UPDATE OF initiative_record;
-
-  IF EXISTS (
-      SELECT 1
-        FROM pg_catalog.unnest(requested_prerequisite_initiative_ids) AS prerequisite_id
-       WHERE NOT EXISTS (
-          SELECT 1
-            FROM architecture_core.remediation_initiative AS initiative_record
-           WHERE initiative_record.tenant_record_id = active_tenant_id
-             AND initiative_record.remediation_initiative_id = prerequisite_id
-             AND initiative_record.superseded_at IS NULL
-             AND initiative_record.truth_status_code NOT IN ('rejected', 'superseded')
-       )
-  ) THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'every prerequisite must reference an active remediation initiative in the verified tenant';
-  END IF;
-
-  SELECT plan_record.assessment_improvement_plan_id
-    INTO existing_plan_id
+  -- Exact replay is transport idempotency, not a new business decision. Resolve
+  -- it before mutable prerequisite liveness so a later supersession cannot turn
+  -- a retry into an availability error.
+  SELECT plan_record.*
+    INTO existing_plan
     FROM architecture_core.assessment_improvement_plan AS plan_record
    WHERE plan_record.tenant_record_id = active_tenant_id
      AND plan_record.decision_request_id = requested_decision_request_id;
 
-  IF existing_plan_id IS NOT NULL THEN
+  IF existing_plan.assessment_improvement_plan_id IS NOT NULL THEN
+    existing_plan_id := existing_plan.assessment_improvement_plan_id;
+
+    SELECT initiative_record.*
+      INTO existing_initiative
+      FROM architecture_core.remediation_initiative AS initiative_record
+     WHERE initiative_record.tenant_record_id = active_tenant_id
+       AND initiative_record.remediation_initiative_id =
+           existing_plan.remediation_initiative_id;
+
+    SELECT milestone_record.*
+      INTO existing_milestone
+      FROM architecture_core.initiative_milestone AS milestone_record
+     WHERE milestone_record.tenant_record_id = active_tenant_id
+       AND milestone_record.initiative_milestone_id =
+           existing_plan.initiative_milestone_id;
+
+    IF existing_plan.data_management_assessment_projection_id IS DISTINCT FROM
+           requested_assessment_projection_id
+       OR existing_plan.missing_evidence_code IS DISTINCT FROM
+           requested_missing_evidence_code
+       OR existing_plan.target_capability_object_id IS DISTINCT FROM
+           requested_target_capability_object_id
+       OR existing_plan.accountable_organization_object_id IS DISTINCT FROM
+           requested_accountable_organization_object_id
+       OR existing_plan.funding_reference IS DISTINCT FROM requested_funding_reference
+       OR existing_initiative.initiative_code IS DISTINCT FROM requested_initiative_code
+       OR existing_initiative.initiative_title IS DISTINCT FROM requested_initiative_title
+       OR existing_milestone.milestone_code IS DISTINCT FROM requested_milestone_code
+       OR existing_milestone.milestone_title IS DISTINCT FROM requested_milestone_title
+       OR existing_milestone.target_at IS DISTINCT FROM requested_due_at THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '23505',
+        MESSAGE = 'decision request id already represents different improvement-plan meaning';
+    END IF;
+
     SELECT dependency_set.dependency_count
       INTO stored_dependency_count
       FROM architecture_core.assessment_improvement_dependency_set AS dependency_set
@@ -318,6 +311,85 @@ BEGIN
         ERRCODE = '23505',
         MESSAGE = 'decision request id already represents a different dependency set';
     END IF;
+
+    SELECT
+        plan_record.remediation_initiative_id,
+        plan_record.initiative_milestone_id,
+        event_record.outbox_event_id
+      INTO
+        result_initiative_id,
+        result_milestone_id,
+        result_event_id
+      FROM architecture_core.assessment_improvement_plan AS plan_record
+      LEFT JOIN architecture_core.outbox_event AS event_record
+        ON event_record.tenant_record_id = active_tenant_id
+       AND event_record.decision_request_id = requested_decision_request_id
+       AND event_record.event_type_code =
+           'org.contextualwisdomlab.ea.data_management.improvement_initiative_created.v1'
+     WHERE plan_record.tenant_record_id = active_tenant_id
+       AND plan_record.assessment_improvement_plan_id = existing_plan_id;
+
+    IF result_event_id IS NULL THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '23514',
+        MESSAGE = 'improvement-plan evidence exists without transactional outbox evidence';
+    END IF;
+
+    RETURN QUERY
+    SELECT
+        existing_plan_id,
+        result_initiative_id,
+        result_milestone_id,
+        result_event_id;
+    RETURN;
+  END IF;
+
+  -- Own the source-assessment serialization point before checking mutable
+  -- prerequisite liveness. This makes the decision linearizable with concurrent
+  -- assessment deliveries and prevents a prerequisite from being superseded
+  -- while this command waits to acquire the source aggregate.
+  PERFORM 1
+    FROM architecture_core.data_management_assessment_projection AS projection_record
+   WHERE projection_record.tenant_record_id = active_tenant_id
+     AND projection_record.data_management_assessment_projection_id =
+         requested_assessment_projection_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'assessment projection is unavailable for the verified tenant';
+  END IF;
+
+  -- Lock every existing requested prerequisite in deterministic UUID order before
+  -- evaluating supersession. Different source assessments can share prerequisites;
+  -- deterministic lock order prevents dependency-set lock cycles while FOR UPDATE
+  -- prevents a concurrent supersession from invalidating the accepted decision.
+  PERFORM initiative_record.remediation_initiative_id
+    FROM architecture_core.remediation_initiative AS initiative_record
+    JOIN pg_catalog.unnest(requested_prerequisite_initiative_ids)
+         AS requested_prerequisite(prerequisite_initiative_id)
+      ON requested_prerequisite.prerequisite_initiative_id =
+         initiative_record.remediation_initiative_id
+   WHERE initiative_record.tenant_record_id = active_tenant_id
+   ORDER BY initiative_record.remediation_initiative_id
+   FOR UPDATE OF initiative_record;
+
+  IF EXISTS (
+      SELECT 1
+        FROM pg_catalog.unnest(requested_prerequisite_initiative_ids) AS prerequisite_id
+       WHERE NOT EXISTS (
+          SELECT 1
+            FROM architecture_core.remediation_initiative AS initiative_record
+           WHERE initiative_record.tenant_record_id = active_tenant_id
+             AND initiative_record.remediation_initiative_id = prerequisite_id
+             AND initiative_record.superseded_at IS NULL
+             AND initiative_record.truth_status_code NOT IN ('rejected', 'superseded')
+       )
+  ) THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'every prerequisite must reference an active remediation initiative in the verified tenant';
   END IF;
 
   SELECT

@@ -199,6 +199,39 @@ BEGIN
 END;
 $$;
 
+-- A historical planner read must still use a scenario that was active at the
+-- requested recording cutoff after that scenario was superseded later.
+BEGIN;
+UPDATE architecture_core.architecture_scenario
+   SET superseded_at = '2027-08-01T00:00:00Z'
+ WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+   AND architecture_scenario_id = '0196e002-1111-7111-8111-111111111111';
+
+DO $$
+DECLARE
+  historical_row record;
+BEGIN
+  SELECT *
+    INTO historical_row
+    FROM architecture_core.project_technology_target_state_plan(
+        '0196f100-1111-7111-8111-111111111111',
+        '2027-07-01T00:00:00Z',
+        '2027-07-15T00:00:00Z',
+        180
+    )
+   WHERE application_object_id = '0196f130-3333-7333-8333-333333333333'
+     AND external_object_kind_code = 'database_schema';
+
+  IF historical_row.scenario_code <> 'approved_database_target'
+     OR historical_row.transformation_state_code <> 'completed'
+     OR historical_row.recommended_action_code <> 'verify_target_state' THEN
+    RAISE EXCEPTION 'historical target-state plan was not reproducible';
+  END IF;
+END;
+$$;
+
+ROLLBACK;
+
 SELECT set_config(
     'app.tenant_record_id',
     '0195d145-64e8-7f4f-8a23-a0cc784cb712',

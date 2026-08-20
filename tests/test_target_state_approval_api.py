@@ -501,6 +501,10 @@ def test_http_approval_is_purpose_authorized_and_returns_actionable_receipt() ->
     assert anonymous["error_code"] == "authorization_required"
     assert denied_status == 403
     assert denied["error_code"] == "forbidden"
+    assert denied["next_action"] == (
+        "Obtain an approved target-state approval role from Keyverse; "
+        "do not widen Enterprise Architecture read roles."
+    )
     assert ok_status == 201
     assert ok["transformation_state_code"] == "approved"
     assert ok["next_action"] == "schedule_transformation"
