@@ -66,7 +66,6 @@ def _without_recheck_role(document: dict[str, Any]) -> dict[str, Any]:
     configuration = changed["x-keyverse-contract"]["requiredConfiguration"]
     required_roles = {
         _DATA_MANAGEMENT_RECHECK_ROLE_CONFIGURATION,
-        _DATA_MANAGEMENT_RECHECK_STATUS_ROLE_CONFIGURATION,
         _PORTFOLIO_ASSESSMENT_ROLE_CONFIGURATION,
     }
     missing_roles = required_roles.difference(configuration)
@@ -229,10 +228,11 @@ def _validate_read_schemas(document: dict[str, Any]) -> None:
         "schemas",
     )
     required_schemas = {
-        _DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA,
         _PORTFOLIO_ASSESSMENT_RESPONSE_SCHEMA,
         "PortfolioAssessment",
     }
+    if _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH in document.get("paths", {}):
+        required_schemas.add(_DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA)
     missing_schemas = required_schemas.difference(schemas)
     if missing_schemas:
         raise ContractValidationError(
@@ -243,18 +243,19 @@ def _validate_read_schemas(document: dict[str, Any]) -> None:
 def _validate_read_operations(paths: dict[str, Any]) -> None:
     """Bind reassessment status and portfolio assessment reads."""
 
-    _validate_read_operation(
-        paths,
-        runtime_path=_DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH,
-        operation_id=_DATA_MANAGEMENT_RECHECK_STATUS_OPERATION_ID,
-        expected_parameters={
-            ("assessment_recheck_request_id", "path"): (
-                True,
-                _CANONICAL_UUID7_SCHEMA,
-            )
-        },
-        response_schema=_DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA,
-    )
+    if _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH in paths:
+        _validate_read_operation(
+            paths,
+            runtime_path=_DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH,
+            operation_id=_DATA_MANAGEMENT_RECHECK_STATUS_OPERATION_ID,
+            expected_parameters={
+                ("assessment_recheck_request_id", "path"): (
+                    True,
+                    _CANONICAL_UUID7_SCHEMA,
+                )
+            },
+            response_schema=_DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA,
+        )
     _validate_read_operation(
         paths,
         runtime_path=_PORTFOLIO_ASSESSMENT_RUNTIME_PATH,
