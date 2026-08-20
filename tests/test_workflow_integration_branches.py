@@ -73,11 +73,15 @@ def test_protected_main_verifies_and_retains_exact_attestations() -> None:
     """Bind provenance and SBOM attestations to one stable source/workflow identity."""
     workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
 
-    assert "name: Verify protected-main provenance and SBOM attestations" in workflow_text
+    assert (
+        "name: Verify protected-main provenance and SBOM attestations" in workflow_text
+    )
     assert 'SOURCE_SHA: ${{ github.sha }}' in workflow_text
     assert 'SOURCE_REF: ${{ github.ref }}' in workflow_text
     assert 'EXPECTED_SOURCE_REF: refs/heads/main' in workflow_text
-    assert 'REPOSITORY: ContextualWisdomLab/enterprise-architecture-core' in workflow_text
+    assert (
+        'REPOSITORY: ContextualWisdomLab/enterprise-architecture-core' in workflow_text
+    )
     assert (
         'SIGNER_WORKFLOW: ContextualWisdomLab/enterprise-architecture-core/'
         '.github/workflows/supply-chain.yml'
