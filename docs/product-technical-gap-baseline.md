@@ -1,6 +1,6 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-20T22:53:58Z, GitHub inspection and repository inspection<br>
+**Snapshot:** 2026-08-20T23:00:52Z, GitHub inspection and repository inspection<br>
 **Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
@@ -9,8 +9,8 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-20T22:53:58Z` — PR #18 was inspected at exact head
-`d65bb9e78623f62139f6ef2a340eade703aeed4f`, based on protected
+**Live refresh:** `2026-08-20T23:00:52Z` — PR #18 was inspected at exact head
+`2f10b05b7f149831324388e2c93efdfc3c4baad6`, based on protected
 `develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks are
 queued after an exact-head dispatch and no formal approval is observed.
 The synchronized stack is current at
@@ -20,9 +20,10 @@ PR #31 `172f439736753a14cdb6569b954adb1cf905bc44`, PR #32
 `6eab7bae3e2e7424ac33fbd74a3953e2a3949596`; their exact bases are recorded
 below, hosted required Checks were re-queued after the current-head pushes, and
 no formal same-head approval is observed. PR #34 is an independent `main` candidate at exact head
-`b6160bdf1ac9c7f9511c9261b7032f853d591f15` with hosted Checks queued. Local
-PR34 evidence passes 121 tests, 100% statement-and-branch coverage (436
-statements/162 branches), Ruff, and repository validation; current PR35 evidence
+`a5fb5b11f05eb81a541ad40c5525975fe860c8ff` with hosted Checks queued after a
+current-head Ruff repair. Local PR34 evidence passes 126 tests, 100%
+statement-and-branch coverage (436 statements/162 branches), Ruff, and
+repository validation; current PR35 evidence
 passes 698 tests, 100% statement-and-branch coverage (3250 statements/900
 branches), Ruff, repository validation (`48 tables, 399 columns, 22 indexes,
 416 constraints, 14 OpenAPI operations, 12 AsyncAPI operations, 7 connectors,
@@ -84,7 +85,7 @@ recollected after any push or base change.
 | PR | Scope | Base → head | Observed state | Customer-safe next action |
 | ---: | --- | --- | --- | --- |
 | [35](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/35) | Prepare append-only write boundaries for hot partitioning | `portfolio-assessment-summary` at current base `d024aab7031d628be64a589a846b15a6f883746f` → `hot-write-capacity` | Ready; exact head `6eab7bae3e2e7424ac33fbd74a3953e2a3949596`; PR33 current head was propagated and the merge conflict was resolved without dropping either chain; current evidence is 698 tests, 100% statement-and-branch coverage, Ruff, repository validation, clean PostgreSQL 18 SQL/runtime acceptance; hosted required Checks were re-queued; no formal approval | Wait for terminal Checks and an independent same-head review; merge only after PR #33 and its ancestors are current and protected. |
-| [34](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/34) | Repair protected-main SPDX attestation compatibility | `main` at current base `ca6889497728e1a3f09d68790a9096576e13a3ff` → `codex/supply-chain-sbom-attestation` | Ready; exact head `b6160bdf1ac9c7f9511c9261b7032f853d591f15`; local current-head evidence passes 121 tests, 100% statement-and-branch coverage (436 statements/162 branches), Ruff, and repository validation; hosted Checks are queued; no formal approval | Wait for terminal hosted Checks and an independent same-head review; merge only after the exact-head protected gate passes. |
+| [34](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/34) | Repair protected-main SPDX attestation compatibility | `main` at current base `ca6889497728e1a3f09d68790a9096576e13a3ff` → `codex/supply-chain-sbom-attestation` | Ready; exact head `a5fb5b11f05eb81a541ad40c5525975fe860c8ff`; current-head Ruff repair passes 126 tests, 100% statement-and-branch coverage (436 statements/162 branches), Ruff, and repository validation; hosted Checks are queued; no formal approval | Wait for terminal hosted Checks and an independent same-head review; merge only after the exact-head protected gate passes. |
 | [33](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/33) | Publish deterministic portfolio assessment summary | `portfolio-assessment-api` at current base `03b3d560ce29a9441119995134a028a69edab315` → `portfolio-assessment-summary` | Ready; exact head `d024aab7031d628be64a589a846b15a6f883746f`; portfolio contract count was refreshed to 14 operations; current PR35 aggregate evidence covers the synchronized chain; hosted Checks were re-queued; no formal approval | Wait for terminal Checks and obtain an independent same-head review; merge only after the synchronized parent and descendant gates are current. |
 | [32](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/32) | Expose portfolio assessment read port | `data-management-recheck-status-v1` at current base `172f439736753a14cdb6569b954adb1cf905bc44` → `portfolio-assessment-api` | Ready; exact head `03b3d560ce29a9441119995134a028a69edab315`; 674 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; hosted Checks were re-queued; no formal approval | Wait for terminal Checks and obtain an independent same-head review; repair and revalidate before merge. |
 | [31](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/31) | Expose data-management reassessment status | `data-management-recheck-v1` at current base `073b6420f9c74033c166580a1f01c13d20c8ee30` → `data-management-recheck-status-v1` | Ready; exact head `172f439736753a14cdb6569b954adb1cf905bc44`; synchronized parent of the portfolio API; hosted Checks were re-queued; no formal approval | Wait for terminal Checks, inspect the independent review, then merge only with current-head evidence. |
@@ -117,7 +118,7 @@ after any push or base-branch change.
 | PR | Full head SHA | Collected | Delivery truth | Current evidence boundary |
 | ---: | --- | --- | --- | --- |
 | 35 | `6eab7bae3e2e7424ac33fbd74a3953e2a3949596` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current head includes PR33 propagation and hot-write capacity; 698 tests, 100% statement-and-branch coverage (3250 statements/900 branches), Ruff, repository validation, clean PostgreSQL 18 migrations 0001–0050, every SQL acceptance file, and runtime privilege acceptance; hosted Checks re-queued; no formal approval. |
-| 34 | `b6160bdf1ac9c7f9511c9261b7032f853d591f15` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current-head local evidence passes 121 tests, 100% statement-and-branch coverage (436 statements/162 branches), Ruff, and repository validation; workflow-specific hosted SBOM/attestation Checks are queued; no formal approval, merge, release, or live deployment is claimed. |
+| 34 | `a5fb5b11f05eb81a541ad40c5525975fe860c8ff` | `2026-08-20T23:00:52Z` | `implementation_candidate` | Current-head Ruff repair passes 126 tests, 100% statement-and-branch coverage (436 statements/162 branches), Ruff, and repository validation; workflow-specific hosted SBOM/attestation Checks are queued; no formal approval, merge, release, or live deployment is claimed. |
 | 33 | `d024aab7031d628be64a589a846b15a6f883746f` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Portfolio summary contract count refreshed to 14 operations; current PR35 aggregate local evidence covers this exact chain; hosted Checks re-queued; no formal approval. |
 | 32 | `03b3d560ce29a9441119995134a028a69edab315` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Portfolio API and isolated reassessment fixtures; 674 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; hosted Checks re-queued; no formal approval. |
 | 31 | `172f439736753a14cdb6569b954adb1cf905bc44` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Synchronized status parent of PR32; current PR35 aggregate local evidence covers the status contract and PostgreSQL fixture; hosted Checks re-queued; no formal approval. |
