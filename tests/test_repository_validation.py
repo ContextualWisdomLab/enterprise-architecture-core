@@ -124,10 +124,10 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     """The complete repository validates and reports the current schema counts."""
 
     report = validate_repository(repository_root)
-    assert report.table_count == 46
-    assert report.column_count == 390
-    assert report.index_count == 17
-    assert report.constraint_count == 409
+    assert report.table_count == 48
+    assert report.column_count == 399
+    assert report.index_count == 18
+    assert report.constraint_count == 416
     assert report.openapi_operation_count == 11
     assert report.asyncapi_operation_count == 12
     assert report.adr_count >= 19
