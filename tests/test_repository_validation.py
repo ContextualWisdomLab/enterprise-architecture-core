@@ -47,6 +47,12 @@ _DATA_MANAGEMENT_RECHECK_SCHEMAS = (
     "DataManagementAssessmentRecheckReceipt",
 )
 _DATA_MANAGEMENT_RECHECK_ROLE = "EA_DATA_MANAGEMENT_RECHECK_ROLES"
+_DATA_MANAGEMENT_RECHECK_STATUS_PATH = (
+    "/v1/data-management-assessment-rechecks/"
+    "{assessment_recheck_request_id}"
+)
+_DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA = "DataManagementAssessmentRecheckStatus"
+_DATA_MANAGEMENT_RECHECK_STATUS_ROLE = "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES"
 
 
 def _strip_event_contract_members(
@@ -82,9 +88,34 @@ def _strip_event_data_contracts(repository_root: Path) -> None:
     )
 
 
+def _strip_data_management_recheck_status_openapi_contract(
+    repository_root: Path,
+) -> None:
+    """Restore the command-only OpenAPI generation before compatibility validation."""
+
+    openapi_path = repository_root / "contracts/openapi.json"
+    document = json.loads(openapi_path.read_text(encoding="utf-8"))
+    document["paths"].pop(_DATA_MANAGEMENT_RECHECK_STATUS_PATH, None)
+    document["components"]["schemas"].pop(
+        _DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA,
+        None,
+    )
+    configuration = document["x-keyverse-contract"]["requiredConfiguration"]
+    document["x-keyverse-contract"]["requiredConfiguration"] = [
+        value
+        for value in configuration
+        if value != _DATA_MANAGEMENT_RECHECK_STATUS_ROLE
+    ]
+    openapi_path.write_text(
+        json.dumps(document, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _strip_data_management_recheck_openapi_contract(repository_root: Path) -> None:
     """Restore the predecessor OpenAPI generation before compatibility validation."""
 
+    _strip_data_management_recheck_status_openapi_contract(repository_root)
     openapi_path = repository_root / "contracts/openapi.json"
     document = json.loads(openapi_path.read_text(encoding="utf-8"))
     document["paths"].pop(_DATA_MANAGEMENT_RECHECK_PATH, None)
@@ -128,7 +159,7 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     assert report.column_count == 399
     assert report.index_count == 18
     assert report.constraint_count == 416
-    assert report.openapi_operation_count == 11
+    assert report.openapi_operation_count == 12
     assert report.asyncapi_operation_count == 12
     assert report.adr_count >= 19
     assert report.connector_count == 7
