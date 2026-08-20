@@ -20,7 +20,7 @@ DECLARE
 BEGIN
   SELECT
       request_record.assessment_recheck_request_id,
-      projection_record.*
+      projection_record
     INTO recheck_id, source_projection
     FROM architecture_core.assessment_recheck_request AS request_record
     JOIN architecture_core.data_management_assessment_projection AS projection_record
