@@ -199,6 +199,19 @@ BEGIN
       MESSAGE = 'evidence URI must be a tenant-local canonical UUIDv7 Data Context assessment-evidence reference';
   END IF;
 
+  -- Serialize every valid plan-scoped decision before replay inspection. Under
+  -- PostgreSQL READ COMMITTED, a concurrent exact retry that starts before the
+  -- first transaction commits otherwise sees no replay row, waits on the later
+  -- plan lock, and then misclassifies the now-committed exact decision as a
+  -- conflict. Locking first makes the subsequent replay SELECT take a fresh
+  -- snapshot after the original decision is durable.
+  PERFORM 1
+    FROM architecture_core.assessment_improvement_plan AS plan_record
+   WHERE plan_record.tenant_record_id = active_tenant_id
+     AND plan_record.assessment_improvement_plan_id =
+         requested_assessment_improvement_plan_id
+   FOR UPDATE;
+
   -- Resolve exact committed replay before current-state checks. The decision ID
   -- is transport idempotency evidence; changing any semantic field fails closed.
   SELECT acceptance_record.*
@@ -491,6 +504,6 @@ COMMENT ON FUNCTION architecture_core.accept_data_management_improvement_evidenc
     uuid,
     timestamptz
 ) IS
-'Accepts only authoritative or observed tenant-local Semantic Data Portal assessment evidence with a receipt-bound digest, records immutable milestone completion and transactional outbox evidence atomically, returns an assessment-recheck next action when all projected gaps are closed, and makes exact UUIDv7 decision replay deterministic.';
+'Accepts only authoritative or observed tenant-local Semantic Data Portal assessment evidence with a receipt-bound digest, records immutable milestone completion and transactional outbox evidence atomically, returns an assessment-recheck next action when all projected gaps are closed, and serializes plan-scoped exact UUIDv7 decision replay so concurrent retries deterministically return the same durable receipt.';
 
 COMMIT;
