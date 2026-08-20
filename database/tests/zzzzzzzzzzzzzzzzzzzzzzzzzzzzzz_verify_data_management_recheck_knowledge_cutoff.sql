@@ -18,10 +18,16 @@ DECLARE
   source_projection architecture_core.data_management_assessment_projection%ROWTYPE;
   remaining_successors integer;
 BEGIN
-  SELECT
-      request_record.assessment_recheck_request_id,
-      projection_record.*
-    INTO recheck_id, source_projection
+  SELECT request_record.assessment_recheck_request_id
+    INTO recheck_id
+    FROM architecture_core.assessment_recheck_request AS request_record
+   WHERE request_record.tenant_record_id =
+         '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND request_record.decision_request_id =
+         '0196f300-1111-7111-8111-111111111169';
+
+  SELECT projection_record.*
+    INTO source_projection
     FROM architecture_core.assessment_recheck_request AS request_record
     JOIN architecture_core.data_management_assessment_projection AS projection_record
       ON projection_record.tenant_record_id = request_record.tenant_record_id
