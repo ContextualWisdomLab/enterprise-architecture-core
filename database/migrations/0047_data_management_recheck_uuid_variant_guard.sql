@@ -24,10 +24,8 @@ BEGIN
         ON namespace_record.oid = table_record.relnamespace
      WHERE namespace_record.nspname = 'architecture_core'
        AND constraint_catalog.contype = 'c'
-       AND pg_get_constraintdef(constraint_catalog.oid) LIKE
-           '%uuid_extract_version%'
-       AND pg_get_constraintdef(constraint_catalog.oid) NOT LIKE
-           '%IS NOT DISTINCT FROM 7%'
+       AND pg_get_constraintdef(constraint_catalog.oid) ~
+           E'uuid_extract_version\\([^)]*\\) = 7'
      ORDER BY table_record.relname, constraint_catalog.conname
   LOOP
     hardened_definition := regexp_replace(
