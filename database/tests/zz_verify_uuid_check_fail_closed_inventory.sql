@@ -2,7 +2,8 @@
 
 -- Behavioral UUID variant regressions exercise representative foundation and
 -- reassessment writes. This catalog acceptance prevents another table from
--- retaining the same SQL-UNKNOWN form unnoticed.
+-- retaining the same SQL-UNKNOWN form unnoticed, including a CHECK that mixes
+-- already-hardened and still-vulnerable UUID predicates.
 DO $$
 DECLARE
   vulnerable_constraints text;
@@ -19,10 +20,8 @@ BEGIN
       ON namespace_record.oid = table_record.relnamespace
    WHERE namespace_record.nspname = 'architecture_core'
      AND constraint_record.contype = 'c'
-     AND pg_get_constraintdef(constraint_record.oid) LIKE
-         '%uuid_extract_version%'
-     AND pg_get_constraintdef(constraint_record.oid) NOT LIKE
-         '%IS NOT DISTINCT FROM 7%';
+     AND pg_get_constraintdef(constraint_record.oid) ~
+         E'uuid_extract_version\\([^)]*\\) = 7';
 
   IF vulnerable_constraints IS NOT NULL THEN
     RAISE EXCEPTION
