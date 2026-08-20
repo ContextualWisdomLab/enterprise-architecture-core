@@ -8,6 +8,7 @@ RETURNS TABLE (
     assessment_recheck_request_id uuid,
     data_management_assessment_projection_id uuid,
     successor_assessment_projection_id uuid,
+    successor_truth_status_code text,
     recheck_state_code text,
     successor_readiness_code text,
     successor_overall_score_basis_points integer,
@@ -84,6 +85,7 @@ BEGIN
       selected_request.assessment_recheck_request_id,
       selected_request.data_management_assessment_projection_id,
       NULL::uuid,
+      NULL::text,
       'awaiting_result'::text,
       NULL::text,
       NULL::integer,
@@ -119,11 +121,27 @@ BEGIN
       MESSAGE = 'evidence-gap reassessment must retain missing evidence';
   END IF;
 
+  IF successor_projection.truth_status_code NOT IN ('authoritative', 'observed') THEN
+    RETURN QUERY
+    SELECT
+      selected_request.assessment_recheck_request_id,
+      selected_request.data_management_assessment_projection_id,
+      successor_projection.data_management_assessment_projection_id,
+      successor_projection.truth_status_code,
+      'review_required'::text,
+      successor_projection.readiness_code,
+      successor_projection.overall_score_basis_points,
+      missing_evidence_count,
+      'review_assessment_recheck_evidence'::text;
+    RETURN;
+  END IF;
+
   RETURN QUERY
   SELECT
     selected_request.assessment_recheck_request_id,
     selected_request.data_management_assessment_projection_id,
     successor_projection.data_management_assessment_projection_id,
+    successor_projection.truth_status_code,
     successor_projection.readiness_code,
     successor_projection.readiness_code,
     successor_projection.overall_score_basis_points,
@@ -159,6 +177,6 @@ COMMENT ON FUNCTION architecture_core.read_data_management_assessment_recheck_st
     uuid,
     uuid
 ) IS
-'Purpose-bound tenant-scoped read for one assessment reassessment request. It joins only EA-owned projected evidence to the unique direct successor assessment and returns an explicit buyer next action without copying or mutating semantic-data-portal authority.';
+'Purpose-bound tenant-scoped read for one assessment reassessment request. It joins only EA-owned projected evidence to the unique direct successor assessment, preserves explicit successor truth origin, and review-gates inferred, proposed, superseded, or rejected evidence so it cannot silently become decision-complete or mutate semantic-data-portal authority.';
 
 COMMIT;
