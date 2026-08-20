@@ -85,7 +85,7 @@ def test_http_recheck_is_purpose_authorized_and_actionable() -> None:
     assert anonymous["error_code"] == "authorization_required"
     assert denied_status == 403
     assert denied["error_code"] == "forbidden"
-    assert ok_status == 200
+    assert ok_status == 201
     assert ok["next_action"] == "await_assessment_recheck"
     assert writes == [
         "target-state-replanner-123:0196f300-1111-7111-8111-111111111173"
