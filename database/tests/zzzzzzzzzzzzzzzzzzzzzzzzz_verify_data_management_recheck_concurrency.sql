@@ -12,9 +12,32 @@ SELECT set_config(
     false
 );
 
--- Close the second gap on the intentionally partial fixture created by the
--- earlier reassessment acceptance test. That fixture has no recheck request,
--- making it a clean concurrency target.
+-- Build a concurrency-only one-gap assessment instead of mutating an earlier
+-- acceptance fixture. Other cumulative migration tests are allowed to create
+-- improvement plans against their own projections, so sharing one projection
+-- makes this race test order-dependent before it reaches the lock boundary.
+INSERT INTO architecture_core.projection_receipt (
+    tenant_record_id,
+    projection_receipt_id,
+    event_source_uri,
+    event_identifier,
+    payload_sha256,
+    schema_version,
+    received_at,
+    processed_at,
+    processing_status_code
+) VALUES (
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    '0196f5c0-1111-7111-8111-111111111200',
+    'urn:cwl:tenant_001:semantic_data_portal',
+    '0196f5c0-1111-7111-8111-111111111201',
+    repeat('e', 64),
+    '1.0.0',
+    '2026-08-19T01:20:00Z',
+    '2026-08-19T01:20:01Z',
+    'processed'
+);
+
 DO $$
 DECLARE
   projection_id uuid;
@@ -22,14 +45,27 @@ DECLARE
   acceptance_id uuid;
   closure_next_action text;
 BEGIN
-  SELECT projection_record.data_management_assessment_projection_id
+  SELECT result.data_management_assessment_projection_id
     INTO projection_id
-    FROM architecture_core.data_management_assessment_projection AS projection_record
-   WHERE projection_record.tenant_record_id =
-         '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-     AND projection_record.assessment_result_uri =
-         'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
-     AND projection_record.superseded_at IS NULL;
+    FROM architecture_core.record_data_management_assessment_result(
+      '0196f5c0-1111-7111-8111-111111111200',
+      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f5c0-1111-7111-8111-111111111202',
+      'urn:cwl:tenant_001:ea_core:business_capability:0195d145-64e8-7f4f-8a23-a0cc784cb901',
+      'dama_dmbok2r',
+      '2024',
+      'baseline_data_management',
+      '1.0.0',
+      '2026-08-19T01:19:58Z',
+      '2026-08-19T01:19:59Z',
+      7100,
+      'evidence_gap',
+      'observed',
+      'urn:cwl:tenant_001:data_context:assessment_evidence:0196f5c0-1111-7111-8111-111111111203',
+      repeat('f', 64),
+      'https://example.com/evidence/recheck-concurrency-assessment',
+      NULL,
+      ARRAY['stewardship_evidence']::text[]
+    ) AS result;
 
   IF projection_id IS NULL THEN
     RAISE EXCEPTION 'concurrency reassessment fixture projection is unavailable';
@@ -40,7 +76,7 @@ BEGIN
     FROM architecture_core.create_data_management_improvement_plan(
       projection_id,
       'stewardship_evidence',
-      '0196f300-1111-7111-8111-111111111171',
+      '0196f5c0-1111-7111-8111-111111111204',
       '0195d145-64e8-7f4f-8a23-a0cc784cb901',
       '0196f100-1111-7111-8111-111111111110',
       'close_stewardship_evidence_gap_concurrency',
@@ -63,13 +99,13 @@ BEGIN
       processing_status_code
   ) VALUES (
       '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-      '0196f300-1111-7111-8111-111111111172',
+      '0196f5c0-1111-7111-8111-111111111205',
       'urn:cwl:tenant_001:semantic_data_portal',
-      '0196f300-1111-7111-8111-111111111174',
+      '0196f5c0-1111-7111-8111-111111111207',
       repeat('a', 64),
       '1.0.0',
-      '2026-08-19T00:35:00Z',
-      '2026-08-19T00:35:01Z',
+      '2026-08-19T01:20:02Z',
+      '2026-08-19T01:20:03Z',
       'processed'
   );
 
@@ -79,12 +115,12 @@ BEGIN
     INTO acceptance_id, closure_next_action
     FROM architecture_core.accept_data_management_improvement_evidence(
       plan_id,
-      '0196f300-1111-7111-8111-111111111172',
-      'urn:cwl:tenant_001:data_context:assessment_evidence:0196f300-1111-7111-8111-111111111174',
+      '0196f5c0-1111-7111-8111-111111111205',
+      'urn:cwl:tenant_001:data_context:assessment_evidence:0196f5c0-1111-7111-8111-111111111207',
       'observed',
       repeat('a', 64),
-      '0196f300-1111-7111-8111-111111111175',
-      '2026-08-19T00:35:02Z'
+      '0196f5c0-1111-7111-8111-111111111208',
+      '2026-08-19T01:20:04Z'
     ) AS result;
 
   IF acceptance_id IS NULL
@@ -152,7 +188,7 @@ SELECT dblink_exec(
          WHERE projection_record.tenant_record_id =
                '0195d145-64e8-7f4f-8a23-a0cc784cb711'
            AND projection_record.assessment_result_uri =
-               'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
+               'urn:cwl:tenant_001:data_context:data_management_assessment:0196f5c0-1111-7111-8111-111111111202'
          FOR UPDATE;
       END;
       $remote$;
@@ -173,7 +209,7 @@ SELECT dblink_send_query(
            WHERE projection_record.tenant_record_id =
                  '0195d145-64e8-7f4f-8a23-a0cc784cb711'
              AND projection_record.assessment_result_uri =
-                 'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
+                 'urn:cwl:tenant_001:data_context:data_management_assessment:0196f5c0-1111-7111-8111-111111111202'
         ),
         (
           SELECT acceptance_record.assessment_evidence_acceptance_id
@@ -190,14 +226,14 @@ SELECT dblink_send_query(
                 WHERE projection_record.tenant_record_id =
                       '0195d145-64e8-7f4f-8a23-a0cc784cb711'
                   AND projection_record.assessment_result_uri =
-                      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
+                      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f5c0-1111-7111-8111-111111111202'
              )
            ORDER BY acceptance_record.accepted_at DESC,
                     acceptance_record.assessment_evidence_acceptance_id DESC
            LIMIT 1
         ),
-        '0196f300-1111-7111-8111-111111111176',
-        '2026-08-19T00:40:00Z'
+        '0196f5c0-1111-7111-8111-111111111209',
+        '2026-08-19T01:20:05Z'
       ) AS result;
     $query$
 );
@@ -261,7 +297,7 @@ SELECT dblink_send_query(
            WHERE projection_record.tenant_record_id =
                  '0195d145-64e8-7f4f-8a23-a0cc784cb711'
              AND projection_record.assessment_result_uri =
-                 'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
+                 'urn:cwl:tenant_001:data_context:data_management_assessment:0196f5c0-1111-7111-8111-111111111202'
         ),
         (
           SELECT acceptance_record.assessment_evidence_acceptance_id
@@ -278,14 +314,14 @@ SELECT dblink_send_query(
                 WHERE projection_record.tenant_record_id =
                       '0195d145-64e8-7f4f-8a23-a0cc784cb711'
                   AND projection_record.assessment_result_uri =
-                      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f300-1111-7111-8111-111111111162'
+                      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f5c0-1111-7111-8111-111111111202'
              )
            ORDER BY acceptance_record.accepted_at DESC,
                     acceptance_record.assessment_evidence_acceptance_id DESC
            LIMIT 1
         ),
-        '0196f300-1111-7111-8111-111111111176',
-        '2026-08-19T00:40:00Z'
+        '0196f5c0-1111-7111-8111-111111111209',
+        '2026-08-19T01:20:05Z'
       ) AS result;
     $query$
 );
@@ -394,7 +430,7 @@ BEGIN
    WHERE recheck_record.tenant_record_id =
          '0195d145-64e8-7f4f-8a23-a0cc784cb711'
      AND recheck_record.decision_request_id =
-         '0196f300-1111-7111-8111-111111111176';
+         '0196f5c0-1111-7111-8111-111111111209';
 
   SELECT count(*)
     INTO event_count
@@ -402,7 +438,7 @@ BEGIN
    WHERE event_record.tenant_record_id =
          '0195d145-64e8-7f4f-8a23-a0cc784cb711'
      AND event_record.decision_request_id =
-         '0196f300-1111-7111-8111-111111111176'
+         '0196f5c0-1111-7111-8111-111111111209'
      AND event_record.event_type_code =
          'org.contextualwisdomlab.ea.data_management.assessment_recheck_requested.v1';
 
