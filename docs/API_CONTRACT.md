@@ -24,6 +24,8 @@ Start the `ea-core` process, call `GET /health`, then call `GET /ready`. Use the
 
 `POST /v1/data-management-assessments/{data_management_assessment_projection_id}/recheck` makes the evidence-closure next action executable without changing the Data/AI Context source assessment. The path names the tenant-local EA projection of the foreign assessment. The strict body contains canonical UUIDv7 `trigger_evidence_acceptance_id` and `decision_request_id` plus a CWL `requested_at` timestamp. Only the acceptance whose transactional evidence event proved the final projected gap closed may trigger the request, and the request cannot predate that acceptance. EA Core records immutable reassessment-request evidence and `org.contextualwisdomlab.ea.data_management.assessment_recheck_requested.v1` outbox evidence atomically. A newly committed decision returns HTTP `201` with stable request/outbox identifiers, `replayed: false`, and `await_assessment_recheck`; an exact retry returns the same durable identifiers with HTTP `200` and `replayed: true`. Conflicting decision reuse fails closed. `semantic-data-portal` remains authoritative for the assessment result and later reassessment outcome; this command never mutates or copies that source authority.
 
+`GET /v1/data-management-assessment-rechecks/{assessment_recheck_request_id}` is the separately authorized status read for one accepted reassessment. It returns an explicit pending, evidence-gap, evidence-complete, or review-required state from the purpose-bound PostgreSQL read port. Only authoritative or observed successor evidence can direct an improvement-loop decision; inferred, proposed, superseded, or rejected evidence requires review. The status route uses `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES`, distinct from the reassessment mutation role.
+
 All target-state mutation commands use UUIDv7 decision/evidence/transformation identities, explicit business-effective time, bounded human reason, actor derivation from verified identity, exact idempotency-key receipt binding, and fail-closed conflicting replay. Outbound events omit the private decision actor and reason. The data-management reassessment command is separately purpose-authorized and receipt-bound; it reuses the established immutable assessment projection/evidence history instead of manufacturing source truth.
 
 The read and command surfaces remain Enterprise Architecture authority. pg-erd-cloud physical-schema evidence, Semantic Data Portal Data/AI Context, and LineageWeave inferred/proposed lineage remain foreign authority reached only through governed receipt/canonical-reference projection. No API performs cross-service application-table SQL or promotes foreign inferred evidence to authoritative truth.
@@ -51,6 +53,7 @@ No direct runtime privilege is granted to this overload in `database/init/003_gr
 - Post-verification monitoring uses `EA_MONITOR_ROLES`.
 - Target-state replanning uses `EA_REPLAN_ROLES`.
 - Data-management reassessment requests use `EA_DATA_MANAGEMENT_RECHECK_ROLES`.
+- Data-management reassessment status reads use `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES`.
 - Mutation and monitoring roles are purpose-bound and do not inherit authority from read or sibling roles.
 - Keyverse configuration is fail-closed and includes `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and every operation-specific role allow-list above.
 - JWKS retrieval remains HTTPS, same-origin, redirect-denied, bounded, timeout-limited, and fail-closed.
@@ -69,6 +72,7 @@ The `ea_runtime` login has no direct application-table authority. After service-
 - `read_target_state_monitoring_status(...)`
 - `record_target_state_replan(...)`
 - `request_data_management_assessment_recheck_for_tenant(...)`
+- `read_data_management_assessment_recheck_status(...)`
 
 Each wrapper transaction-locally binds the already verified tenant UUID before tenant-scoped work. The reassessment wrapper delegates only to the existing authoritative reassessment command and restores the caller tenant context before returning. The runtime role is not granted direct access to the underlying projectors, evidence tables, or foreign-product stores.
 

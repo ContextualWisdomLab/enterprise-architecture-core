@@ -168,9 +168,17 @@ Content-Type: application/json
 
 The path UUID identifies the tenant-local EA projection, not a copied source assessment. The trigger must be the acceptance that actually closed the final projected evidence gap. The receipt returns immutable `assessment_recheck_request_id`, `outbox_event_id`, and `next_action: "await_assessment_recheck"`. An exact retry returns the same receipt; a conflicting decision request or a request that predates the triggering acceptance fails closed.
 
-All governed surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`. Configure `EA_APPROVAL_ROLES`, `EA_SCHEDULE_ROLES`, `EA_START_ROLES`, `EA_COMPLETE_ROLES`, `EA_VERIFY_ROLES`, `EA_MONITOR_ROLES`, `EA_REPLAN_ROLES`, and `EA_DATA_MANAGEMENT_RECHECK_ROLES` separately for their purpose-bound mutation or monitoring boundaries. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
+The reassessment status endpoint is:
 
-The `ea_runtime` login has no direct application-table authority. It receives only purpose-bound PostgreSQL functions after service-side verification, including `read_technology_target_state_plan(...)`, `approve_target_state(...)`, `schedule_transformation(...)`, `start_scheduled_transformation(...)`, `complete_started_transformation(...)`, `record_target_state_verification(...)`, `read_target_state_monitoring_status(...)`, `record_target_state_replan(...)`, and `request_data_management_assessment_recheck_for_tenant(...)`. Callers cannot supply a transformation decision actor, and no surface grants direct access to foreign product stores.
+```text
+GET /v1/data-management-assessment-rechecks/{assessment_recheck_request_id}
+```
+
+It returns `await_assessment_recheck` while the source result is pending, exposes only authoritative or observed successor evidence as decision-eligible, and directs inferred, proposed, superseded, or rejected evidence to `review_assessment_recheck_evidence`. Status reads use their separate `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES` authority and never grant reassessment mutation access.
+
+All governed surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`. Configure `EA_APPROVAL_ROLES`, `EA_SCHEDULE_ROLES`, `EA_START_ROLES`, `EA_COMPLETE_ROLES`, `EA_VERIFY_ROLES`, `EA_MONITOR_ROLES`, `EA_REPLAN_ROLES`, `EA_DATA_MANAGEMENT_RECHECK_ROLES`, and `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES` separately for their purpose-bound mutation or read boundaries. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
+
+The `ea_runtime` login has no direct application-table authority. It receives only purpose-bound PostgreSQL functions after service-side verification, including `read_technology_target_state_plan(...)`, `approve_target_state(...)`, `schedule_transformation(...)`, `start_scheduled_transformation(...)`, `complete_started_transformation(...)`, `record_target_state_verification(...)`, `read_target_state_monitoring_status(...)`, `record_target_state_replan(...)`, `request_data_management_assessment_recheck_for_tenant(...)`, and `read_data_management_assessment_recheck_status(...)`. Callers cannot supply a transformation decision actor, and no surface grants direct access to foreign product stores.
 
 ## Validation
 
