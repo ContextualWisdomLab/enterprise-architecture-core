@@ -1,6 +1,6 @@
 # References
 
-Verified standards used by Enterprise Architecture Core, in APA 7th form. Each work has one canonical official locator. Alternate official locators are in the verification notes. Drafts are not treated as final. Cancelled or unofficial review bodies are not cited. No DOI is invented where none is published.
+Verified standards, frameworks, criteria, and specifications used by Enterprise Architecture Core, in APA 7th form. Each work has one canonical official locator. Alternate official locators are in the verification notes. Drafts are not treated as final. Cancelled or unofficial review bodies are not cited. No DOI is invented where none is published.
 
 International Organization for Standardization, International Electrotechnical Commission, & Institute of Electrical and Electronics Engineers. (2022). *Software, systems and enterprise — Architecture description* (ISO/IEC/IEEE Standard No. 42010:2022). https://doi.org/10.1109/IEEESTD.2022.9938446
 
@@ -12,7 +12,7 @@ The Open Group. (2026). *ArchiMate® 4 Specification* (C260). https://publicatio
 
 Association of International Certified Professional Accountants. (2023). *2017 Trust Services Criteria (with revised points of focus — 2022)*. https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022
 
-Cloud Native Computing Foundation. (2022). *CloudEvents specification* (Version 1.0.2). https://github.com/cloudevents/spec/tree/v1.0.2
+Cloud Native Computing Foundation. (2022). *CloudEvents specification* (Version 1.0.2). https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md
 
 National Institute of Standards and Technology. (2024). *The NIST Cybersecurity Framework (CSF) 2.0* (NIST CSWP 29). https://doi.org/10.6028/NIST.CSWP.29
 
@@ -27,6 +27,6 @@ OpenAPI Initiative. (2025). *OpenAPI Specification* (Version 3.2.0). https://spe
 | ArchiMate 4 Specification | Document C260; US ISBN 1-957866-75-8; published 27 April 2026; status Adopted; supersedes C226; no published DOI | https://publications.opengroup.org/standards/archimate/c260 | [ArchiMate standards index](https://publications.opengroup.org/standards/archimate); [licensed downloads](https://www.opengroup.org/archimate-licensed-downloads) | Current official ArchiMate specification. Governing viewpoint language in ADR 0003. |
 | ArchiMate 3.2 Specification | Document C226; US ISBN 1-957866-02-4; published 19 October 2022; supersedes C197; superseded by C260 | https://publications.opengroup.org/c226 | — | Legacy 3.x edition for interoperability with existing 3.2 models and tools. Not the current standard. |
 | 2017 Trust Services Criteria | AICPA 2017 TSC with Revised Points of Focus 2022 | https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022 | — | Control-criteria source only; no SOC 2 certification is claimed by this repository. |
-| CloudEvents 1.0.2 | CNCF CloudEvents release tag `v1.0.2` | https://github.com/cloudevents/spec/tree/v1.0.2 | https://cloudevents.io/ | Event-envelope interoperability source; a released Context Graph dependency is still required for positive integration readiness. |
+| CloudEvents 1.0.2 | CNCF CloudEvents release tag `v1.0.2` | https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md | https://github.com/cloudevents/spec/tree/v1.0.2; https://cloudevents.io/ | Event-envelope interoperability source; a released Context Graph dependency is still required for positive integration readiness. |
 | NIST CSF 2.0 | NIST CSWP 29, final 2024-02-26 | https://doi.org/10.6028/NIST.CSWP.29 | https://www.nist.gov/cyberframework | Security-risk governance and evidence-mapping source; it is not a certification. |
 | OpenAPI 3.2.0 | OpenAPI Specification version 3.2.0, 2025-09-19 | https://spec.openapis.org/oas/v3.2.0.html | https://spec.openapis.org/oas/ | Current HTTP contract language used by the implementation line. |

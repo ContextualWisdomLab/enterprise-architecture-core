@@ -5,10 +5,12 @@
 ## Context
 
 The repository has three materially different states: the protected `develop`
-branch, the deployable implementation on `main`, and a stack of unmerged pull
-requests. Treating a branch or a green check as shipped product truth makes a
-buyer believe that an unmerged capability is available. It also makes it easy
-to lose the next action when a base branch changes.
+initialization baseline, the implementation branch and other unmerged pull
+request candidates, and a deployable, released, or live state that requires
+the corresponding exact package, release, and runtime evidence. Treating a
+branch or a green check as shipped product truth makes a buyer believe that an
+unmerged capability is available. It also makes it easy to lose the next
+action when a base branch changes.
 
 The architecture description must therefore record the buyer outcome, the
 current implementation evidence, the open delivery dependency, and the exact
@@ -48,7 +50,8 @@ explicitly out of scope and the document names the trigger that reopens it.
   pull request.
 - Review and merge loops have a reproducible next action after each base or
   head change.
-- Standards and control claims remain traceable to the doctoring references;
+- Standards and control claims remain traceable to the authoritative
+  references;
   a local test or a plausible document cannot substitute for a release or live
   authorization proof.
 - A future presentation module may add Figma, Storybook, and design tokens
