@@ -1,6 +1,6 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-20T13:06:28Z, GitHub API and repository inspection<br>
+**Snapshot:** 2026-08-20T13:40:38Z, GitHub API and repository inspection<br>
 **Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
@@ -9,9 +9,12 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-20T13:17:51Z` — PR #18 is currently at exact head
-`a5d8550a722106acde49ccd57143932a2ae74bf4` with no formal review and hosted
-required checks pending. PR #14 remains a draft at exact head
+**Live refresh:** `2026-08-20T13:40:38Z` — PR #18 is currently at exact head
+`fa3b460a70586547754e649cc437c36ada75ff58` with no formal review and hosted
+required checks pending. PR #35 is the new hot-write-capacity candidate at
+exact head `633d7ee05e7377c09ccfdd251acd9ad942015625`, based on PR #33 exact
+head `4a2f28a2601dd532a0fed48b944a1e47c3aa46b7`; its required checks are
+pending and no formal review is observed. PR #14 remains a draft at exact head
 `ca6889497728e1a3f09d68790a9096576e13a3ff`; its latest `gh pr checks` result
 passes the required runtime and supply-chain checks. Two older failed runs are
 historical evidence only and do not transfer to a new head.
@@ -47,6 +50,7 @@ The next release loop is therefore:
 | Transformation lifecycle | Approval, schedule, start, complete, verification, monitoring, and replan routes in the latest `implementation_candidate` stack; not buyer-available until integrated and released | A buyer gets a governed decision trail; a planner or inferred fact cannot silently become an authoritative change. |
 | Data/AI evidence loop | Receipt-bound cross-domain projections, assessment improvement, evidence closure, and reassessment status in the latest `implementation_candidate` stack; not buyer-available until integrated and released | Foreign data/AI systems remain authoritative while EA can expose accountable evidence gaps and next actions. |
 | Relational integrity | 3NF migrations, tenant-bound foreign keys, forced RLS, temporal guards, outbox acceptance, and upgrade rehearsal on the implementation line | A buyer receives auditable history and tenant isolation evidence rather than a demo-only graph. |
+| Hot-write capacity preparation | Migration 0050 and ADR 0025 on PR #35 define deterministic tenant-derived 16-bucket routing, storage headroom, and hot-write indexes; physical partition deployment is not claimed | A buyer gets an explicit capacity-migration boundary, while production skew, queue lag, and write amplification still require measurement. |
 | Presentation layer | `docs/STORYBOOK_INVENTORY.md` on the implementation line says no visual UI is shipped | This is intentionally headless. Add Figma/Storybook only when a presentation module and repeated web objects are approved. |
 
 ## Delivery truth classes
@@ -68,6 +72,7 @@ recollected after any push or base change.
 
 | PR | Scope | Base → head | Observed state | Customer-safe next action |
 | ---: | --- | --- | --- | --- |
+| [35](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/35) | Prepare append-only write boundaries for hot partitioning | `portfolio-assessment-summary` at current base `4a2f28a2601dd532a0fed48b944a1e47c3aa46b7` → `hot-write-capacity` | Ready; exact head `633d7ee05e7377c09ccfdd251acd9ad942015625`; required Checks pending; central OpenCode review dispatched; no formal review | Wait for terminal Checks and an independent same-head review; merge only after PR #33 and its ancestors are current and protected. |
 | [34](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/34) | Repair protected-main SPDX attestation compatibility | `main` → `codex/supply-chain-sbom-attestation` | Ready; exact head `6f89e5817249aca332b3b4bab99e1f1a1c9737b4`; hosted Checks queued; local actionlint, pinned package build, Syft SPDX 2.3/3.0.1 validation, 121-test/100% coverage evidence passed; no formal review | Wait for terminal hosted Checks and an independent same-head review; merge only after the exact-head protected gate passes. |
 | [33](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/33) | Publish deterministic portfolio assessment summary | `portfolio-assessment-api` at current base `03fd6269e87d0eee5e9a9d312cffe390398df339` → `portfolio-assessment-summary` | Ready; exact head `4a2f28a2601dd532a0fed48b944a1e47c3aa46b7`; parent synchronization is now reflected in the PR base; required Checks queued; no formal review | Wait for terminal Checks and obtain an independent same-head review; merge only after the synchronized parent and descendant gates are current. |
 | [32](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/32) | Expose portfolio assessment read port | `data-management-recheck-status-v1` at current base `6ab5cf065c2042b6a4fab4231607d2a1a3b9a729` → `portfolio-assessment-api` | Ready; exact head `03fd6269e87d0eee5e9a9d312cffe390398df339`; parent integration and style fixes are included; required Checks queued; no formal review | Wait for terminal Checks and obtain an independent same-head review; repair and revalidate before merge. |
@@ -81,7 +86,7 @@ recollected after any push or base change.
 | [22](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/22) | Complete started target-state transformation | `target-state-start-v1` → `target-state-complete-v1` | Draft; visible repository gates green | Verify only an authoritative started transformation can complete. |
 | [21](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/21) | Run repository acceptance on protected `develop` pushes | `main` → `fix/develop-push-acceptance` | Ready; exact current head `4ada32a811c2f5ba7ac2138c0826229c5d62e78b`; repository Checks terminal green; no qualifying independent current-head approval | Obtain a formal same-head approval, then re-fetch and re-check before merge. |
 | [19](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/19) | Start scheduled target-state transformation | `target-state-schedule-v1` → `target-state-start-v1` | Draft; visible repository gates green | Review the schedule-to-start authority boundary before advancing. |
-| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` → `cursor/ea-core-customer-docs-609e` | Ready; exact head `a5d8550a722106acde49ccd57143932a2ae74bf4`; no formal review; hosted required-workflow and security/provenance evidence remains queued | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
+| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` → `cursor/ea-core-customer-docs-609e` | Ready; exact head `fa3b460a70586547754e649cc437c36ada75ff58`; no formal review; hosted required-workflow and security/provenance evidence remains queued | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
 | [17](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/17) | Schedule approved target-state transformation | `target-state-approval-v1` → `target-state-schedule-v1` | Draft; visible repository gates green | Review milestone binding and exact replay semantics. |
 | [16](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/16) | Govern target-state approval command | `target-state-planner-api-v1` → `target-state-approval-v1` | Draft; visible repository gates green | Require operation-specific Keyverse authority and immutable evidence. |
 | [15](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/15) | Expose authenticated target-state planner query | `target-state-planner-v1` → `target-state-planner-api-v1` | Draft; visible repository gates green | Verify issuer, audience, tenant, role, bitemporal cutoff, and no direct-table access. |
@@ -91,14 +96,16 @@ recollected after any push or base change.
 
 ### Current-head evidence packet
 
-The following exact-head packet was collected at `2026-08-20T13:06:28Z` from
-the GitHub REST API and local acceptance runs. Every open PR is classified as
+The original exact-head packet was collected at `2026-08-20T13:06:28Z` from
+the GitHub REST API and local acceptance runs; the PR #18 and PR #35 rows were
+refreshed at `2026-08-20T13:40:38Z`. Every open PR is classified as
 an `implementation_candidate`; that class does not imply merge, release,
 deployment, or buyer availability. The full SHA is the identity to re-fetch
 after any push or base-branch change.
 
 | PR | Full head SHA | Collected | Delivery truth | Current evidence boundary |
 | ---: | --- | --- | --- | --- |
+| 35 | `633d7ee05e7377c09ccfdd251acd9ad942015625` | `2026-08-20T13:40:38Z` | `implementation_candidate` | PostgreSQL 18 clean-install and 0049→0050 upgrade acceptance passed locally; Python 682-test/100% coverage, Ruff, and repository validation passed; hosted Checks pending; no formal review. |
 | 34 | `6f89e5817249aca332b3b4bab99e1f1a1c9737b4` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Hosted Checks queued; local actionlint, package, Syft SPDX 2.3/3.0.1, 121-test/100% evidence passed. |
 | 33 | `4a2f28a2601dd532a0fed48b944a1e47c3aa46b7` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Hosted Checks queued; local 682-test/100% and real PostgreSQL summary acceptance passed. |
 | 32 | `03fd6269e87d0eee5e9a9d312cffe390398df339` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Hosted Checks queued; local 661-test/100% and real PostgreSQL current-head acceptance passed. |
@@ -112,7 +119,7 @@ after any push or base-branch change.
 | 22 | `61ae51a10aece4af51b3cea3ed4ba662598f32e0` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
 | 21 | `4ada32a811c2f5ba7ac2138c0826229c5d62e78b` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Repository Checks terminal green; no qualifying independent current-head approval. |
 | 19 | `daa58320e3fca4c9ea04fcd1cd72d9c754781b51` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
-| 18 | `e31309e7ed2e33ed0a05c368a8ffe96869bd7a58` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Hosted required workflows/security/provenance Checks queued; no formal current-head review. |
+| 18 | `fa3b460a70586547754e649cc437c36ada75ff58` | `2026-08-20T13:40:38Z` | `implementation_candidate` | Documentation snapshot refresh is pushed; hosted required workflows/security/provenance Checks pending; no formal current-head review. |
 | 17 | `c2d448f2b8dd159bbed9b66dd3e9953a919dd1f7` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
 | 16 | `b26800d6133bab615bf4a17ff9a5871c30f1fc6a` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
 | 15 | `4950f486028cff75b7db07460353bff3807fa87d` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
@@ -141,6 +148,7 @@ not a merge authorization. The loop must preserve the sequence
 | P0 | No immutable customer release is observed | At `2026-08-20T13:06:28Z`, GitHub release/tag inventory is empty; package/SBOM workflows exist only as candidate evidence | A buyer cannot pin, install, verify, or roll back a product version. | Publish the first versioned package after protected integration and update `CHANGELOG.md` with the exact acceptance evidence. | Release tag, package checksums/SBOM/provenance, install smoke test, and rollback instructions all point to the same commit. |
 | P0 | Shared Context Graph contract is release-gated rather than live-proven | At `2026-08-20T13:06:28Z`, `/ready` intentionally fails closed when the exact `cwl-context-contracts` distribution is unavailable; no immutable contract version or live positive readiness evidence is observed | Cross-product impact decisions cannot be promoted to production interoperability without a trusted contract artifact. | Publish or consume the exact immutable contract release through the approved connector boundary; keep unknown/mutable branches rejected. | Live `/ready` is 200 with the exact contract version, and cross-domain replay/tenant/authority acceptance passes against the released artifact. |
 | P1 | Portfolio fit/scoring is normalized but not a buyer API | PR [32](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/32) at exact head `03fd6269e87d0eee5e9a9d312cffe390398df339` adds the authenticated single-object assessment read port; synchronized PR [33](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/33) at exact head `4a2f28a2601dd532a0fed48b944a1e47c3aa46b7` adds the deterministic summary candidate | A portfolio owner still needs an aggregate fit, criticality, cost, and risk answer on the protected branch. | Complete the current-head review and Checks loop for #32, then repeat it for the synchronized summary while preserving tenant, valid-time, recorded-time, truth status, evidence, and next-action fields. | The integrated summary has an OpenAPI contract, purpose-bound reader, deterministic PostgreSQL acceptance, negative authorization tests, and a current-head runtime response. |
+| P1 | Append-only database write hot spots lack buyer-observed capacity evidence | PR [35](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/35) at exact head `633d7ee05e7377c09ccfdd251acd9ad942015625` adds migration 0050, ADR 0025, deterministic 16-bucket tenant routing, fillfactor headroom, hot-write indexes, and clean/upgrade PostgreSQL acceptance; physical partitions and production skew measurements remain absent | A buyer cannot yet distinguish a measured high-write operating envelope from a schema prepared for future scale. | Merge the reviewed stack, then measure tenant skew, queue lag, write amplification, and index behavior on representative authorized data before proposing a physical HASH/LIST cutover. | Protected integration and a repeatable PostgreSQL capacity report bind the same migration, measurements, RLS behavior, and rollback evidence; no production capacity claim is made before then. |
 | P1 | External lifecycle and data/AI adapters remain contract catalog entries | Connector catalog and receipt guards exist; vendor lifecycle and owner-produced production adapters are explicitly future work | Buyers see a safe integration boundary but still assemble feeds manually. | Add one highest-leverage REST/event adapter with canonical URI, receipt digest, replay, tenant, truth-origin, and failure-retry evidence. | The owning external system, released connector contract, real inbound receipt, replay test, and failure recovery are observed together. |
 | P1 | Decision results are headless and lack an accessible buyer presentation surface | Storybook inventory explicitly records no visual UI | A non-technical buyer cannot yet explore capability maps, scenario comparison, or transformation timelines without a consuming product. | First approve a presentation-module boundary and repeated object inventory; then create Figma file/ADR linkage and Storybook tokens/components. | Browser E2E proves keyboard, screen-reader-equivalent text, exact-value alternatives, i18n consistency, and action edge cases against live API data. |
 | P1 | CSAP/SOC 2 readiness is described but not an evidence pack | Security, threat, operability, and supply-chain documents exist; no certification or audit report is claimed by this repository | A regulated buyer cannot use the repository as an audit-ready control evidence pack. | Map implemented controls to NIST CSF 2.0 and AICPA Trust Services Criteria, then add owner, evidence location, cadence, and exception state. | Every claimed control has current executable or operational evidence; missing evidence remains explicitly `planned`, not `compliant`. |
