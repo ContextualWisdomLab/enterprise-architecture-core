@@ -115,56 +115,11 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStatePlanResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStatePlanResponse"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -173,93 +128,16 @@
         "operationId": "approveTechnologyTargetState",
         "summary": "Approve one proposed target-state transformation",
         "description": "Commit a human-authorized target-state approval through the purpose-bound EA command port.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "architecture_transformation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TargetStateApprovalRequest"
-              }
-            }
-          }
-        },
+        "security": [{"keyverseBearer": []}],
+        "parameters": [{"name": "architecture_transformation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateApprovalRequest"}}}},
         "responses": {
-          "200": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateApprovalReceipt"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateApprovalReceipt"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateApprovalReceipt"}}}},
+          "201": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateApprovalReceipt"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -268,93 +146,16 @@
         "operationId": "scheduleTechnologyTargetState",
         "summary": "Schedule one approved target-state transformation",
         "description": "Bind one approved transformation to one authoritative remediation milestone.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "architecture_transformation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TargetStateScheduleRequest"
-              }
-            }
-          }
-        },
+        "security": [{"keyverseBearer": []}],
+        "parameters": [{"name": "architecture_transformation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateScheduleRequest"}}}},
         "responses": {
-          "200": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateScheduleReceipt"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateScheduleReceipt"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateScheduleReceipt"}}}},
+          "201": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateScheduleReceipt"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -363,93 +164,16 @@
         "operationId": "startTechnologyTargetState",
         "summary": "Start one scheduled target-state transformation",
         "description": "Advance one scheduled authoritative transformation to started.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "architecture_transformation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TargetStateStartRequest"
-              }
-            }
-          }
-        },
+        "security": [{"keyverseBearer": []}],
+        "parameters": [{"name": "architecture_transformation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateStartRequest"}}}},
         "responses": {
-          "200": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateStartReceipt"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateStartReceipt"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateStartReceipt"}}}},
+          "201": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateStartReceipt"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -458,93 +182,16 @@
         "operationId": "completeTechnologyTargetState",
         "summary": "Complete one started target-state transformation",
         "description": "Append authoritative completion history and transactional outbox evidence; then verify target state.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "architecture_transformation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TargetStateCompleteRequest"
-              }
-            }
-          }
-        },
+        "security": [{"keyverseBearer": []}],
+        "parameters": [{"name": "architecture_transformation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateCompleteRequest"}}}},
         "responses": {
-          "200": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateCompleteReceipt"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateCompleteReceipt"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateCompleteReceipt"}}}},
+          "201": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateCompleteReceipt"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -553,93 +200,16 @@
         "operationId": "verifyTechnologyTargetState",
         "summary": "Verify the achieved target state of one completed transformation",
         "description": "Record a human-authorized target-state verification decision with immutable evidence and an explicit next action.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "architecture_transformation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TargetStateVerificationRequest"
-              }
-            }
-          }
-        },
+        "security": [{"keyverseBearer": []}],
+        "parameters": [{"name": "architecture_transformation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateVerificationRequest"}}}},
         "responses": {
-          "200": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateVerificationReceipt"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateVerificationReceipt"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateVerificationReceipt"}}}},
+          "201": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateVerificationReceipt"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -648,102 +218,19 @@
         "operationId": "getTargetStateMonitoring",
         "summary": "Assess freshness of verified target-state evidence",
         "description": "Return one tenant-scoped bitemporal monitoring decision without mutating terminal transformation history.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
+        "security": [{"keyverseBearer": []}],
         "parameters": [
-          {
-            "name": "architecture_transformation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "valid_at",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "recorded_at",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "max_evidence_age_days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 3650,
-              "default": 90
-            }
-          }
+          {"name": "architecture_transformation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+          {"name": "valid_at", "in": "query", "required": true, "schema": {"type": "string", "format": "date-time"}},
+          {"name": "recorded_at", "in": "query", "required": true, "schema": {"type": "string", "format": "date-time"}},
+          {"name": "max_evidence_age_days", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 3650, "default": 90}}
         ],
         "responses": {
-          "200": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateMonitoringStatus"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateMonitoringStatus"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -752,93 +239,16 @@
         "operationId": "replanTechnologyTargetState",
         "summary": "Create a governed replacement after a detected target-state gap",
         "description": "Record an immutable human-authorized replacement proposal without reopening or rewriting the terminal predecessor.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "architecture_transformation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TargetStateReplanRequest"
-              }
-            }
-          }
-        },
+        "security": [{"keyverseBearer": []}],
+        "parameters": [{"name": "architecture_transformation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateReplanRequest"}}}},
         "responses": {
-          "200": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateReplanReceipt"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TargetStateReplanReceipt"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateReplanReceipt"}}}},
+          "201": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TargetStateReplanReceipt"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -847,94 +257,16 @@
         "operationId": "requestDataManagementAssessmentRecheck",
         "summary": "Request reassessment after every projected evidence gap is closed",
         "description": "Commit one tenant-scoped immutable reassessment request through the authenticated EA command port without mutating the Data/AI Context source assessment. A newly committed request returns 201 with replayed=false; an exact durable retry returns 200 with replayed=true.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "data_management_assessment_projection_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DataManagementAssessmentRecheckRequest"
-              }
-            }
-          }
-        },
+        "security": [{"keyverseBearer": []}],
+        "parameters": [{"name": "data_management_assessment_projection_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/DataManagementAssessmentRecheckRequest"}}}},
         "responses": {
-          "200": {
-            "description": "The exact durable reassessment request is replayed without duplicating evidence.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DataManagementAssessmentRecheckReceipt"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "A new durable reassessment request and transactional outbox event are committed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DataManagementAssessmentRecheckReceipt"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "The exact durable reassessment request is replayed without duplicating evidence.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/DataManagementAssessmentRecheckReceipt"}}}},
+          "201": {"description": "A new durable reassessment request and transactional outbox event are committed.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/DataManagementAssessmentRecheckReceipt"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     },
@@ -942,107 +274,35 @@
       "get": {
         "operationId": "getDataManagementAssessmentRecheckStatus",
         "summary": "Follow one evidence-backed data-management reassessment",
-        "description": "Read the tenant-scoped projected successor assessment and the buyer's next action without mutating the authoritative Data/AI Context assessment.",
-        "security": [
-          {
-            "keyverseBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "assessment_recheck_request_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-            }
-          }
-        ],
+        "description": "Read the tenant-scoped projected successor assessment, preserve its explicit truth origin, and require review before inferred, proposed, superseded, or rejected evidence can drive a completion decision.",
+        "security": [{"keyverseBearer": []}],
+        "parameters": [{"name": "assessment_recheck_request_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}}],
         "responses": {
-          "200": {
-            "description": "The reassessment is still pending or a unique direct successor projection determines the next action.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DataManagementAssessmentRecheckStatus"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "See response schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorStatus"
-                }
-              }
-            }
-          }
+          "200": {"description": "The reassessment is pending, decision-eligible, or explicitly review-gated according to the unique direct successor projection and its truth origin.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/DataManagementAssessmentRecheckStatus"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
     }
   },
   "components": {
     "securitySchemes": {
-      "keyverseBearer": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
-      }
+      "keyverseBearer": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
     },
     "schemas": {
       "HealthStatus": {
         "type": "object",
         "additionalProperties": false,
         "required": ["service_name", "status_code"],
-        "properties": {
-          "service_name": {"type": "string", "const": "enterprise-architecture-core"},
-          "status_code": {"type": "string", "const": "alive"}
-        }
+        "properties": {"service_name": {"type": "string", "const": "enterprise-architecture-core"}, "status_code": {"type": "string", "const": "alive"}}
       },
       "ReadyStatus": {
         "type": "object",
         "additionalProperties": false,
         "required": ["service_name", "status_code", "contract_ready", "database_ready"],
-        "properties": {
-          "service_name": {"type": "string", "const": "enterprise-architecture-core"},
-          "status_code": {"type": "string", "enum": ["ready", "not_ready"]},
-          "contract_ready": {"type": "boolean"},
-          "database_ready": {"type": "boolean"}
-        }
+        "properties": {"service_name": {"type": "string", "const": "enterprise-architecture-core"}, "status_code": {"type": "string", "enum": ["ready", "not_ready"]}, "contract_ready": {"type": "boolean"}, "database_ready": {"type": "boolean"}}
       },
       "TargetStatePlanResponse": {
         "type": "object",
@@ -1085,250 +345,105 @@
         }
       },
       "TargetStateApprovalRequest": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id"],
-        "properties": {
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "effective_at": {"type": "string", "format": "date-time"},
-          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
-          "evidence_record_id": {"type": "string", "format": "uuid"}
-        }
+        "properties": {"decision_request_id": {"type": "string", "format": "uuid"}, "effective_at": {"type": "string", "format": "date-time"}, "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence_record_id": {"type": "string", "format": "uuid"}}
       },
       "TargetStateApprovalReceipt": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["transformation_history_record_id", "transformation_state_code", "outbox_event_id", "decision_request_id", "approval_recorded_at", "replayed", "next_action"],
-        "properties": {
-          "transformation_history_record_id": {"type": "string", "format": "uuid"},
-          "transformation_state_code": {"type": "string", "const": "approved"},
-          "outbox_event_id": {"type": "string", "format": "uuid"},
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "approval_recorded_at": {"type": "string", "format": "date-time"},
-          "replayed": {"type": "boolean"},
-          "next_action": {"type": "string", "const": "schedule_transformation"}
-        }
+        "properties": {"transformation_history_record_id": {"type": "string", "format": "uuid"}, "transformation_state_code": {"type": "string", "const": "approved"}, "outbox_event_id": {"type": "string", "format": "uuid"}, "decision_request_id": {"type": "string", "format": "uuid"}, "approval_recorded_at": {"type": "string", "format": "date-time"}, "replayed": {"type": "boolean"}, "next_action": {"type": "string", "const": "schedule_transformation"}}
       },
       "TargetStateScheduleRequest": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id", "initiative_milestone_id"],
-        "properties": {
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "effective_at": {"type": "string", "format": "date-time"},
-          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
-          "evidence_record_id": {"type": "string", "format": "uuid"},
-          "initiative_milestone_id": {"type": "string", "format": "uuid"}
-        }
+        "properties": {"decision_request_id": {"type": "string", "format": "uuid"}, "effective_at": {"type": "string", "format": "date-time"}, "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence_record_id": {"type": "string", "format": "uuid"}, "initiative_milestone_id": {"type": "string", "format": "uuid"}}
       },
       "TargetStateScheduleReceipt": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["transformation_schedule_record_id", "architecture_transformation_id", "initiative_milestone_id", "outbox_event_id", "decision_request_id", "milestone_target_at", "schedule_recorded_at", "replayed", "next_action"],
-        "properties": {
-          "transformation_schedule_record_id": {"type": "string", "format": "uuid"},
-          "architecture_transformation_id": {"type": "string", "format": "uuid"},
-          "initiative_milestone_id": {"type": "string", "format": "uuid"},
-          "outbox_event_id": {"type": "string", "format": "uuid"},
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "milestone_target_at": {"type": "string", "format": "date-time"},
-          "schedule_recorded_at": {"type": "string", "format": "date-time"},
-          "replayed": {"type": "boolean"},
-          "next_action": {"type": "string", "const": "start_transformation"}
-        }
+        "properties": {"transformation_schedule_record_id": {"type": "string", "format": "uuid"}, "architecture_transformation_id": {"type": "string", "format": "uuid"}, "initiative_milestone_id": {"type": "string", "format": "uuid"}, "outbox_event_id": {"type": "string", "format": "uuid"}, "decision_request_id": {"type": "string", "format": "uuid"}, "milestone_target_at": {"type": "string", "format": "date-time"}, "schedule_recorded_at": {"type": "string", "format": "date-time"}, "replayed": {"type": "boolean"}, "next_action": {"type": "string", "const": "start_transformation"}}
       },
       "TargetStateStartRequest": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id"],
-        "properties": {
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "effective_at": {"type": "string", "format": "date-time"},
-          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
-          "evidence_record_id": {"type": "string", "format": "uuid"}
-        }
+        "properties": {"decision_request_id": {"type": "string", "format": "uuid"}, "effective_at": {"type": "string", "format": "date-time"}, "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence_record_id": {"type": "string", "format": "uuid"}}
       },
       "TargetStateStartReceipt": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["transformation_history_record_id", "architecture_transformation_id", "transformation_state_code", "outbox_event_id", "decision_request_id", "start_recorded_at", "replayed", "next_action"],
-        "properties": {
-          "transformation_history_record_id": {"type": "string", "format": "uuid"},
-          "architecture_transformation_id": {"type": "string", "format": "uuid"},
-          "transformation_state_code": {"type": "string", "const": "started"},
-          "outbox_event_id": {"type": "string", "format": "uuid"},
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "start_recorded_at": {"type": "string", "format": "date-time"},
-          "replayed": {"type": "boolean"},
-          "next_action": {"type": "string", "const": "monitor_transformation"}
-        }
+        "properties": {"transformation_history_record_id": {"type": "string", "format": "uuid"}, "architecture_transformation_id": {"type": "string", "format": "uuid"}, "transformation_state_code": {"type": "string", "const": "started"}, "outbox_event_id": {"type": "string", "format": "uuid"}, "decision_request_id": {"type": "string", "format": "uuid"}, "start_recorded_at": {"type": "string", "format": "date-time"}, "replayed": {"type": "boolean"}, "next_action": {"type": "string", "const": "monitor_transformation"}}
       },
       "TargetStateCompleteRequest": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id"],
-        "properties": {
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "effective_at": {"type": "string", "format": "date-time"},
-          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
-          "evidence_record_id": {"type": "string", "format": "uuid"}
-        }
+        "properties": {"decision_request_id": {"type": "string", "format": "uuid"}, "effective_at": {"type": "string", "format": "date-time"}, "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence_record_id": {"type": "string", "format": "uuid"}}
       },
       "TargetStateCompleteReceipt": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["transformation_history_record_id", "architecture_transformation_id", "transformation_state_code", "outbox_event_id", "decision_request_id", "completion_recorded_at", "replayed", "next_action"],
-        "properties": {
-          "transformation_history_record_id": {"type": "string", "format": "uuid"},
-          "architecture_transformation_id": {"type": "string", "format": "uuid"},
-          "transformation_state_code": {"type": "string", "const": "completed"},
-          "outbox_event_id": {"type": "string", "format": "uuid"},
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "completion_recorded_at": {"type": "string", "format": "date-time"},
-          "replayed": {"type": "boolean"},
-          "next_action": {"type": "string", "const": "verify_target_state"}
-        }
+        "properties": {"transformation_history_record_id": {"type": "string", "format": "uuid"}, "architecture_transformation_id": {"type": "string", "format": "uuid"}, "transformation_state_code": {"type": "string", "const": "completed"}, "outbox_event_id": {"type": "string", "format": "uuid"}, "decision_request_id": {"type": "string", "format": "uuid"}, "completion_recorded_at": {"type": "string", "format": "date-time"}, "replayed": {"type": "boolean"}, "next_action": {"type": "string", "const": "verify_target_state"}}
       },
       "TargetStateVerificationRequest": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["decision_request_id", "effective_at", "decision_reason_text", "evidence_record_id", "verification_outcome_code"],
-        "properties": {
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "effective_at": {"type": "string", "format": "date-time"},
-          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
-          "evidence_record_id": {"type": "string", "format": "uuid"},
-          "verification_outcome_code": {"type": "string", "enum": ["verified", "gap_detected"]}
-        }
+        "properties": {"decision_request_id": {"type": "string", "format": "uuid"}, "effective_at": {"type": "string", "format": "date-time"}, "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence_record_id": {"type": "string", "format": "uuid"}, "verification_outcome_code": {"type": "string", "enum": ["verified", "gap_detected"]}}
       },
       "TargetStateVerificationReceipt": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["transformation_history_record_id", "architecture_transformation_id", "verification_outcome_code", "outbox_event_id", "decision_request_id", "verification_recorded_at", "replayed", "next_action"],
-        "properties": {
-          "transformation_history_record_id": {"type": "string", "format": "uuid"},
-          "architecture_transformation_id": {"type": "string", "format": "uuid"},
-          "verification_outcome_code": {"type": "string", "enum": ["verified", "gap_detected"]},
-          "outbox_event_id": {"type": "string", "format": "uuid"},
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "verification_recorded_at": {"type": "string", "format": "date-time"},
-          "replayed": {"type": "boolean"},
-          "next_action": {"type": "string", "enum": ["monitor_target_state", "replan_target_state"]}
-        }
+        "properties": {"transformation_history_record_id": {"type": "string", "format": "uuid"}, "architecture_transformation_id": {"type": "string", "format": "uuid"}, "verification_outcome_code": {"type": "string", "enum": ["verified", "gap_detected"]}, "outbox_event_id": {"type": "string", "format": "uuid"}, "decision_request_id": {"type": "string", "format": "uuid"}, "verification_recorded_at": {"type": "string", "format": "date-time"}, "replayed": {"type": "boolean"}, "next_action": {"type": "string", "enum": ["monitor_target_state", "replan_target_state"]}}
       },
       "TargetStateMonitoringStatus": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["architecture_transformation_id", "verification_state_code", "verification_effective_at", "verification_recorded_at", "evidence_record_id", "evidence_age_days", "monitoring_state_code", "next_action"],
-        "properties": {
-          "architecture_transformation_id": {"type": "string", "format": "uuid"},
-          "verification_state_code": {"type": "string", "enum": ["verified", "gap_detected"]},
-          "verification_effective_at": {"type": "string", "format": "date-time"},
-          "verification_recorded_at": {"type": "string", "format": "date-time"},
-          "evidence_record_id": {"type": "string", "format": "uuid"},
-          "evidence_age_days": {"type": "integer", "minimum": 0},
-          "monitoring_state_code": {"type": "string", "enum": ["current", "stale", "gap_detected"]},
-          "next_action": {"type": "string", "enum": ["continue_monitoring", "collect_new_target_state_evidence", "replan_target_state"]}
-        }
+        "properties": {"architecture_transformation_id": {"type": "string", "format": "uuid"}, "verification_state_code": {"type": "string", "enum": ["verified", "gap_detected"]}, "verification_effective_at": {"type": "string", "format": "date-time"}, "verification_recorded_at": {"type": "string", "format": "date-time"}, "evidence_record_id": {"type": "string", "format": "uuid"}, "evidence_age_days": {"type": "integer", "minimum": 0}, "monitoring_state_code": {"type": "string", "enum": ["current", "stale", "gap_detected"]}, "next_action": {"type": "string", "enum": ["continue_monitoring", "collect_new_target_state_evidence", "replan_target_state"]}}
       },
       "TargetStateReplanRequest": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["decision_request_id", "replacement_architecture_transformation_id", "architecture_scenario_id", "remediation_initiative_id", "transformation_code", "transformation_title", "transformation_description", "effective_at", "decision_reason_text", "evidence_record_id"],
-        "properties": {
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "replacement_architecture_transformation_id": {"type": "string", "format": "uuid"},
-          "architecture_scenario_id": {"type": "string", "format": "uuid"},
-          "remediation_initiative_id": {"type": "string", "format": "uuid"},
-          "transformation_code": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$"},
-          "transformation_title": {"type": "string", "minLength": 1, "maxLength": 512},
-          "transformation_description": {"type": "string", "minLength": 1, "maxLength": 4096},
-          "effective_at": {"type": "string", "format": "date-time"},
-          "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096},
-          "evidence_record_id": {"type": "string", "format": "uuid"}
-        }
+        "properties": {"decision_request_id": {"type": "string", "format": "uuid"}, "replacement_architecture_transformation_id": {"type": "string", "format": "uuid"}, "architecture_scenario_id": {"type": "string", "format": "uuid"}, "remediation_initiative_id": {"type": "string", "format": "uuid"}, "transformation_code": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$"}, "transformation_title": {"type": "string", "minLength": 1, "maxLength": 512}, "transformation_description": {"type": "string", "minLength": 1, "maxLength": 4096}, "effective_at": {"type": "string", "format": "date-time"}, "decision_reason_text": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence_record_id": {"type": "string", "format": "uuid"}}
       },
       "TargetStateReplanReceipt": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["transformation_replan_record_id", "predecessor_architecture_transformation_id", "replacement_architecture_transformation_id", "transformation_history_record_id", "outbox_event_id", "decision_request_id", "replan_recorded_at", "replayed", "next_action"],
-        "properties": {
-          "transformation_replan_record_id": {"type": "string", "format": "uuid"},
-          "predecessor_architecture_transformation_id": {"type": "string", "format": "uuid"},
-          "replacement_architecture_transformation_id": {"type": "string", "format": "uuid"},
-          "transformation_history_record_id": {"type": "string", "format": "uuid"},
-          "outbox_event_id": {"type": "string", "format": "uuid"},
-          "decision_request_id": {"type": "string", "format": "uuid"},
-          "replan_recorded_at": {"type": "string", "format": "date-time"},
-          "replayed": {"type": "boolean"},
-          "next_action": {"type": "string", "const": "approve_target_state"}
-        }
+        "properties": {"transformation_replan_record_id": {"type": "string", "format": "uuid"}, "predecessor_architecture_transformation_id": {"type": "string", "format": "uuid"}, "replacement_architecture_transformation_id": {"type": "string", "format": "uuid"}, "transformation_history_record_id": {"type": "string", "format": "uuid"}, "outbox_event_id": {"type": "string", "format": "uuid"}, "decision_request_id": {"type": "string", "format": "uuid"}, "replan_recorded_at": {"type": "string", "format": "date-time"}, "replayed": {"type": "boolean"}, "next_action": {"type": "string", "const": "approve_target_state"}}
       },
       "DataManagementAssessmentRecheckRequest": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["trigger_evidence_acceptance_id", "decision_request_id", "requested_at"],
-        "properties": {
-          "trigger_evidence_acceptance_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
-          "decision_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
-          "requested_at": {"type": "string", "format": "date-time"}
-        }
+        "properties": {"trigger_evidence_acceptance_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}, "decision_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}, "requested_at": {"type": "string", "format": "date-time"}}
       },
       "DataManagementAssessmentRecheckReceipt": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["assessment_recheck_request_id", "outbox_event_id", "replayed", "next_action"],
-        "properties": {
-          "assessment_recheck_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
-          "outbox_event_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
-          "replayed": {"type": "boolean"},
-          "next_action": {"type": "string", "const": "await_assessment_recheck"}
-        }
+        "properties": {"assessment_recheck_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}, "outbox_event_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}, "replayed": {"type": "boolean"}, "next_action": {"type": "string", "const": "await_assessment_recheck"}}
       },
       "DataManagementAssessmentRecheckStatus": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["assessment_recheck_request_id", "data_management_assessment_projection_id", "successor_assessment_projection_id", "recheck_state_code", "successor_readiness_code", "successor_overall_score_basis_points", "successor_missing_evidence_count", "next_action"],
+        "required": ["assessment_recheck_request_id", "data_management_assessment_projection_id", "successor_assessment_projection_id", "successor_truth_status_code", "recheck_state_code", "successor_readiness_code", "successor_overall_score_basis_points", "successor_missing_evidence_count", "next_action"],
         "properties": {
           "assessment_recheck_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
           "data_management_assessment_projection_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
           "successor_assessment_projection_id": {"type": ["string", "null"], "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
-          "recheck_state_code": {"type": "string", "enum": ["awaiting_result", "evidence_gap", "evidence_complete"]},
+          "successor_truth_status_code": {"type": ["string", "null"], "enum": ["authoritative", "observed", "inferred", "proposed", "superseded", "rejected", null]},
+          "recheck_state_code": {"type": "string", "enum": ["awaiting_result", "evidence_gap", "evidence_complete", "review_required"]},
           "successor_readiness_code": {"type": ["string", "null"], "enum": ["evidence_gap", "evidence_complete", null]},
           "successor_overall_score_basis_points": {"type": ["integer", "null"], "minimum": 0, "maximum": 10000},
           "successor_missing_evidence_count": {"type": ["integer", "null"], "minimum": 0},
-          "next_action": {"type": "string", "enum": ["await_assessment_recheck", "plan_remaining_assessment_gap", "close_assessment_improvement_loop"]}
+          "next_action": {"type": "string", "enum": ["await_assessment_recheck", "plan_remaining_assessment_gap", "close_assessment_improvement_loop", "review_assessment_recheck_evidence"]}
         }
       },
       "ErrorStatus": {
-        "type": "object",
-        "additionalProperties": false,
+        "type": "object", "additionalProperties": false,
         "required": ["error_code", "next_action"],
-        "properties": {
-          "error_code": {"type": "string", "minLength": 1},
-          "next_action": {"type": "string", "minLength": 1}
-        }
+        "properties": {"error_code": {"type": "string", "minLength": 1}, "next_action": {"type": "string", "minLength": 1}}
       }
     }
   },
   "x-keyverse-contract": {
-    "requiredConfiguration": [
-      "EA_OIDC_ISSUER",
-      "EA_OIDC_AUDIENCE",
-      "EA_OIDC_JWKS_URL",
-      "EA_TENANT_CLAIM",
-      "EA_ROLE_CLAIM",
-      "EA_READ_ROLES",
-      "EA_APPROVAL_ROLES",
-      "EA_SCHEDULE_ROLES",
-      "EA_START_ROLES",
-      "EA_COMPLETE_ROLES",
-      "EA_VERIFY_ROLES",
-      "EA_MONITOR_ROLES",
-      "EA_REPLAN_ROLES",
-      "EA_DATA_MANAGEMENT_RECHECK_ROLES",
-      "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES"
-    ],
+    "requiredConfiguration": ["EA_OIDC_ISSUER", "EA_OIDC_AUDIENCE", "EA_OIDC_JWKS_URL", "EA_TENANT_CLAIM", "EA_ROLE_CLAIM", "EA_READ_ROLES", "EA_APPROVAL_ROLES", "EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES", "EA_VERIFY_ROLES", "EA_MONITOR_ROLES", "EA_REPLAN_ROLES", "EA_DATA_MANAGEMENT_RECHECK_ROLES", "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES"],
     "requiredChecks": ["signature", "issuer", "audience", "expiration", "tenant", "role"]
   }
 }
