@@ -103,7 +103,8 @@ def _validate_status_operation(paths: dict[str, Any]) -> None:
     parameter_identity = ("assessment_recheck_request_id", "path")
     if set(parameters) != {parameter_identity}:
         raise ContractValidationError(
-            "data-management reassessment status parameters must match executable parsing"
+            "data-management reassessment status parameters must match "
+            "executable parsing"
         )
     core._require_parameter(
         parameters,
