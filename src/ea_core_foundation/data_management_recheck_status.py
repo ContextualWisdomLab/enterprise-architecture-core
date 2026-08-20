@@ -51,7 +51,7 @@ _ALL_SUCCESSOR_TRUTH = _TRUSTED_SUCCESSOR_TRUTH | _REVIEW_REQUIRED_SUCCESSOR_TRU
 
 @dataclass(frozen=True, slots=True)
 class DataManagementRecheckStatusRequest:
-    """One tenant-scoped request to follow a previously accepted reassessment command."""
+    """One tenant-scoped request to follow an accepted reassessment command."""
 
     assessment_recheck_request_id: UUID
 
@@ -60,7 +60,7 @@ class DataManagementRecheckStatusRequest:
         cls,
         assessment_recheck_request_id: str,
     ) -> DataManagementRecheckStatusRequest:
-        """Validate the canonical reassessment-request identity before storage access."""
+        """Validate the reassessment-request identity before storage access."""
 
         return cls(
             assessment_recheck_request_id=_parse_uuid7(
@@ -112,14 +112,16 @@ def _unavailable_recheck_status_reader(
     """Reject status reads when no safe PostgreSQL read port exists."""
 
     del context, request
-    raise PlannerExecutionError("data-management recheck status database is unavailable")
+    raise PlannerExecutionError(
+        "data-management recheck status database is unavailable"
+    )
 
 
 def _parse_response_uuid(
     response: Mapping[str, object],
     field_name: str,
 ) -> UUID:
-    """Return one canonical UUIDv7 response field or fail the storage boundary closed."""
+    """Return one UUIDv7 response field or fail the storage boundary closed."""
 
     value = response.get(field_name)
     if not isinstance(value, str):
