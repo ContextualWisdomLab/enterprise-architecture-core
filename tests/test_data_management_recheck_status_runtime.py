@@ -115,7 +115,7 @@ def test_http_recheck_status_fails_closed_without_policy_and_reader(
 
 
 def test_http_recheck_status_rejects_invalid_target_before_read() -> None:
-    """Authority-bearing or nested targets cannot alias a local reassessment resource."""
+    """Authority-bearing or nested targets cannot alias a local resource."""
 
     reads: list[str] = []
 
