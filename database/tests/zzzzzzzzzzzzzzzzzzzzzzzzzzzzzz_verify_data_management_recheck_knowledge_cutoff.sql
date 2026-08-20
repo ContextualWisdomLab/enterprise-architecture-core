@@ -56,9 +56,9 @@ BEGIN
         processing_status_code
     ) VALUES (
         '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-        '0196f400-1111-7111-8111-111111111180',
+        '0196f600-1111-7111-8111-111111111180',
         'urn:cwl:tenant_001:semantic_data_portal',
-        '0196f400-1111-7111-8111-111111111181',
+        '0196f600-1111-7111-8111-111111111181',
         repeat('c', 64),
         '1.0.0',
         '2026-08-19T00:40:00Z',
@@ -68,8 +68,8 @@ BEGIN
 
     PERFORM *
       FROM architecture_core.record_data_management_assessment_result(
-        '0196f400-1111-7111-8111-111111111180',
-        'urn:cwl:tenant_001:data_context:data_management_assessment:0196f400-1111-7111-8111-111111111182',
+        '0196f600-1111-7111-8111-111111111180',
+        'urn:cwl:tenant_001:data_context:data_management_assessment:0196f600-1111-7111-8111-111111111182',
         'urn:cwl:tenant_001:ea_core:business_capability:' ||
             source_projection.subject_capability_object_id::text,
         source_projection.framework_code,
@@ -81,7 +81,7 @@ BEGIN
         10000,
         'evidence_complete',
         'observed',
-        'urn:cwl:tenant_001:data_context:assessment_evidence:0196f400-1111-7111-8111-111111111183',
+        'urn:cwl:tenant_001:data_context:assessment_evidence:0196f600-1111-7111-8111-111111111183',
         repeat('d', 64),
         'https://example.com/evidence/stale-recheck-successor',
         source_projection.assessment_result_uri,
