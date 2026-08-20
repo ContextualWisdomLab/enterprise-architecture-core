@@ -129,3 +129,21 @@ ON FUNCTION architecture_core.request_data_management_assessment_recheck_for_ten
     timestamptz
 )
 TO ea_runtime;
+
+GRANT EXECUTE
+ON FUNCTION architecture_core.read_data_management_assessment_recheck_status(
+    uuid,
+    uuid
+)
+TO ea_runtime;
+
+GRANT EXECUTE
+ON FUNCTION architecture_core.read_portfolio_assessment_for_tenant(
+    uuid,
+    uuid,
+    timestamptz,
+    timestamptz,
+    text,
+    text
+)
+TO ea_runtime;

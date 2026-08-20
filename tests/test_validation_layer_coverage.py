@@ -15,6 +15,10 @@ _RECHECK_PATH = (
     "/v1/data-management-assessments/"
     "{data_management_assessment_projection_id}/recheck"
 )
+_PORTFOLIO_PATH = (
+    "/v1/architecture-objects/"
+    "{architecture_object_id}/portfolio-assessments"
+)
 
 
 def _repository_fixture(tmp_path: Path, *, adr_count: int = 10) -> Path:
@@ -247,6 +251,44 @@ def test_recheck_runtime_requires_both_reassessment_schemas(
         "DataManagementAssessmentRecheckRequest",
         "DataManagementAssessmentRecheckReceipt",
     ):
+        changed = deepcopy(openapi_document)
+        changed["components"]["schemas"].pop(schema_name)
+        with pytest.raises(
+            recheck_validation.ContractValidationError,
+            match="missing OpenAPI schemas",
+        ):
+            recheck_validation.validate_openapi_runtime_surface(changed)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value", "message"),
+    [
+        ("operationId", "getSomethingElse", "operationId must be"),
+        ("security", [], "must require Keyverse bearer authorization"),
+        ("parameters", [], "parameters must match executable parsing"),
+    ],
+)
+def test_portfolio_read_operation_fails_closed_when_published_boundary_drifts(
+    openapi_document: dict[str, object],
+    field_name: str,
+    invalid_value: object,
+    message: str,
+) -> None:
+    """Portfolio read metadata must stay identical to its strict parser."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PORTFOLIO_PATH]["get"][field_name] = invalid_value
+
+    with pytest.raises(recheck_validation.ContractValidationError, match=message):
+        recheck_validation.validate_openapi_runtime_surface(changed)
+
+
+def test_portfolio_read_runtime_requires_its_response_schemas(
+    openapi_document: dict[str, object],
+) -> None:
+    """The portfolio wrapper and row schemas are inseparable from the GET route."""
+
+    for schema_name in ("PortfolioAssessmentResponse", "PortfolioAssessment"):
         changed = deepcopy(openapi_document)
         changed["components"]["schemas"].pop(schema_name)
         with pytest.raises(

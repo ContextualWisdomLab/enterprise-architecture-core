@@ -37,6 +37,11 @@ from .monitoring_runtime import MonitoringServiceHandler
 from .monitoring_runtime import (
     create_runtime_server as create_monitoring_runtime_server,
 )
+from .portfolio import (
+    build_portfolio_assessment_authorization_config,
+    build_portfolio_assessment_reader,
+    parse_portfolio_assessment_request,
+)
 from .replan import (
     build_replan_authorization_config,
     build_target_state_replan_writer,
@@ -69,6 +74,8 @@ _TARGET_STATE_REPLAN_PATH_SUFFIX = "/replan"
 _DATA_MANAGEMENT_RECHECK_PATH_PREFIX = "/v1/data-management-assessments/"
 _DATA_MANAGEMENT_RECHECK_PATH_SUFFIX = "/recheck"
 _DATA_MANAGEMENT_RECHECK_STATUS_PATH_PREFIX = "/v1/data-management-assessment-rechecks/"
+_PORTFOLIO_ASSESSMENT_PATH_PREFIX = "/v1/architecture-objects/"
+_PORTFOLIO_ASSESSMENT_PATH_SUFFIX = "/portfolio-assessments"
 
 
 class ReplanServiceHandler(MonitoringServiceHandler):
@@ -122,15 +129,106 @@ class ReplanServiceHandler(MonitoringServiceHandler):
         reader = getattr(self.server, "data_management_recheck_status_reader", None)
         return reader if callable(reader) else None
 
+    def _portfolio_assessment_authorization_config(
+        self,
+    ) -> KeyverseAuthorizationConfig | None:
+        """Return the distinct Keyverse portfolio assessment read profile."""
+
+        config = getattr(
+            self.server,
+            "portfolio_assessment_authorization_config",
+            None,
+        )
+        return config if isinstance(config, KeyverseAuthorizationConfig) else None
+
+    def _portfolio_assessment_reader(self):
+        """Return the configured purpose-bound portfolio assessment reader."""
+
+        reader = getattr(self.server, "portfolio_assessment_reader", None)
+        return reader if callable(reader) else None
+
     def do_GET(self) -> None:
-        """Route reassessment status reads before delegating earlier read surfaces."""
+        """Route portfolio and reassessment reads before earlier read surfaces."""
 
         request_target = self.requestline.split(" ", 2)[1]
         normalized_path = urlparse(request_target).path
+        if (
+            normalized_path.startswith(_PORTFOLIO_ASSESSMENT_PATH_PREFIX)
+            and normalized_path.endswith(_PORTFOLIO_ASSESSMENT_PATH_SUFFIX)
+        ):
+            self._serve_portfolio_assessment(request_target)
+            return
         if normalized_path.startswith(_DATA_MANAGEMENT_RECHECK_STATUS_PATH_PREFIX):
             self._serve_data_management_recheck_status(request_target)
             return
         super().do_GET()
+
+    def _serve_portfolio_assessment(self, request_target: str) -> None:
+        """Authorize and read one bitemporal portfolio assessment collection."""
+
+        config = self._portfolio_assessment_authorization_config()
+        reader = self._portfolio_assessment_reader()
+        if config is None or reader is None:
+            self._write_json(
+                503,
+                {
+                    "error_code": "portfolio_assessment_unavailable",
+                    "next_action": (
+                        "Configure Keyverse portfolio assessment read roles and the "
+                        "EA runtime database."
+                    ),
+                },
+            )
+            return
+        jwks_loader = getattr(self.server, "jwks_loader", load_keyverse_jwks)
+        signature_verifier = getattr(
+            self.server,
+            "signature_verifier",
+            verify_rs256_signature,
+        )
+        try:
+            context = verify_keyverse_bearer(
+                self.headers.get("Authorization"),
+                config,
+                jwks_loader=jwks_loader,
+                signature_verifier=signature_verifier,
+            )
+        except AuthorizationError as error:
+            self._write_json(
+                error.http_status,
+                {"error_code": error.error_code, "next_action": error.next_action},
+            )
+            return
+        try:
+            request = parse_portfolio_assessment_request(request_target)
+        except PlannerRequestError:
+            self._write_json(
+                400,
+                {
+                    "error_code": "invalid_portfolio_assessment_request",
+                    "next_action": (
+                        "Request one canonical architecture-object UUIDv7 with "
+                        "valid_at "
+                        "and recorded_at cutoffs."
+                    ),
+                },
+            )
+            return
+        try:
+            assessment = reader(context, request)
+        except Exception:
+            self._write_json(
+                503,
+                {
+                    "error_code": "portfolio_assessment_read_failed",
+                    "next_action": (
+                        "Retry the same portfolio assessment query after the EA "
+                        "runtime database is available."
+                    ),
+                },
+            )
+            return
+        self._write_json(200, assessment)
 
     def do_POST(self) -> None:
         """Route terminal command extensions before delegating earlier commands."""
@@ -367,6 +465,10 @@ def create_runtime_server(
         KeyverseAuthorizationConfig | None
     ) = None,
     data_management_recheck_status_reader: Any = None,
+    portfolio_assessment_authorization_config: (
+        KeyverseAuthorizationConfig | None
+    ) = None,
+    portfolio_assessment_reader: Any = None,
     **runtime_kwargs: Any,
 ) -> ThreadingHTTPServer:
     """Create the complete runtime plus purpose-bound reassessment workflow."""
@@ -383,6 +485,10 @@ def create_runtime_server(
         data_management_recheck_status_authorization_config
     )
     server.data_management_recheck_status_reader = data_management_recheck_status_reader
+    server.portfolio_assessment_authorization_config = (
+        portfolio_assessment_authorization_config
+    )
+    server.portfolio_assessment_reader = portfolio_assessment_reader
     return server
 
 
@@ -415,6 +521,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         data_management_recheck_status_authorization_config=(
             build_data_management_recheck_status_authorization_config(environment)
         ),
+        portfolio_assessment_authorization_config=(
+            build_portfolio_assessment_authorization_config(environment)
+        ),
         target_state_plan_reader=build_target_state_plan_reader(database_dsn),
         target_state_approval_writer=build_target_state_approval_writer(database_dsn),
         target_state_schedule_writer=build_target_state_schedule_writer(database_dsn),
@@ -433,6 +542,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         data_management_recheck_status_reader=(
             build_data_management_recheck_status_reader(database_dsn)
         ),
+        portfolio_assessment_reader=build_portfolio_assessment_reader(database_dsn),
     )
     try:
         serve_forever(server)

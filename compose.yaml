@@ -15,9 +15,7 @@ services:
       retries: 20
     volumes:
       - architecture_database_data:/var/lib/postgresql
-      - ./database/init/001_create_runtime_role.sh:/docker-entrypoint-initdb.d/001_create_runtime_role.sh:ro
-      - ./database/init/002_apply_foundation_migrations.sh:/docker-entrypoint-initdb.d/002_apply_foundation_migrations.sh:ro
-      - ./database/init/003_grant_runtime_access.sql:/docker-entrypoint-initdb.d/003_grant_runtime_access.sql:ro
+      - ./database/init:/docker-entrypoint-initdb.d:ro
       - ./database/migrations:/opt/ea-core/migrations:ro
       - ./database/scripts:/opt/ea-core/scripts:ro
 

@@ -101,7 +101,9 @@ def test_recheck_status_authority_is_distinct_and_fail_closed() -> None:
     assert config.allowed_roles == frozenset({"ea_data_management_recheck_reader"})
 
     environment.pop("EA_DATA_MANAGEMENT_RECHECK_READ_ROLES")
-    assert build_data_management_recheck_status_authorization_config(environment) is None
+    assert (
+        build_data_management_recheck_status_authorization_config(environment) is None
+    )
 
 
 def test_recheck_status_reader_uses_purpose_bound_port_and_validates_meaning() -> None:
@@ -221,7 +223,7 @@ def test_recheck_status_reader_fails_closed_on_transport_errors() -> None:
 
 
 def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
-    """Malformed JSON, expanded shapes, invalid IDs, truth drift, and state drift fail closed."""
+    """Malformed JSON, IDs, truth, and state drift fail closed."""
 
     request = parse_data_management_recheck_status_request(_PATH)
     invalid_payloads = (
@@ -261,6 +263,19 @@ def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
                 "successor_overall_score_basis_points": None,
                 "successor_missing_evidence_count": None,
                 "next_action": "await_assessment_recheck",
+            }
+        ),
+        json.dumps(
+            {
+                "assessment_recheck_request_id": _RECHECK_ID,
+                "data_management_assessment_projection_id": _ASSESSMENT_ID,
+                "successor_assessment_projection_id": None,
+                "successor_truth_status_code": None,
+                "recheck_state_code": "awaiting_result",
+                "successor_readiness_code": None,
+                "successor_overall_score_basis_points": None,
+                "successor_missing_evidence_count": None,
+                "next_action": "retry_assessment_recheck",
             }
         ),
         json.dumps(

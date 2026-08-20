@@ -1,5 +1,7 @@
 # Changelog
 
+- Added the first buyer-facing application-portfolio read slice through `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessments`, with explicit valid/system cutoffs, optional framework/cycle selectors, dedicated `EA_PORTFOLIO_ASSESSMENT_READ_ROLES`, a purpose-bound PostgreSQL read port, truth-origin labels, and fail-closed runtime/OpenAPI validation. Scoring mutations, aggregate portfolio views, and presentation UI remain outside this slice.
+
 ## [Unreleased]
 
 ### Added
