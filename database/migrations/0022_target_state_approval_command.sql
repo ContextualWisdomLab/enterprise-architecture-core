@@ -113,6 +113,11 @@ BEGIN
       true
   );
 
+  -- Preserve the fast sequential replay path. If no committed decision exists,
+  -- serialize on the immutable transformation aggregate and repeat the replay
+  -- lookup after acquiring the lock. A concurrent exact caller can therefore
+  -- observe the first caller's durable history/outbox pair after COMMIT instead
+  -- of continuing from stale pre-lock state and failing the proposed-state gate.
   SELECT
       history_record.transformation_history_record_id,
       history_record.architecture_transformation_id,
@@ -132,6 +137,41 @@ BEGIN
     FROM architecture_core.transformation_history_record AS history_record
    WHERE history_record.tenant_record_id = requested_tenant_record_id
      AND history_record.decision_request_id = requested_decision_request_id;
+
+  IF existing_history_id IS NULL THEN
+    PERFORM 1
+      FROM architecture_core.architecture_transformation AS transformation_record
+     WHERE transformation_record.tenant_record_id = requested_tenant_record_id
+       AND transformation_record.architecture_transformation_id =
+           requested_transformation_id
+     FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '23514',
+        MESSAGE = 'authoritative transformation is unavailable for the verified tenant';
+    END IF;
+
+    SELECT
+        history_record.transformation_history_record_id,
+        history_record.architecture_transformation_id,
+        history_record.effective_at,
+        history_record.decision_actor_ref,
+        history_record.decision_reason_text,
+        history_record.evidence_record_id,
+        history_record.recorded_at
+      INTO
+        existing_history_id,
+        existing_transformation_id,
+        existing_effective_at,
+        existing_actor_ref,
+        existing_reason_text,
+        existing_evidence_id,
+        existing_recorded_at
+      FROM architecture_core.transformation_history_record AS history_record
+     WHERE history_record.tenant_record_id = requested_tenant_record_id
+       AND history_record.decision_request_id = requested_decision_request_id;
+  END IF;
 
   IF existing_history_id IS NOT NULL THEN
     IF existing_transformation_id IS DISTINCT FROM requested_transformation_id
@@ -170,14 +210,16 @@ BEGIN
     RETURN;
   END IF;
 
+  -- The aggregate row is already locked on the fresh-decision path. Recheck
+  -- current eligibility after serialization so a waited caller cannot act on a
+  -- transformation that became inactive or non-authoritative while it waited.
   PERFORM 1
     FROM architecture_core.architecture_transformation AS transformation_record
    WHERE transformation_record.tenant_record_id = requested_tenant_record_id
      AND transformation_record.architecture_transformation_id =
          requested_transformation_id
      AND transformation_record.superseded_at IS NULL
-     AND transformation_record.truth_status_code = 'authoritative'
-   FOR UPDATE;
+     AND transformation_record.truth_status_code = 'authoritative';
 
   IF NOT FOUND THEN
     RAISE EXCEPTION USING
@@ -313,6 +355,6 @@ COMMENT ON FUNCTION architecture_core.approve_target_state(
     text,
     uuid
 ) IS
-'Purpose-bound human approval command for a proposed authoritative EA transformation. The caller must already have verified Keyverse signature, issuer, audience, expiration, tenant and approval role. One UUIDv7 decision request is idempotent: an exact replay returns the original history/outbox receipt, while conflicting meaning is rejected. The authoritative history append and privacy-minimized transformation outbox event commit in the same transaction.';
+'Purpose-bound human approval command for a proposed authoritative EA transformation. The caller must already have verified Keyverse signature, issuer, audience, expiration, tenant and approval role. One UUIDv7 decision request is concurrency-safe and idempotent: exact concurrent or sequential replay returns the original history/outbox receipt, while conflicting meaning is rejected. Fresh decisions serialize on the transformation aggregate before current-state evaluation. The authoritative history append and privacy-minimized transformation outbox event commit in the same transaction.';
 
 COMMIT;
