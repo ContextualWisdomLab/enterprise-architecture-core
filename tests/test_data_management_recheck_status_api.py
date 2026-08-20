@@ -233,6 +233,8 @@ def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
         json.dumps(_payload(successor_assessment_projection_id="not-a-uuid")),
         json.dumps(_payload(successor_assessment_projection_id=None)),
         json.dumps(_payload(successor_truth_status_code="unknown")),
+        json.dumps(_payload(successor_truth_status_code=[])),
+        json.dumps(_payload(successor_readiness_code=[])),
         json.dumps(_payload(successor_overall_score_basis_points=True)),
         json.dumps(_payload(successor_overall_score_basis_points=10001)),
         json.dumps(_payload(successor_missing_evidence_count=True)),
