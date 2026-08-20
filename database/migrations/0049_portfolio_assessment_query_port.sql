@@ -169,6 +169,7 @@ BEGIN
       )
       AND assessment_scale.recorded_at <= assessment_recorded_at
       AND scale_value.recorded_at <= assessment_recorded_at
+      AND dimension.recorded_at <= assessment_recorded_at
       AND (
         requested_framework_code IS NULL
         OR framework.framework_code = requested_framework_code
