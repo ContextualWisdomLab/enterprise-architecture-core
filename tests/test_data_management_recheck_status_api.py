@@ -42,6 +42,7 @@ def _payload(**changes: object) -> dict[str, object]:
         "assessment_recheck_request_id": _RECHECK_ID,
         "data_management_assessment_projection_id": _ASSESSMENT_ID,
         "successor_assessment_projection_id": _SUCCESSOR_ID,
+        "successor_truth_status_code": "observed",
         "recheck_state_code": "evidence_gap",
         "successor_readiness_code": "evidence_gap",
         "successor_overall_score_basis_points": 7200,
@@ -131,6 +132,7 @@ def test_recheck_status_reader_uses_purpose_bound_port_and_validates_meaning() -
     assert "data-governance-lead-123" not in command_text
     assert "secret" not in command_text
     assert captured["timeout"] == 10
+    assert result["successor_truth_status_code"] == "observed"
     assert result["recheck_state_code"] == "evidence_gap"
     assert result["next_action"] == "plan_remaining_assessment_gap"
 
@@ -144,6 +146,7 @@ def test_recheck_status_reader_accepts_waiting_and_complete_states() -> None:
                 "assessment_recheck_request_id": _RECHECK_ID,
                 "data_management_assessment_projection_id": _ASSESSMENT_ID,
                 "successor_assessment_projection_id": None,
+                "successor_truth_status_code": None,
                 "recheck_state_code": "awaiting_result",
                 "successor_readiness_code": None,
                 "successor_overall_score_basis_points": None,
@@ -218,7 +221,7 @@ def test_recheck_status_reader_fails_closed_on_transport_errors() -> None:
 
 
 def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
-    """Malformed JSON, expanded shapes, invalid IDs, and state drift fail closed."""
+    """Malformed JSON, expanded shapes, invalid IDs, truth drift, and state drift fail closed."""
 
     request = parse_data_management_recheck_status_request(_PATH)
     invalid_payloads = (
@@ -229,6 +232,7 @@ def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
         json.dumps(_payload(data_management_assessment_projection_id=1)),
         json.dumps(_payload(successor_assessment_projection_id="not-a-uuid")),
         json.dumps(_payload(successor_assessment_projection_id=None)),
+        json.dumps(_payload(successor_truth_status_code="unknown")),
         json.dumps(_payload(successor_overall_score_basis_points=True)),
         json.dumps(_payload(successor_overall_score_basis_points=10001)),
         json.dumps(_payload(successor_missing_evidence_count=True)),
@@ -236,11 +240,20 @@ def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
         json.dumps(_payload(recheck_state_code="unknown")),
         json.dumps(_payload(next_action="approve_without_evidence")),
         json.dumps(_payload(successor_missing_evidence_count=0)),
+        json.dumps(_payload(successor_truth_status_code="proposed")),
+        json.dumps(
+            _payload(
+                successor_truth_status_code="observed",
+                recheck_state_code="review_required",
+                next_action="review_assessment_recheck_evidence",
+            )
+        ),
         json.dumps(
             {
                 "assessment_recheck_request_id": _RECHECK_ID,
                 "data_management_assessment_projection_id": _ASSESSMENT_ID,
                 "successor_assessment_projection_id": _SUCCESSOR_ID,
+                "successor_truth_status_code": None,
                 "recheck_state_code": "awaiting_result",
                 "successor_readiness_code": None,
                 "successor_overall_score_basis_points": None,
