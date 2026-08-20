@@ -54,3 +54,21 @@ def test_all_adrs_are_accepted_and_dated(repository_root: Path) -> None:
         date.fromisoformat(date_match.group(1))
         assert "## Decision" in adr_text
         assert "## Consequence" in adr_text
+
+
+def test_dependency_aware_improvement_contract_is_documented(
+    repository_root: Path,
+) -> None:
+    """Canonical model/API docs expose the implemented dependency decision boundary."""
+
+    data_model_text = (repository_root / "docs/DATA_MODEL.md").read_text(
+        encoding="utf-8"
+    )
+    api_contract_text = (repository_root / "docs/API_CONTRACT.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "assessment_improvement_dependency_set" in data_model_text
+    assert "assessment_improvement_dependency_relation" in data_model_text
+    assert "dependency-aware improvement command" in api_contract_text
+    assert "not an implemented HTTP endpoint" in api_contract_text
