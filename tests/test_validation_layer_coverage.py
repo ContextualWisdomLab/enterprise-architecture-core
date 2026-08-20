@@ -9,6 +9,7 @@ import pytest
 
 import ea_core_foundation.validation_data_management_closure as closure_validation
 import ea_core_foundation.validation_data_management_recheck as recheck_validation
+import ea_core_foundation.validation_data_management_recheck_status as status_validation
 import ea_core_foundation.validation_replan as replan_validation
 
 _RECHECK_PATH = (
@@ -85,6 +86,13 @@ def _stub_closure_artifact_validators(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def _recheck_generation_document(document: dict[str, object]) -> dict[str, object]:
+    """Remove the newer status-read generation before testing the command layer."""
+
+    changed = status_validation._without_status_openapi(deepcopy(document))
+    return status_validation._without_status_role(changed)
+
+
 def test_closure_repository_orchestration_retains_all_evidence_dimensions(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -146,7 +154,7 @@ def test_replan_role_removal_rejects_missing_replan_authority(
 ) -> None:
     """A list-shaped Keyverse contract cannot silently omit replanning authority."""
 
-    changed = deepcopy(openapi_document)
+    changed = _recheck_generation_document(openapi_document)
     changed["x-keyverse-contract"]["requiredConfiguration"].remove("EA_REPLAN_ROLES")
 
     with pytest.raises(
@@ -194,7 +202,7 @@ def test_recheck_role_is_mandatory_when_keyverse_configuration_is_present(
 ) -> None:
     """The reassessment operation cannot inherit a different purpose-bound role."""
 
-    changed = deepcopy(openapi_document)
+    changed = _recheck_generation_document(openapi_document)
     changed["x-keyverse-contract"]["requiredConfiguration"].remove(
         "EA_DATA_MANAGEMENT_RECHECK_ROLES"
     )
@@ -239,7 +247,7 @@ def test_recheck_operation_fails_closed_when_published_boundary_drifts(
 ) -> None:
     """Published reassessment metadata must remain identical to executable parsing."""
 
-    changed = deepcopy(openapi_document)
+    changed = _recheck_generation_document(openapi_document)
     changed["paths"][_RECHECK_PATH]["post"][field_name] = invalid_value
 
     with pytest.raises(recheck_validation.ContractValidationError, match=message):
@@ -255,7 +263,7 @@ def test_recheck_runtime_requires_both_reassessment_schemas(
         "DataManagementAssessmentRecheckRequest",
         "DataManagementAssessmentRecheckReceipt",
     ):
-        changed = deepcopy(openapi_document)
+        changed = _recheck_generation_document(openapi_document)
         changed["components"]["schemas"].pop(schema_name)
         with pytest.raises(
             recheck_validation.ContractValidationError,
