@@ -8,7 +8,13 @@ AsyncAPI Initiative. (2026, January 31). *AsyncAPI specification* (Version 3.1.0
 
 Cloud Native Computing Foundation. (2022). *CloudEvents specification* (Version 1.0.2). https://github.com/cloudevents/spec/tree/v1.0.2
 
-GitHub. (n.d.). *Using artifact attestations to establish provenance for builds*. GitHub Docs. Retrieved August 17, 2026, from https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
+GitHub. (2026). *actions/attest* (Version 4.2.2) [Computer software]. GitHub. https://github.com/actions/attest/tree/1e69f48acb82d1966a394da916b4c1698aa569d6
+
+GitHub. (n.d.-a). *gh attestation verify*. GitHub CLI manual. Retrieved August 21, 2026, from https://cli.github.com/manual/gh_attestation_verify
+
+GitHub. (n.d.-b). *Using artifact attestations to establish provenance for builds*. GitHub Docs. Retrieved August 17, 2026, from https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
+
+in-toto. (n.d.). *Predicate type: SPDX (v3)*. Retrieved August 21, 2026, from https://github.com/in-toto/attestation/blob/main/spec/predicates/spdx.md
 
 International Organization for Standardization, International Electrotechnical Commission, & Institute of Electrical and Electronics Engineers. (2022). *ISO/IEC/IEEE 42010:2022 Software, systems and enterprise—Architecture description*. International Organization for Standardization.
 
