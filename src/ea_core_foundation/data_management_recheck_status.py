@@ -181,11 +181,14 @@ def _validate_recheck_status_response(
             "data-management recheck status returned invalid status evidence"
         )
     _parse_response_uuid(response, "successor_assessment_projection_id")
-    if truth not in _ALL_SUCCESSOR_TRUTH:
+    if not isinstance(truth, str) or truth not in _ALL_SUCCESSOR_TRUTH:
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
         )
-    if readiness not in {"evidence_gap", "evidence_complete"}:
+    if not isinstance(readiness, str) or readiness not in {
+        "evidence_gap",
+        "evidence_complete",
+    }:
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
         )
@@ -224,7 +227,7 @@ def _validate_recheck_status_response(
     expected_action = {
         "evidence_gap": "plan_remaining_assessment_gap",
         "evidence_complete": "close_assessment_improvement_loop",
-    }[cast(str, readiness)]
+    }[readiness]
     if state != readiness or action != expected_action:
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
