@@ -28,7 +28,6 @@ from .runtime import (
 from .runtime import create_runtime_server as create_scheduling_runtime_server
 from .service import (
     BindAddress,
-    PlannerExecutionError,
     PlannerRequestError,
     build_approval_authorization_config,
     build_database_readiness_probe,
@@ -125,7 +124,7 @@ class CompletionServiceHandler(SchedulingServiceHandler):
             return
         try:
             receipt = writer(context, request)
-        except PlannerExecutionError:
+        except Exception:
             self._write_json(
                 503,
                 {
