@@ -35,7 +35,10 @@ BEGIN
          acceptance_record.assessment_improvement_plan_id
    WHERE acceptance_record.tenant_record_id =
          '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-     AND plan_record.data_management_assessment_projection_id = projection_id;
+     AND plan_record.data_management_assessment_projection_id = projection_id
+   ORDER BY acceptance_record.accepted_at DESC,
+            acceptance_record.assessment_evidence_acceptance_id DESC
+   LIMIT 1;
 
   IF projection_id IS NULL OR acceptance_id IS NULL THEN
     RAISE EXCEPTION 'completed reassessment runtime fixture is unavailable';
@@ -71,6 +74,12 @@ BEGIN
      '0195d145-64e8-7f4f-8a23-a0cc784cb712' THEN
     RAISE EXCEPTION 'runtime reassessment port leaked delegated tenant context';
   END IF;
+
+  PERFORM set_config(
+      'app.tenant_record_id',
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      false
+  );
 END;
 $$;
 
