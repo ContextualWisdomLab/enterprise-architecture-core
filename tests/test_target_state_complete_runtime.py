@@ -14,7 +14,7 @@ import pytest
 import ea_core_foundation.completion_runtime as completion_runtime
 from ea_core_foundation.authorization import KeyverseAuthorizationConfig
 from ea_core_foundation.completion_runtime import create_runtime_server
-from ea_core_foundation.service import BindAddress, PlannerExecutionError
+from ea_core_foundation.service import BindAddress
 
 _TENANT_ID = "018f47b2-905a-7b16-bfd4-7e4f53f10e91"
 _TRANSFORMATION_ID = "0196e010-1111-7111-8111-111111111191"
@@ -300,7 +300,7 @@ def test_http_completion_returns_retriable_failure_when_writer_raises() -> None:
 
     def failing_writer(context: Any, request: Any) -> dict[str, object]:
         del context, request
-        raise PlannerExecutionError("conflict")
+        raise RuntimeError("unexpected command-port failure")
 
     server, thread, host, port = _start_server(
         complete_authorization_config=_config(),
