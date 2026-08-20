@@ -1,6 +1,10 @@
 \set ON_ERROR_STOP on
 
-SET ROLE ea_runtime;
+-- Exercise the persisted CHECK through the migration-owner connection so a
+-- runtime-role privilege boundary cannot mask the UUID invariant under test.
+-- Runtime least privilege is verified separately by the purpose-bound port
+-- acceptance suite.
+RESET ROLE;
 SELECT set_config(
     'app.tenant_record_id',
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
@@ -31,10 +35,10 @@ BEGIN
         repeat('a', 64)
     );
     RAISE EXCEPTION 'non-RFC UUID variant evidence identifier unexpectedly succeeded';
-  EXCEPTION
-    WHEN check_violation THEN NULL;
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM NOT LIKE '%evidence_record_uuid_version%' THEN
+      RAISE;
+    END IF;
   END;
 END;
 $$;
-
-RESET ROLE;
