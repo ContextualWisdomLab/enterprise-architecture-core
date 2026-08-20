@@ -66,8 +66,4 @@ BEGIN
 END;
 $$;
 
-COMMENT ON CONSTRAINT assessment_recheck_request_decision_uuid_version
-ON architecture_core.assessment_recheck_request IS
-'Every persisted reassessment decision identifier must be an RFC 9562 UUIDv7. uuid_extract_version returns NULL for non-RFC variants, so IS NOT DISTINCT FROM 7 keeps the invariant fail-closed rather than allowing SQL CHECK UNKNOWN.';
-
 COMMIT;
