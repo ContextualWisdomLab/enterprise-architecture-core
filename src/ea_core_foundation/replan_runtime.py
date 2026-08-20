@@ -182,7 +182,8 @@ class ReplanServiceHandler(MonitoringServiceHandler):
                 },
             )
             return
-        self._write_json(200, receipt)
+        status = 200 if receipt.get("replayed") is True else 201
+        self._write_json(status, receipt)
 
     def _serve_target_state_replan(self, request_target: str) -> None:
         """Authorize and atomically record one governed replacement target state."""
