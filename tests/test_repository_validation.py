@@ -168,7 +168,7 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     report = validate_repository(repository_root)
     assert report.table_count == 48
     assert report.column_count == 399
-    assert report.index_count == 18
+    assert report.index_count == 22
     assert report.constraint_count == 416
     assert report.openapi_operation_count == 14
     assert report.asyncapi_operation_count == 12

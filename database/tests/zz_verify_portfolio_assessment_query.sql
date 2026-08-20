@@ -50,6 +50,10 @@ SELECT pg_catalog.set_config(
  WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
    AND object_assessment_id = '0196a007-1111-7111-8111-111111111114';
 
+-- Reapply the production runtime boundary after the foundation RLS fixture
+-- grants broad privileges to ea_runtime for its earlier checks.
+\ir ../init/003_grant_runtime_access.sql
+
 SET ROLE ea_runtime;
 SET app.tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711';
 
@@ -126,3 +130,12 @@ END;
 $$;
 
 RESET ROLE;
+
+-- Keep this acceptance file isolated from later trigger/RLS fixtures. The
+-- foundation test intentionally gives ea_runtime broad table authority for
+-- those tests; the production boundary itself was asserted above.
+GRANT USAGE ON SCHEMA architecture_core TO ea_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON ALL TABLES IN SCHEMA architecture_core TO ea_runtime;
+GRANT EXECUTE
+    ON ALL FUNCTIONS IN SCHEMA architecture_core TO ea_runtime;

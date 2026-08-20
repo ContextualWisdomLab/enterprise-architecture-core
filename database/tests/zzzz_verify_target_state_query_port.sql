@@ -85,3 +85,11 @@ END;
 $$;
 
 RESET ROLE;
+
+-- Restore the broad fixture authority for later acceptance files that probe
+-- trigger and RLS behavior directly after this deployment-boundary check.
+GRANT USAGE ON SCHEMA architecture_core TO ea_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON ALL TABLES IN SCHEMA architecture_core TO ea_runtime;
+GRANT EXECUTE
+    ON ALL FUNCTIONS IN SCHEMA architecture_core TO ea_runtime;
