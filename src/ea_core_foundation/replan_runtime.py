@@ -101,22 +101,23 @@ class ReplanServiceHandler(MonitoringServiceHandler):
     def do_POST(self) -> None:
         """Route terminal command extensions before delegating earlier commands."""
 
-        normalized_path = urlparse(self.path).path
+        request_target = self.requestline.split(" ", 2)[1]
+        normalized_path = urlparse(request_target).path
         if (
             normalized_path.startswith(_DATA_MANAGEMENT_RECHECK_PATH_PREFIX)
             and normalized_path.endswith(_DATA_MANAGEMENT_RECHECK_PATH_SUFFIX)
         ):
-            self._serve_data_management_recheck()
+            self._serve_data_management_recheck(request_target)
             return
         if (
             normalized_path.startswith(_TARGET_STATE_COMMAND_PATH_PREFIX)
             and normalized_path.endswith(_TARGET_STATE_REPLAN_PATH_SUFFIX)
         ):
-            self._serve_target_state_replan()
+            self._serve_target_state_replan(request_target)
             return
         super().do_POST()
 
-    def _serve_data_management_recheck(self) -> None:
+    def _serve_data_management_recheck(self, request_target: str) -> None:
         """Authorize and atomically request one evidence-backed reassessment."""
 
         config = self._data_management_recheck_authorization_config()
@@ -154,7 +155,7 @@ class ReplanServiceHandler(MonitoringServiceHandler):
             return
         try:
             payload = self._read_approval_json()
-            request = parse_data_management_recheck_request(self.path, payload)
+            request = parse_data_management_recheck_request(request_target, payload)
         except PlannerRequestError:
             self._write_json(
                 400,
@@ -183,7 +184,7 @@ class ReplanServiceHandler(MonitoringServiceHandler):
             return
         self._write_json(200, receipt)
 
-    def _serve_target_state_replan(self) -> None:
+    def _serve_target_state_replan(self, request_target: str) -> None:
         """Authorize and atomically record one governed replacement target state."""
 
         config = self._replan_authorization_config()
@@ -221,7 +222,7 @@ class ReplanServiceHandler(MonitoringServiceHandler):
             return
         try:
             payload = self._read_approval_json()
-            request = parse_target_state_replan_request(self.path, payload)
+            request = parse_target_state_replan_request(request_target, payload)
         except PlannerRequestError:
             self._write_json(
                 400,
