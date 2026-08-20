@@ -846,7 +846,7 @@
       "post": {
         "operationId": "requestDataManagementAssessmentRecheck",
         "summary": "Request reassessment after every projected evidence gap is closed",
-        "description": "Commit one tenant-scoped immutable reassessment request through the authenticated EA command port without mutating the Data/AI Context source assessment.",
+        "description": "Commit one tenant-scoped immutable reassessment request through the authenticated EA command port without mutating the Data/AI Context source assessment. A newly committed request returns 201 with replayed=false; an exact durable retry returns 200 with replayed=true.",
         "security": [
           {
             "keyverseBearer": []
@@ -876,7 +876,17 @@
         },
         "responses": {
           "200": {
-            "description": "The reassessment request is recorded or the exact idempotent receipt is returned.",
+            "description": "The exact durable reassessment request is replayed without duplicating evidence.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataManagementAssessmentRecheckReceipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "A new durable reassessment request and transactional outbox event are committed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1191,10 +1201,11 @@
       "DataManagementAssessmentRecheckReceipt": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["assessment_recheck_request_id", "outbox_event_id", "next_action"],
+        "required": ["assessment_recheck_request_id", "outbox_event_id", "replayed", "next_action"],
         "properties": {
           "assessment_recheck_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
           "outbox_event_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "replayed": {"type": "boolean"},
           "next_action": {"type": "string", "const": "await_assessment_recheck"}
         }
       },
