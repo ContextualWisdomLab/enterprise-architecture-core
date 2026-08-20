@@ -134,16 +134,14 @@ FROM dblink_get_result('schedule_a') AS result(
     replayed boolean,
     action_code text
 );
-SELECT count(*)
+-- Asynchronous dblink requires one additional empty result read before reuse.
+SELECT *
 FROM dblink_get_result('schedule_a') AS result(
     schedule_id text,
     outbox_id text,
     replayed boolean,
     action_code text
-)
-\gset
-\if :count
-\endif
+);
 
 SELECT dblink_send_query(
     'schedule_b',
@@ -172,8 +170,10 @@ DECLARE
   b_pid integer;
   blocked boolean := false;
 BEGIN
-  SELECT backend_pid INTO a_pid FROM schedule_backend_session WHERE source_code = 'session_a';
-  SELECT backend_pid INTO b_pid FROM schedule_backend_session WHERE source_code = 'session_b';
+  SELECT backend_pid INTO a_pid
+    FROM schedule_backend_session WHERE source_code = 'session_a';
+  SELECT backend_pid INTO b_pid
+    FROM schedule_backend_session WHERE source_code = 'session_b';
   FOR attempt_number IN 1..100 LOOP
     SELECT EXISTS (
       SELECT 1
@@ -200,16 +200,13 @@ FROM dblink_get_result('schedule_b') AS result(
     replayed boolean,
     action_code text
 );
-SELECT count(*)
+SELECT *
 FROM dblink_get_result('schedule_b') AS result(
     schedule_id text,
     outbox_id text,
     replayed boolean,
     action_code text
-)
-\gset
-\if :count
-\endif
+);
 
 DO $$
 DECLARE
