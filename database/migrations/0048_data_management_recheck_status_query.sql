@@ -112,6 +112,12 @@ BEGIN
         MESSAGE = 'assessment reassessment successor predates the reassessment request';
     END IF;
 
+    IF successor_projection.knowledge_cutoff_at < selected_request.requested_at THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '23514',
+        MESSAGE = 'assessment reassessment successor knowledge predates the reassessment request';
+    END IF;
+
     SELECT pg_catalog.count(*)::integer
       INTO missing_evidence_count
       FROM architecture_core.assessment_missing_evidence_projection AS evidence_record
@@ -209,6 +215,6 @@ COMMENT ON FUNCTION architecture_core.read_data_management_assessment_recheck_st
     uuid,
     uuid
 ) IS
-'Purpose-bound tenant-scoped read for one assessment reassessment request. It installs the verified tenant only for the duration of the read and restores the caller setting on success or failure, joins only EA-owned projected evidence to the unique direct successor assessment, preserves explicit successor truth origin, and review-gates inferred, proposed, superseded, or rejected evidence so it cannot silently become decision-complete or mutate semantic-data-portal authority.';
+'Purpose-bound tenant-scoped read for one assessment reassessment request. It installs the verified tenant only for the duration of the read and restores the caller setting on success or failure, joins only EA-owned projected evidence to the unique direct successor assessment, rejects successor evidence whose knowledge cutoff predates the governed reassessment request, preserves explicit successor truth origin, and review-gates inferred, proposed, superseded, or rejected evidence so it cannot silently become decision-complete or mutate semantic-data-portal authority.';
 
 COMMIT;
