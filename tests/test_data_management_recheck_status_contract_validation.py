@@ -162,7 +162,11 @@ def _repository_fixture(tmp_path: Path, *, adr_count: int = 10) -> Path:
 def _stub_repository_validators(monkeypatch: pytest.MonkeyPatch) -> None:
     """Isolate orchestration while retaining real filesystem and JSON boundaries."""
 
-    monkeypatch.setattr(status_validation, "validate_migration_inventory", lambda paths: None)
+    monkeypatch.setattr(
+        status_validation,
+        "validate_migration_inventory",
+        lambda paths: None,
+    )
     monkeypatch.setattr(
         status_validation,
         "validate_migration_sql",
