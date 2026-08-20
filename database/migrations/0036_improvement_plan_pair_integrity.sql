@@ -196,23 +196,6 @@ BEGIN
 
   IF EXISTS (
       SELECT 1
-        FROM pg_catalog.unnest(requested_prerequisite_initiative_ids) AS prerequisite_id
-       WHERE NOT EXISTS (
-          SELECT 1
-            FROM architecture_core.remediation_initiative AS initiative_record
-           WHERE initiative_record.tenant_record_id = active_tenant_id
-             AND initiative_record.remediation_initiative_id = prerequisite_id
-             AND initiative_record.superseded_at IS NULL
-             AND initiative_record.truth_status_code NOT IN ('rejected', 'superseded')
-       )
-  ) THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'every prerequisite must reference an active remediation initiative in the verified tenant';
-  END IF;
-
-  IF EXISTS (
-      SELECT 1
         FROM pg_catalog.unnest(requested_dependency_evidence_record_ids) AS evidence_id
        WHERE NOT EXISTS (
           SELECT 1
@@ -226,9 +209,10 @@ BEGIN
       MESSAGE = 'every prerequisite requires tenant-scoped dependency evidence';
   END IF;
 
-  -- Serialize dependency-aware decisions on the immutable source projection before
-  -- replay lookup. Concurrent exact deliveries therefore observe the first
-  -- committed dependency set instead of racing the plan's decision uniqueness.
+  -- Own the source-assessment serialization point before checking mutable
+  -- prerequisite liveness. This makes the decision linearizable with concurrent
+  -- assessment deliveries and prevents a prerequisite from being superseded
+  -- while this command waits to acquire the source aggregate.
   PERFORM 1
     FROM architecture_core.data_management_assessment_projection AS projection_record
    WHERE projection_record.tenant_record_id = active_tenant_id
@@ -240,6 +224,37 @@ BEGIN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
       MESSAGE = 'assessment projection is unavailable for the verified tenant';
+  END IF;
+
+  -- Lock every existing requested prerequisite in deterministic UUID order before
+  -- evaluating supersession. Different source assessments can share prerequisites;
+  -- deterministic lock order prevents dependency-set lock cycles while FOR UPDATE
+  -- prevents a concurrent supersession from invalidating the accepted decision.
+  PERFORM initiative_record.remediation_initiative_id
+    FROM architecture_core.remediation_initiative AS initiative_record
+    JOIN pg_catalog.unnest(requested_prerequisite_initiative_ids)
+         AS requested_prerequisite(prerequisite_initiative_id)
+      ON requested_prerequisite.prerequisite_initiative_id =
+         initiative_record.remediation_initiative_id
+   WHERE initiative_record.tenant_record_id = active_tenant_id
+   ORDER BY initiative_record.remediation_initiative_id
+   FOR UPDATE OF initiative_record;
+
+  IF EXISTS (
+      SELECT 1
+        FROM pg_catalog.unnest(requested_prerequisite_initiative_ids) AS prerequisite_id
+       WHERE NOT EXISTS (
+          SELECT 1
+            FROM architecture_core.remediation_initiative AS initiative_record
+           WHERE initiative_record.tenant_record_id = active_tenant_id
+             AND initiative_record.remediation_initiative_id = prerequisite_id
+             AND initiative_record.superseded_at IS NULL
+             AND initiative_record.truth_status_code NOT IN ('rejected', 'superseded')
+       )
+  ) THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'every prerequisite must reference an active remediation initiative in the verified tenant';
   END IF;
 
   SELECT plan_record.assessment_improvement_plan_id
@@ -405,6 +420,6 @@ COMMENT ON FUNCTION architecture_core.create_data_management_improvement_plan(
     uuid[],
     uuid[]
 ) IS
-'Creates or exactly replays an assessment-driven proposed remediation plan with an explicit dependency set. Prerequisite initiatives and one-to-one evidence are bounded, tenant-scoped, immutable, and replay-checked; concurrent exact deliveries serialize on the source projection. The underlying assessment projection remains read-only foreign evidence.';
+'Creates or exactly replays an assessment-driven proposed remediation plan with an explicit dependency set. Prerequisite initiatives and one-to-one evidence are bounded, tenant-scoped, immutable, and replay-checked; source and prerequisite locks make concurrent acceptance linearizable with supersession. The underlying assessment projection remains read-only foreign evidence.';
 
 COMMIT;
