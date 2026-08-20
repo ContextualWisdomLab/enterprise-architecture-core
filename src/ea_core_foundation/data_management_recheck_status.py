@@ -47,7 +47,10 @@ class DataManagementRecheckStatusRequest:
     assessment_recheck_request_id: UUID
 
     @classmethod
-    def from_value(cls, assessment_recheck_request_id: str) -> DataManagementRecheckStatusRequest:
+    def from_value(
+        cls,
+        assessment_recheck_request_id: str,
+    ) -> DataManagementRecheckStatusRequest:
         """Validate the canonical reassessment-request identity before storage access."""
 
         return cls(
@@ -132,7 +135,11 @@ def _validate_recheck_status_response(
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
         )
-    if _parse_response_uuid(response, "assessment_recheck_request_id") != request.assessment_recheck_request_id:
+    response_recheck_id = _parse_response_uuid(
+        response,
+        "assessment_recheck_request_id",
+    )
+    if response_recheck_id != request.assessment_recheck_request_id:
         raise PlannerExecutionError(
             "data-management recheck status returned invalid status evidence"
         )
@@ -146,7 +153,10 @@ def _validate_recheck_status_response(
     missing_count = response.get("successor_missing_evidence_count")
 
     if state == "awaiting_result":
-        if any(value is not None for value in (successor, readiness, score, missing_count)):
+        if any(
+            value is not None
+            for value in (successor, readiness, score, missing_count)
+        ):
             raise PlannerExecutionError(
                 "data-management recheck status returned invalid status evidence"
             )
@@ -228,7 +238,10 @@ def build_data_management_recheck_status_reader(
             "--set",
             f"tenant_record_id={context.tenant_record_id}",
             "--set",
-            f"assessment_recheck_request_id={request.assessment_recheck_request_id}",
+            (
+                "assessment_recheck_request_id="
+                f"{request.assessment_recheck_request_id}"
+            ),
             "--command",
             _RECHECK_STATUS_SQL,
         ]
