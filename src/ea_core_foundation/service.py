@@ -1073,6 +1073,10 @@ class FoundationServiceHandler(BaseHTTPRequestHandler):
                 config,
                 jwks_loader=jwks_loader,
                 signature_verifier=signature_verifier,
+                forbidden_next_action=(
+                    "Obtain an approved target-state approval role from Keyverse; "
+                    "do not widen Enterprise Architecture read roles."
+                ),
             )
         except AuthorizationError as error:
             self._write_json(
