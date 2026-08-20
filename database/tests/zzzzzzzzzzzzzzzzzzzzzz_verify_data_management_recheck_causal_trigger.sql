@@ -182,7 +182,7 @@ BEGIN
     RAISE EXCEPTION 'non-final evidence acceptance triggered reassessment';
   EXCEPTION WHEN check_violation THEN
     IF SQLERRM IS DISTINCT FROM
-       'reassessment must bind to the evidence acceptance that closed the final gap' THEN
+       'reassessment must bind to the evidence acceptance that causally closed the final gap' THEN
       RAISE;
     END IF;
   END;
