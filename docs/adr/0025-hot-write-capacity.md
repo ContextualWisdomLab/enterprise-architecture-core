@@ -15,10 +15,11 @@ contract for a later partition cutover.
 
 Migration `0050_hot_write_capacity.sql` adds the same deterministic
 `architecture_core.hot_partition_bucket(uuid)` function to every high-write
-boundary. It maps a tenant UUID to one of 16 stable buckets without exposing
-tenant identity or requiring application-side routing. Each boundary also
-receives a tenant-first hot-write index and `fillfactor = 80` for new-page
-headroom.
+boundary. It maps the MD5 digest of a tenant UUID to one of 16 stable buckets
+without exposing tenant identity or requiring application-side routing. The
+digest-based mapping keeps the routing contract reproducible across PostgreSQL
+major-version changes. Each boundary also receives a tenant-first hot-write
+index and `fillfactor = 80` for new-page headroom.
 
 The current release keeps ordinary tables and foreign-key semantics intact.
 The bucket is a routing contract and capacity-preparation measure, not a claim

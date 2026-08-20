@@ -5,13 +5,13 @@ CREATE FUNCTION architecture_core.hot_partition_bucket(
 )
 RETURNS smallint
 LANGUAGE sql
-IMMUTABLE
+    IMMUTABLE
 PARALLEL SAFE
 AS $$
     SELECT (
-        (
-            hashtextextended(requested_tenant_record_id::text, 0)
-            & 9223372036854775807
+        get_byte(
+            decode(md5(requested_tenant_record_id::text), 'hex'),
+            0
         ) % 16
     )::smallint;
 $$;
