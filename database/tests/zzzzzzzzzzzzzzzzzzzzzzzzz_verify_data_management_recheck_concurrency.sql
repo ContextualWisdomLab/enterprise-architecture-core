@@ -97,6 +97,15 @@ BEGIN
 END;
 $$;
 
+SELECT CASE
+         WHEN EXISTS (
+           SELECT 1
+             FROM pg_catalog.pg_extension
+            WHERE extname = 'dblink'
+         ) THEN 1
+         ELSE 0
+       END AS dblink_preexisted
+\gset
 CREATE EXTENSION IF NOT EXISTS dblink;
 
 SELECT dblink_connect(
@@ -120,6 +129,9 @@ CREATE TEMP TABLE recheck_backend_session (
     source_code text PRIMARY KEY,
     backend_pid integer NOT NULL
 );
+INSERT INTO recheck_backend_session
+SELECT 'session_a', result.backend_pid
+FROM dblink('recheck_a', 'SELECT pg_backend_pid()') AS result(backend_pid integer);
 INSERT INTO recheck_backend_session
 SELECT 'session_b', result.backend_pid
 FROM dblink('recheck_b', 'SELECT pg_backend_pid()') AS result(backend_pid integer);
@@ -278,14 +290,18 @@ SELECT dblink_send_query(
     $query$
 );
 
--- Prove B reached the held projection row instead of relying on a timing-only
--- sleep. Both the RED implementation and the repaired implementation block on
--- this row, but only the repaired one takes that lock before its replay lookup.
+-- Prove B is specifically blocked by session A, which owns the target
+-- projection row, instead of treating any unrelated lock wait as acceptance.
 DO $$
 DECLARE
+  session_a_pid integer;
   session_b_pid integer;
   is_blocked boolean := false;
 BEGIN
+  SELECT backend_pid
+    INTO session_a_pid
+    FROM recheck_backend_session
+   WHERE source_code = 'session_a';
   SELECT backend_pid
     INTO session_b_pid
     FROM recheck_backend_session
@@ -297,6 +313,7 @@ BEGIN
           FROM pg_catalog.pg_stat_activity AS activity_record
          WHERE activity_record.pid = session_b_pid
            AND activity_record.wait_event_type = 'Lock'
+           AND session_a_pid = ANY(pg_catalog.pg_blocking_pids(session_b_pid))
     ) INTO is_blocked;
 
     EXIT WHEN is_blocked;
@@ -305,7 +322,7 @@ BEGIN
 
   IF NOT is_blocked THEN
     RAISE EXCEPTION
-      'concurrent reassessment session did not reach the held projection lock';
+      'concurrent reassessment session was not blocked by the target-row owner';
   END IF;
 END;
 $$;
@@ -400,4 +417,7 @@ $$;
 
 SELECT dblink_disconnect('recheck_a');
 SELECT dblink_disconnect('recheck_b');
+\if :dblink_preexisted
+\else
 DROP EXTENSION dblink;
+\endif
