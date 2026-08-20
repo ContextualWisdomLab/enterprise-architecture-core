@@ -75,6 +75,7 @@ Naruon / gyeot           -> optional composition hubs
 
 | Topic | Document |
 | --- | --- |
+| Product and technical gap baseline | [docs/product-technical-gap-baseline.md](docs/product-technical-gap-baseline.md) |
 | Architecture-description boundary (ISO/IEC/IEEE 42010:2022) | [docs/adr/0001-architecture-description-boundary.md](docs/adr/0001-architecture-description-boundary.md) |
 | Target-state, capability, and transformation records (TOGAF Standard) | [docs/adr/0002-target-state-capability-transformation.md](docs/adr/0002-target-state-capability-transformation.md) |
 | Viewpoint language (ArchiMate 4) | [docs/adr/0003-archimate-viewpoint-language.md](docs/adr/0003-archimate-viewpoint-language.md) |
