@@ -277,7 +277,7 @@ def test_openapi_binds_governed_replan_request_receipt_and_role(
 
 
 def test_openapi_binds_reassessment_status_read_and_role(openapi_document) -> None:
-    """The published read contract follows reassessment evidence without mutation."""
+    """The published read preserves successor truth and review-gates weak evidence."""
 
     status_path = (
         "/v1/data-management-assessment-rechecks/"
@@ -308,21 +308,33 @@ def test_openapi_binds_reassessment_status_read_and_role(openapi_document) -> No
         "assessment_recheck_request_id",
         "data_management_assessment_projection_id",
         "successor_assessment_projection_id",
+        "successor_truth_status_code",
         "recheck_state_code",
         "successor_readiness_code",
         "successor_overall_score_basis_points",
         "successor_missing_evidence_count",
         "next_action",
     }
+    assert status["properties"]["successor_truth_status_code"]["enum"] == [
+        "authoritative",
+        "observed",
+        "inferred",
+        "proposed",
+        "superseded",
+        "rejected",
+        None,
+    ]
     assert status["properties"]["recheck_state_code"]["enum"] == [
         "awaiting_result",
         "evidence_gap",
         "evidence_complete",
+        "review_required",
     ]
     assert status["properties"]["next_action"]["enum"] == [
         "await_assessment_recheck",
         "plan_remaining_assessment_gap",
         "close_assessment_improvement_loop",
+        "review_assessment_recheck_evidence",
     ]
 
 
