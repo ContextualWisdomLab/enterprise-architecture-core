@@ -12,6 +12,7 @@ import pytest
 
 import ea_core_foundation.validation as base_validation
 import ea_core_foundation.validation_data_management_recheck as recheck_validation
+import ea_core_foundation.validation_data_management_recheck_status as status_validation
 import ea_core_foundation.validation_replan as replan_validation
 from ea_core_foundation.authorization import AuthorizationContext
 from ea_core_foundation.replan import (
@@ -328,9 +329,11 @@ def test_replan_runtime_contract_requires_both_replan_schemas(
     """The command surface fails when either request or receipt schema is absent."""
 
     for schema_name in ("TargetStateReplanRequest", "TargetStateReplanReceipt"):
-        changed = recheck_validation._without_recheck_openapi(
+        changed = status_validation._without_status_openapi(
             deepcopy(openapi_document)
         )
+        changed = status_validation._without_status_role(changed)
+        changed = recheck_validation._without_recheck_openapi(changed)
         changed = recheck_validation._without_recheck_role(changed)
         changed["components"]["schemas"].pop(schema_name)
         with pytest.raises(

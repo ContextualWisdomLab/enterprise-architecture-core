@@ -6,7 +6,7 @@ It records business capabilities, applications, interfaces, technology component
 
 ## What a buyer can decide
 
-The current development stack includes a **Technology Change Impact & Target-State Planner** plus separately authorized approval, scheduling, start, completion, target-state verification, post-verification monitoring, target-state replanning, and data-management reassessment-request surfaces. Given a technology version plus explicit real-world and system-recording cutoffs, the planner joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
+The current development stack includes a **Technology Change Impact & Target-State Planner** plus separately authorized approval, scheduling, start, completion, target-state verification, post-verification monitoring, target-state replanning, and data-management reassessment request/status surfaces. Given a technology version plus explicit real-world and system-recording cutoffs, the planner joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
 
 When the planner returns `approve_target_state`, an authorized human can submit the exact proposed transformation, UUIDv7 decision request, effective time, reason, and evidence reference. EA Core derives the actor from the verified Keyverse identity, appends authoritative transformation history, and emits the privacy-minimized transformation approval outbox event atomically. Exact retries are idempotent; conflicting reuse of a decision request fails closed.
 
@@ -19,6 +19,8 @@ After a verified outcome, a separately authorized monitoring read evaluates the 
 When a terminal transformation has `gap_detected`, a separately authorized replanner can create one new governed replacement transformation. The predecessor is not reopened or rewritten: EA Core links the replacement to the terminal predecessor, supersedes the predecessor, creates the replacement in `proposed`, records immutable replan evidence, and emits `org.contextualwisdomlab.ea.transformation.replanned.v1` in the same transaction. Exact retries return the same receipt; conflicting reuse, cross-tenant references, a non-gap predecessor, an already-superseded predecessor, or reuse of a replacement identifier fails closed. The buyer's next action is `approve_target_state`, so the replacement re-enters the same human-governed lifecycle rather than becoming a parallel workflow engine.
 
 The Data/AI Context assessment improvement loop is also actionable without duplicating catalog authority. EA Core may project a versioned assessment result, convert a missing-evidence gap into accountable proposed improvement work, accept receipt-bound evidence, and—only after the final projected gap is causally closed—allow a separately authorized operator to request reassessment. That request records immutable EA-side evidence and a privacy-minimized transactional event, then returns `await_assessment_recheck`. `semantic-data-portal` remains authoritative for the source assessment and any later reassessment result; EA Core never writes that foreign store.
+
+A separately authorized reassessment-status read follows that immutable request without promoting foreign evidence. `awaiting_result` keeps the buyer waiting for a projected successor; an authoritative or observed successor yields `evidence_gap` with `plan_remaining_assessment_gap` or `evidence_complete` with `close_assessment_improvement_loop`. An inferred, proposed, superseded, or rejected successor yields `review_required` and `review_assessment_recheck_evidence`, so weak foreign truth can never silently close the improvement loop.
 
 `semantic-data-portal` remains the Data/AI Context system of record; `pg-erd-cloud` remains physical schema/design evidence; LineageWeave evidence remains inferred/proposed unless governed elsewhere. EA Core stores canonical references and receipt evidence rather than copying those products or querying their application tables.
 
@@ -172,9 +174,15 @@ All governed surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER
 
 The implemented buyer-facing portfolio reads are `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessments`, which returns explicit bitemporal facts, and `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessment-summary`, which groups only identical framework/version/scale/dimension/cycle facts and returns deterministic evidence next actions. It never averages scores across different scales.
 
-The reassessment status read is `GET /v1/data-management-assessment-rechecks/{assessment_recheck_request_id}`; it returns the next evidence-backed action without changing the foreign assessment source.
+Follow that immutable request through the purpose-bound status read:
 
-The `ea_runtime` login has no direct application-table authority. It receives only purpose-bound PostgreSQL functions after service-side verification, including `read_technology_target_state_plan(...)`, `approve_target_state(...)`, `schedule_transformation(...)`, `start_scheduled_transformation(...)`, `complete_started_transformation(...)`, `record_target_state_verification(...)`, `read_target_state_monitoring_status(...)`, `record_target_state_replan(...)`, and `request_data_management_assessment_recheck_for_tenant(...)`. Callers cannot supply a transformation decision actor, and no surface grants direct access to foreign product stores.
+```text
+GET /v1/data-management-assessment-rechecks/{assessment_recheck_request_id}
+```
+
+Use the returned `recheck_state_code`, explicit `successor_truth_status_code`, evidence readiness/score/gap count, and `next_action` together. Only `authoritative` or `observed` successor truth can yield ordinary `evidence_gap` or `evidence_complete`; inferred/proposed/superseded/rejected successors are `review_required` even if their projected readiness appears complete.
+
+The `ea_runtime` login has no direct application-table authority. It receives only purpose-bound PostgreSQL functions after service-side verification, including `read_technology_target_state_plan(...)`, `approve_target_state(...)`, `schedule_transformation(...)`, `start_scheduled_transformation(...)`, `complete_started_transformation(...)`, `record_target_state_verification(...)`, `read_target_state_monitoring_status(...)`, `record_target_state_replan(...)`, `request_data_management_assessment_recheck_for_tenant(...)`, `read_data_management_assessment_recheck_status(...)`, and `read_portfolio_assessment_for_tenant(...)`. Callers cannot supply a transformation decision actor, and no surface grants direct access to foreign product stores.
 
 ## Validation
 
@@ -185,4 +193,4 @@ uv run --extra dev python -m coverage report
 uv run --extra dev python scripts/validate_repository.py
 ```
 
-CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, the planner and full governed transformation lifecycle, post-verification monitoring/replanning, data-management evidence closure/reassessment, OpenAPI/AsyncAPI contracts, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.
+CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, the planner and full governed transformation lifecycle, post-verification monitoring/replanning, data-management evidence closure/reassessment/status reads, OpenAPI/AsyncAPI contracts, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.
