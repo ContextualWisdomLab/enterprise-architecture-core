@@ -25,6 +25,8 @@ DECLARE
   selected_request architecture_core.assessment_recheck_request%ROWTYPE;
   source_projection architecture_core.data_management_assessment_projection%ROWTYPE;
   successor_projection architecture_core.data_management_assessment_projection%ROWTYPE;
+  current_successor_uri text;
+  successor_depth integer := 0;
   missing_evidence_count integer;
 BEGIN
   IF requested_tenant_record_id IS NULL
@@ -105,6 +107,31 @@ BEGIN
       );
       RETURN;
     END IF;
+
+    successor_depth := 1;
+    WHILE successor_projection.superseded_at IS NOT NULL LOOP
+      IF successor_depth >= 32 THEN
+        RAISE EXCEPTION USING
+          ERRCODE = '23514',
+          MESSAGE = 'assessment reassessment successor chain exceeds supported depth';
+      END IF;
+
+      current_successor_uri := successor_projection.assessment_result_uri;
+      SELECT projection_record.*
+        INTO successor_projection
+        FROM architecture_core.data_management_assessment_projection AS projection_record
+       WHERE projection_record.tenant_record_id = requested_tenant_record_id
+         AND projection_record.supersedes_assessment_result_uri = current_successor_uri
+       ORDER BY projection_record.recorded_at ASC
+       LIMIT 1;
+
+      IF successor_projection.data_management_assessment_projection_id IS NULL THEN
+        RAISE EXCEPTION USING
+          ERRCODE = '23514',
+          MESSAGE = 'superseded assessment reassessment successor has no successor projection';
+      END IF;
+      successor_depth := successor_depth + 1;
+    END LOOP;
 
     IF successor_projection.recorded_at < selected_request.recorded_at THEN
       RAISE EXCEPTION USING
@@ -215,6 +242,6 @@ COMMENT ON FUNCTION architecture_core.read_data_management_assessment_recheck_st
     uuid,
     uuid
 ) IS
-'Purpose-bound tenant-scoped read for one assessment reassessment request. It installs the verified tenant only for the duration of the read and restores the caller setting on success or failure, joins only EA-owned projected evidence to the unique direct successor assessment, rejects successor evidence whose knowledge cutoff predates the governed reassessment request, preserves explicit successor truth origin, and review-gates inferred, proposed, superseded, or rejected evidence so it cannot silently become decision-complete or mutate semantic-data-portal authority.';
+'Purpose-bound tenant-scoped read for one assessment reassessment request. It installs the verified tenant only for the duration of the read and restores the caller setting on success or failure, follows the immutable linear assessment-supersession chain to its current terminal successor with a fixed depth bound, rejects selected successor evidence whose knowledge cutoff predates the governed reassessment request, preserves explicit successor truth origin, and review-gates inferred, proposed, superseded, or rejected evidence so it cannot silently become decision-complete or mutate semantic-data-portal authority.';
 
 COMMIT;
