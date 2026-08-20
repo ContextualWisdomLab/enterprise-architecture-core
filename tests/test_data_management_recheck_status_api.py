@@ -105,7 +105,9 @@ def test_recheck_status_authority_is_distinct_and_fail_closed() -> None:
     )
 
     environment.pop("EA_DATA_MANAGEMENT_RECHECK_READ_ROLES")
-    assert build_data_management_recheck_status_authorization_config(environment) is None
+    assert (
+        build_data_management_recheck_status_authorization_config(environment) is None
+    )
 
 
 def test_recheck_status_reader_uses_purpose_bound_port_and_validates_meaning() -> None:
