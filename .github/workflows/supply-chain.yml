@@ -39,17 +39,7 @@ jobs:
           upload-release-assets: false
           dependency-snapshot: false
           syft-version: v1.51.0
-      - name: Generate SPDX 2.3 SBOM for GitHub attestation compatibility
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
-        with:
-          path: dist
-          format: spdx-json
-          output-file: dist/enterprise-architecture-core.attestation.spdx.json
-          upload-artifact: false
-          upload-release-assets: false
-          dependency-snapshot: false
-          syft-version: v1.51.0
-      - name: Validate SPDX SBOMs and artifact checksums
+      - name: Validate SPDX 3.0.1 SBOM and artifact checksums
         run: |
           python - <<'PY'
           import json
@@ -75,21 +65,13 @@ jobs:
               for item in graph
               if isinstance(item, dict)
           )
-          attestation_sbom = json.loads(
-              Path("dist/enterprise-architecture-core.attestation.spdx.json")
-              .read_text(encoding="utf-8")
-          )
-          assert attestation_sbom.get("spdxVersion") == "SPDX-2.3"
-          assert attestation_sbom.get("SPDXID") == "SPDXRef-DOCUMENT"
-          assert attestation_sbom.get("packages")
           assert any(Path("dist").glob("*.whl"))
           assert any(Path("dist").glob("*.tar.gz"))
           PY
           (
             cd dist
             sha256sum -- *.whl *.tar.gz \
-              enterprise-architecture-core.spdx.json \
-              enterprise-architecture-core.attestation.spdx.json > SHA256SUMS
+              enterprise-architecture-core.spdx.json > SHA256SUMS
             sha256sum -c SHA256SUMS
           )
       - name: Upload checked-out commit package evidence
@@ -100,7 +82,6 @@ jobs:
             dist/*.whl
             dist/*.tar.gz
             dist/enterprise-architecture-core.spdx.json
-            dist/enterprise-architecture-core.attestation.spdx.json
             dist/SHA256SUMS
           if-no-files-found: error
           retention-days: 7
@@ -127,10 +108,63 @@ jobs:
           subject-path: |
             evidence/*.whl
             evidence/*.tar.gz
-      - name: Attest SPDX 2.3 SBOM
+      - name: Attest SPDX 3 SBOM
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: |
             evidence/*.whl
             evidence/*.tar.gz
-          sbom-path: evidence/enterprise-architecture-core.attestation.spdx.json
+          predicate-type: https://spdx.dev/Document/v3
+          predicate-path: evidence/enterprise-architecture-core.spdx.json
+      - name: Verify protected-main provenance and SBOM attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref }}
+          EXPECTED_SOURCE_REF: refs/heads/main
+          REPOSITORY: ContextualWisdomLab/enterprise-architecture-core
+          SIGNER_WORKFLOW: ContextualWisdomLab/enterprise-architecture-core/.github/workflows/supply-chain.yml
+          SPDX_PREDICATE: https://spdx.dev/Document/v3
+        run: |
+          set -euo pipefail
+          if [[ "$SOURCE_REF" != "$EXPECTED_SOURCE_REF" ]]; then
+            echo "refusing attestation verification outside protected main" >&2
+            exit 1
+          fi
+          shopt -s nullglob
+          artifacts=(evidence/*.whl evidence/*.tar.gz)
+          if (( ${#artifacts[@]} != 2 )); then
+            echo "expected exactly one wheel and one source distribution" >&2
+            exit 1
+          fi
+          mkdir -p attestation-verification
+          for artifact in "${artifacts[@]}"; do
+            gh attestation verify "$artifact" \
+              --repo "$REPOSITORY" \
+              --source-digest "$SOURCE_SHA" \
+              --source-ref "$EXPECTED_SOURCE_REF" \
+              --signer-digest "$SOURCE_SHA" \
+              --signer-workflow "$SIGNER_WORKFLOW" \
+              --cert-oidc-issuer https://token.actions.githubusercontent.com \
+              --deny-self-hosted-runners \
+              --format json \
+              > "attestation-verification/$(basename "$artifact").provenance.json"
+            gh attestation verify "$artifact" \
+              --repo "$REPOSITORY" \
+              --source-digest "$SOURCE_SHA" \
+              --source-ref "$EXPECTED_SOURCE_REF" \
+              --signer-digest "$SOURCE_SHA" \
+              --signer-workflow "$SIGNER_WORKFLOW" \
+              --cert-oidc-issuer https://token.actions.githubusercontent.com \
+              --deny-self-hosted-runners \
+              --predicate-type "$SPDX_PREDICATE" \
+              --format json \
+              > "attestation-verification/$(basename "$artifact").sbom.json"
+          done
+      - name: Retain protected-main attestation verification evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: attestation-verification-${{ github.sha }}
+          path: attestation-verification/*.json
+          if-no-files-found: error
+          retention-days: 90
