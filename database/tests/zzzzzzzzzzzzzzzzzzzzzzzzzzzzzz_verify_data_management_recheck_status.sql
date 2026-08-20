@@ -31,7 +31,7 @@ BEGIN
      AND request_record.decision_request_id =
          '0196f300-1111-7111-8111-111111111169';
 
-  SELECT projection_record
+  SELECT projection_record.*
     INTO source_projection
     FROM architecture_core.assessment_recheck_request AS request_record
     JOIN architecture_core.data_management_assessment_projection AS projection_record
