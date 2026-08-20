@@ -1,6 +1,6 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-20T21:13:04Z, GitHub inspection and repository inspection<br>
+**Snapshot:** 2026-08-20T21:18:59Z, GitHub inspection and repository inspection<br>
 **Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
@@ -9,10 +9,11 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-20T21:13:04Z` — PR #18 is at exact head
-`a30e6197424f0269f22c5dcb1fb9ffdb2bec6e5c`, based on protected
+**Live refresh:** `2026-08-20T21:18:59Z` — PR #18 is at exact head
+`f4a11d8d318eaa636acaeaf8141d2b622c66f9c1`, based on protected
 `develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks show one
-pending review job and no formal approval. The synchronized stack is current at
+pending OpenCode review job after an exact-head dispatch and no formal approval.
+The synchronized stack is current at
 PR #31 `01f9c0c2ba976f3e4f05d2e8c5263ae14aab77c9`, PR #32
 `f8310c1d3bc7525f5bb5c6da0bf9a798ccd35a0d`, PR #33
 `94b8aa933d602f2a3774c6b2b75b55d3dcdd6fd9`, and PR #35
@@ -92,7 +93,7 @@ recollected after any push or base change.
 | [22](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/22) | Complete started target-state transformation | `target-state-start-v1` → `target-state-complete-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Verify only an authoritative started transformation can complete. |
 | [21](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/21) | Run repository acceptance on protected `develop` pushes | `main` → `fix/develop-push-acceptance` | Ready; exact current head `4ada32a811c2f5ba7ac2138c0826229c5d62e78b`; repository Checks terminal green; exact-head OpenCode dispatch was accepted; no qualifying independent current-head approval | Obtain a formal same-head approval, then re-fetch and re-check before merge. |
 | [19](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/19) | Start scheduled target-state transformation | `target-state-schedule-v1` → `target-state-start-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Review the schedule-to-start authority boundary before advancing. |
-| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` at current base `1c0fa8b15ceb9e72186274aeb255d6777eb84ef4` → `cursor/ea-core-customer-docs-609e` | Ready; exact head `a30e6197424f0269f22c5dcb1fb9ffdb2bec6e5c`; hosted checks show one pending review job and otherwise passing/skipped results; no formal approval | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
+| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` at current base `1c0fa8b15ceb9e72186274aeb255d6777eb84ef4` → `cursor/ea-core-customer-docs-609e` | Ready; exact head `f4a11d8d318eaa636acaeaf8141d2b622c66f9c1`; exact-head OpenCode dispatch accepted and its review job is pending; no formal approval | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
 | [17](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/17) | Schedule approved target-state transformation | `target-state-approval-v1` → `target-state-schedule-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Review milestone binding and exact replay semantics. |
 | [16](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/16) | Govern target-state approval command | `target-state-planner-api-v1` → `target-state-approval-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Require operation-specific Keyverse authority and immutable evidence. |
 | [15](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/15) | Expose authenticated target-state planner query | `target-state-planner-v1` → `target-state-planner-api-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Verify issuer, audience, tenant, role, bitemporal cutoff, and no direct-table access. |
@@ -125,7 +126,7 @@ after any push or base-branch change.
 | 22 | `61ae51a10aece4af51b3cea3ed4ba662598f32e0` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
 | 21 | `4ada32a811c2f5ba7ac2138c0826229c5d62e78b` | `2026-08-20T14:22:40Z` | `implementation_candidate` | Repository Checks terminal green; exact-head OpenCode dispatch was accepted; no qualifying independent current-head approval observed. |
 | 19 | `daa58320e3fca4c9ea04fcd1cd72d9c754781b51` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
-| 18 | `a30e6197424f0269f22c5dcb1fb9ffdb2bec6e5c` | `2026-08-20T21:13:04Z` | `implementation_candidate` | Documentation snapshot is the source head for this refresh; hosted checks show one pending review job with other checks passing/skipped; no formal current-head approval observed. |
+| 18 | `f4a11d8d318eaa636acaeaf8141d2b622c66f9c1` | `2026-08-20T21:18:59Z` | `implementation_candidate` | Documentation snapshot source head; exact-head OpenCode dispatch accepted and its review job is pending; other hosted checks are passing/skipped; no formal current-head approval observed. |
 | 17 | `c2d448f2b8dd159bbed9b66dd3e9953a919dd1f7` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
 | 16 | `b26800d6133bab615bf4a17ff9a5871c30f1fc6a` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
 | 15 | `4950f486028cff75b7db07460353bff3807fa87d` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft candidate; no protected integration, immutable release, or live deployment evidence observed. |
