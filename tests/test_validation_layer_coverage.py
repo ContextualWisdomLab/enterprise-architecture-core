@@ -86,6 +86,41 @@ def _stub_closure_artifact_validators(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def _stub_recheck_artifact_validators(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Isolate the reassessment repository orchestration from artifact details."""
+
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_migration_inventory",
+        lambda paths: None,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_migration_sql",
+        lambda text: (1, 2, 3, 4),
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_openapi_document",
+        lambda document: 5,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_openapi_runtime_surface",
+        lambda document: None,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_asyncapi_document",
+        lambda document: 6,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_connector_catalog",
+        lambda document: 7,
+    )
+
+
 def _recheck_generation_document(document: dict[str, object]) -> dict[str, object]:
     """Remove the newer status-read generation before testing the command layer."""
 
@@ -131,6 +166,29 @@ def test_closure_repository_orchestration_rejects_missing_contract(
         match="missing required file",
     ):
         closure_validation.validate_repository(root)
+
+
+def test_recheck_repository_orchestration_retains_all_evidence_dimensions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment layer composes the same real repository evidence dimensions."""
+
+    root = _repository_fixture(tmp_path)
+    _stub_recheck_artifact_validators(monkeypatch)
+
+    report = recheck_validation.validate_repository(root)
+
+    assert (
+        report.table_count,
+        report.column_count,
+        report.index_count,
+        report.constraint_count,
+        report.openapi_operation_count,
+        report.asyncapi_operation_count,
+        report.adr_count,
+        report.connector_count,
+    ) == (1, 2, 3, 4, 5, 6, 10, 7)
 
 
 def test_closure_repository_orchestration_requires_decision_evidence(
