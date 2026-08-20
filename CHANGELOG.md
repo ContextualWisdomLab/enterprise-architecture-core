@@ -21,6 +21,7 @@
 - Exact installed Context Graph contract-version readiness and PostgreSQL runtime-role readiness probes; database readiness keeps inline credentials out of argv, preserves supported libpq TLS/channel-binding/host-selection/password-file/passwordless/default-socket/session-target semantics, and rejects unknown or ambiguous query parameters.
 - Committed `uv.lock` and CI lock-check so reviewed dependencies cannot drift.
 - Exact-head SPDX 3.0.1 SBOM and SHA-256 wheel/sdist evidence on pull requests and protected-main builds, plus protected-main SLSA build-provenance and SBOM attestations using immutably pinned actions.
+- Protected-main SBOM attestation compatibility: retain the primary SPDX 3.0.1 package evidence and publish a separately checksummed SPDX 2.3 predicate because the pinned GitHub attestation action accepts SPDX JSON documents with `spdxVersion`/`SPDXID` headers.
 - Ecosystem connector catalog for Keyverse, context-graph-contracts, Semantic Data Portal, pg-erd-cloud, LineageWeave, naruon, and organization `.github`.
 - Enterprise Architecture Decision Plane product and responsibility baseline.
 - PostgreSQL 3NF schema for capabilities, applications, technologies, interfaces, temporal relations, lifecycle, evidence, OIDC identity links, and transactional outbox events.
