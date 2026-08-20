@@ -1,8 +1,9 @@
 \set ON_ERROR_STOP on
 
 -- Executable buyer acceptance for following an accepted reassessment request.
--- The first candidate intentionally fails when the status query is not wired to
--- the normalized missing-evidence projection owned by this database.
+-- A projected successor must preserve its explicit truth origin: proposed or
+-- inferred results can be visible, but they cannot silently close the governed
+-- improvement loop even when their evidence-readiness shape is complete.
 
 RESET ROLE;
 SELECT set_config(
@@ -46,6 +47,7 @@ BEGIN
 
   IF status_record.assessment_recheck_request_id IS DISTINCT FROM recheck_id
      OR status_record.successor_assessment_projection_id IS NOT NULL
+     OR status_record.successor_truth_status_code IS NOT NULL
      OR status_record.recheck_state_code IS DISTINCT FROM 'awaiting_result'
      OR status_record.successor_readiness_code IS NOT NULL
      OR status_record.successor_overall_score_basis_points IS NOT NULL
@@ -88,14 +90,14 @@ BEGIN
       source_projection.profile_code,
       '2026-08-19T00:39:58Z',
       '2026-08-19T00:39:59Z',
-      8200,
-      'evidence_gap',
-      'observed',
+      10000,
+      'evidence_complete',
+      'proposed',
       'urn:cwl:tenant_001:data_context:assessment_evidence:0196f400-1111-7111-8111-111111111193',
       repeat('b', 64),
       'https://example.com/evidence/recheck-successor',
       source_projection.assessment_result_uri,
-      ARRAY['stewardship_evidence']::text[]
+      ARRAY[]::text[]
     ) AS result;
 
   SELECT *
@@ -110,13 +112,15 @@ BEGIN
         source_projection.data_management_assessment_projection_id
      OR status_record.successor_assessment_projection_id IS DISTINCT FROM
         successor_projection_id
-     OR status_record.recheck_state_code IS DISTINCT FROM 'evidence_gap'
-     OR status_record.successor_readiness_code IS DISTINCT FROM 'evidence_gap'
-     OR status_record.successor_overall_score_basis_points IS DISTINCT FROM 8200
-     OR status_record.successor_missing_evidence_count IS DISTINCT FROM 1
+     OR status_record.successor_truth_status_code IS DISTINCT FROM 'proposed'
+     OR status_record.recheck_state_code IS DISTINCT FROM 'review_required'
+     OR status_record.successor_readiness_code IS DISTINCT FROM 'evidence_complete'
+     OR status_record.successor_overall_score_basis_points IS DISTINCT FROM 10000
+     OR status_record.successor_missing_evidence_count IS DISTINCT FROM 0
      OR status_record.next_action IS DISTINCT FROM
-        'plan_remaining_assessment_gap' THEN
-    RAISE EXCEPTION 'successor reassessment status lost evidence or next action';
+        'review_assessment_recheck_evidence' THEN
+    RAISE EXCEPTION
+      'proposed successor escaped truth review or lost buyer evidence';
   END IF;
 
   BEGIN
