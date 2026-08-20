@@ -18,7 +18,7 @@ INSERT INTO architecture_core.object_revision (
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
     '0196a009-1111-7111-8111-111111111111',
     '0195d145-64e8-7f4f-8a23-a0cc784cb902',
-    2,
+    3,
     'Legacy Order Platform',
     '2026-07-01T00:00:00Z',
     'authoritative',
