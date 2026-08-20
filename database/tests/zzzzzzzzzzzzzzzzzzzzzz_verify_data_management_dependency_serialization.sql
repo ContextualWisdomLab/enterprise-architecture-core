@@ -5,7 +5,7 @@
 -- assessment serialization point. Otherwise a prerequisite can be superseded
 -- while the command waits on that source row and still be recorded as active.
 
-aRESET ROLE;
+RESET ROLE;
 SELECT set_config(
     'app.tenant_record_id',
     '0195d145-64e8-7f4f-8a23-a0cc784cb711',
