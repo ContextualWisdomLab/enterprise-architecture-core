@@ -4,6 +4,10 @@
 -- assessment definition metadata that was recorded after that cutoff. The
 -- normalized dimension is immutable, but its recorded_at still defines when
 -- the system first knew that meaning.
+--
+-- verify_review_integrity.sql deliberately persists proposed revision 2 for
+-- this object. Use revision 3 for the non-overlapping authoritative fixture so
+-- cumulative acceptance preserves the unique object revision sequence.
 INSERT INTO architecture_core.object_revision (
     tenant_record_id,
     object_revision_id,
