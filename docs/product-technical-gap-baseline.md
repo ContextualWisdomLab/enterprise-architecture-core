@@ -14,9 +14,11 @@ test for the next loop.
 The product has a credible headless decision-plane foundation and a growing
 authenticated transformation decision surface. The buyer-facing blocker is
 delivery truth: the protected default branch is still the initialization
-baseline while the deployable runtime and later decision capabilities exist on
-`main` and stacked pull requests. There is no GitHub release or version tag in
-the observed repository state.
+baseline while runtime and later decision capabilities are represented by
+`implementation_candidate` branches and stacked pull requests. Deployable and
+buyer-available truth requires the corresponding exact package, release, and
+live evidence. There is no GitHub release or version tag in the observed
+repository state.
 
 The next release loop is therefore:
 
