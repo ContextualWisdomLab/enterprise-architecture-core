@@ -56,6 +56,30 @@ BEGIN
     RAISE EXCEPTION 'waiting reassessment status is not buyer-actionable';
   END IF;
 
+  -- The purpose-bound SECURITY DEFINER read may install a verified tenant only
+  -- for its own query. It must never leak that tenant into a caller transaction,
+  -- because a pooled runtime connection can execute another tenant-scoped action
+  -- immediately after this read.
+  PERFORM pg_catalog.set_config(
+      'app.tenant_record_id',
+      '0195d145-64e8-7f4f-8a23-a0cc784cb712',
+      true
+  );
+  PERFORM *
+    FROM architecture_core.read_data_management_assessment_recheck_status(
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      recheck_id
+    );
+  IF pg_catalog.current_setting('app.tenant_record_id', true) IS DISTINCT FROM
+       '0195d145-64e8-7f4f-8a23-a0cc784cb712' THEN
+    RAISE EXCEPTION 'reassessment status leaked tenant context into caller';
+  END IF;
+  PERFORM pg_catalog.set_config(
+      'app.tenant_record_id',
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      true
+  );
+
   INSERT INTO architecture_core.projection_receipt (
       tenant_record_id,
       projection_receipt_id,
