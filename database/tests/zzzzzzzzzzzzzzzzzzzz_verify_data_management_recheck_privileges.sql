@@ -25,6 +25,7 @@ BEGIN
    WHERE namespace_record.nspname = 'architecture_core'
      AND procedure_record.proname IN (
        'request_data_management_assessment_recheck',
+       'request_data_management_assessment_recheck_for_tenant',
        'reject_assessment_recheck_request_mutation',
        'enforce_assessment_recheck_temporal_order'
      )
@@ -49,6 +50,7 @@ BEGIN
    WHERE namespace_record.nspname = 'architecture_core'
      AND procedure_record.proname IN (
        'request_data_management_assessment_recheck',
+       'request_data_management_assessment_recheck_for_tenant',
        'reject_assessment_recheck_request_mutation',
        'enforce_assessment_recheck_temporal_order'
      )
