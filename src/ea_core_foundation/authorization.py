@@ -368,6 +368,7 @@ def verify_keyverse_bearer(
     jwks_loader: JwksLoader = load_keyverse_jwks,
     signature_verifier: SignatureVerifier = verify_rs256_signature,
     now_epoch: int | None = None,
+    forbidden_next_action: str | None = None,
 ) -> AuthorizationContext:
     """Verify one Keyverse RS256 bearer and bind its tenant/role claims."""
 
@@ -440,7 +441,10 @@ def verify_keyverse_bearer(
             "JWT role is not authorized for architecture reads",
             error_code="forbidden",
             http_status=403,
-            next_action="Request an approved Enterprise Architecture read role.",
+            next_action=(
+                forbidden_next_action
+                or "Request an approved Enterprise Architecture read role."
+            ),
         )
     return AuthorizationContext(
         tenant_record_id=tenant_record_id,
