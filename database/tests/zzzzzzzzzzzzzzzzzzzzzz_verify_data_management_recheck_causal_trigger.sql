@@ -180,7 +180,10 @@ BEGIN
       );
     RAISE EXCEPTION 'non-final evidence acceptance triggered reassessment';
   EXCEPTION WHEN check_violation THEN
-    NULL;
+    IF SQLERRM IS DISTINCT FROM
+       'reassessment must bind to the evidence acceptance that closed the final gap' THEN
+      RAISE;
+    END IF;
   END;
 
   BEGIN
