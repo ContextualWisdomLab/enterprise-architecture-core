@@ -4,13 +4,16 @@
 
 ## Context
 
-The repository has three materially different states: the protected `develop`
-initialization baseline, the implementation branch and other unmerged pull
-request candidates, and a deployable, released, or live state that requires
-the corresponding exact package, release, and runtime evidence. Treating a
-branch or a green check as shipped product truth makes a buyer believe that an
-unmerged capability is available. It also makes it easy to lose the next
-action when a base branch changes.
+The repository distinguishes these evidence states: `protected` is an exact
+head governed by branch protection; `candidate` is an unmerged implementation
+branch or pull request; `integrated` is a capability present on the protected
+`develop` head; `deployable` has exact package and acceptance evidence but is
+not necessarily released; `released` has an immutable package and release
+record; and `live` has runtime-observation evidence. These states are not
+interchangeable: a protected or integrated head does not prove deployability,
+release, or live operation. Treating a branch or a green check as shipped
+product truth makes a buyer believe that an unmerged capability is available.
+It also makes it easy to lose the next action when a base branch changes.
 
 The architecture description must therefore record the buyer outcome, the
 current implementation evidence, the open delivery dependency, and the exact

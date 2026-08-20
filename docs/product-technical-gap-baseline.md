@@ -1,6 +1,6 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-20T21:31:38Z, GitHub inspection and repository inspection<br>
+**Snapshot:** 2026-08-20T21:36:39Z, GitHub inspection and repository inspection<br>
 **Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
@@ -9,8 +9,8 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-20T21:31:38Z` — PR #18 is at exact head
-`39a278867a24b4d13fefdf43f1a6230cbfc381ee`, based on protected
+**Live refresh:** `2026-08-20T21:36:39Z` — PR #18 was inspected at exact head
+`ee287b77accd0ecfff7424800871c3d82e540960`, based on protected
 `develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks show one
 pending OpenCode review job after an exact-head dispatch and no formal approval.
 The synchronized stack is current at
