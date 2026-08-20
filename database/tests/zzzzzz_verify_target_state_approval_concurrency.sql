@@ -97,17 +97,22 @@ FROM dblink('approval_b', 'SELECT pg_backend_pid()') AS result(backend_pid integ
 -- Hold the transformation aggregate in A. The defective implementation checks
 -- replay state before this lock, so B can observe no committed decision and then
 -- block here. A repaired implementation serializes before replay lookup and sees
--- A's durable receipt after COMMIT.
+-- A's durable receipt after COMMIT. dblink_exec cannot execute a row-returning
+-- SELECT, so acquire the same row lock inside a no-result DO command.
 SELECT dblink_exec('approval_a', 'BEGIN');
 SELECT dblink_exec(
     'approval_a',
     $lock$
-      SELECT 1
-        FROM architecture_core.architecture_transformation
-       WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
-         AND architecture_transformation_id =
-             '0196e010-1111-7111-8111-111111111192'
-       FOR UPDATE
+      DO $approval_lock$
+      BEGIN
+        PERFORM 1
+          FROM architecture_core.architecture_transformation
+         WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+           AND architecture_transformation_id =
+               '0196e010-1111-7111-8111-111111111192'
+         FOR UPDATE;
+      END
+      $approval_lock$;
     $lock$
 );
 
