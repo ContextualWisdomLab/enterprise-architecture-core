@@ -16,19 +16,19 @@ BEGIN
         namespace_record.nspname AS schema_name,
         table_record.relname AS table_name,
         constraint_catalog.conname AS constraint_name,
-        pg_get_constraintdef(constraint_catalog.oid) AS constraint_definition
-      FROM pg_constraint AS constraint_catalog
-      JOIN pg_class AS table_record
+        pg_catalog.pg_get_constraintdef(constraint_catalog.oid) AS constraint_definition
+      FROM pg_catalog."pg_constraint" AS constraint_catalog
+      JOIN pg_catalog.pg_class AS table_record
         ON table_record.oid = constraint_catalog.conrelid
-      JOIN pg_namespace AS namespace_record
+      JOIN pg_catalog.pg_namespace AS namespace_record
         ON namespace_record.oid = table_record.relnamespace
      WHERE namespace_record.nspname = 'architecture_core'
        AND constraint_catalog.contype = 'c'
-       AND pg_get_constraintdef(constraint_catalog.oid) ~
+       AND pg_catalog.pg_get_constraintdef(constraint_catalog.oid) ~
            E'uuid_extract_version\\([^)]*\\) = 7'
      ORDER BY table_record.relname, constraint_catalog.conname
   LOOP
-    hardened_definition := regexp_replace(
+    hardened_definition := pg_catalog.regexp_replace(
       constraint_record.constraint_definition,
       E'(uuid_extract_version\\([^)]*\\)) = 7',
       E'\\1 IS NOT DISTINCT FROM 7',
@@ -39,7 +39,7 @@ BEGIN
        constraint_record.constraint_definition THEN
       RAISE EXCEPTION USING
         ERRCODE = '23514',
-        MESSAGE = format(
+        MESSAGE = pg_catalog.format(
           'unable to harden UUIDv7 constraint %I.%I.%I',
           constraint_record.schema_name,
           constraint_record.table_name,
@@ -47,13 +47,13 @@ BEGIN
         );
     END IF;
 
-    EXECUTE format(
+    EXECUTE pg_catalog.format(
       'ALTER TABLE %I.%I DROP CONSTRAINT %I',
       constraint_record.schema_name,
       constraint_record.table_name,
       constraint_record.constraint_name
     );
-    EXECUTE format(
+    EXECUTE pg_catalog.format(
       'ALTER TABLE %I.%I ADD CONSTRAINT %I %s',
       constraint_record.schema_name,
       constraint_record.table_name,
