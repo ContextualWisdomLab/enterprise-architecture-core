@@ -32,8 +32,8 @@ BEGIN
   LOOP
     hardened_definition := regexp_replace(
       constraint_record.constraint_definition,
-      '(uuid_extract_version\([^)]*\)) = 7',
-      '\1 IS NOT DISTINCT FROM 7',
+      E'(uuid_extract_version\\([^)]*\\)) = 7',
+      E'\\1 IS NOT DISTINCT FROM 7',
       'g'
     );
 
