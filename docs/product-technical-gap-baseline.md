@@ -1,6 +1,6 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-20T23:00:52Z, GitHub inspection and repository inspection<br>
+**Snapshot:** 2026-08-20T23:12:06Z, GitHub inspection and repository inspection<br>
 **Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
@@ -9,8 +9,8 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-20T23:00:52Z` — PR #18 was inspected at exact head
-`2f10b05b7f149831324388e2c93efdfc3c4baad6`, based on protected
+**Live refresh:** `2026-08-20T23:12:06Z` — PR #18 was inspected at exact head
+`22722e23c8d9b240011e8a90171b2852cffc108f`, based on protected
 `develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks are
 queued after an exact-head dispatch and no formal approval is observed.
 The synchronized stack is current at
@@ -20,8 +20,8 @@ PR #31 `172f439736753a14cdb6569b954adb1cf905bc44`, PR #32
 `6eab7bae3e2e7424ac33fbd74a3953e2a3949596`; their exact bases are recorded
 below, hosted required Checks were re-queued after the current-head pushes, and
 no formal same-head approval is observed. PR #34 is an independent `main` candidate at exact head
-`a5fb5b11f05eb81a541ad40c5525975fe860c8ff` with hosted Checks queued after a
-current-head Ruff repair. Local PR34 evidence passes 126 tests, 100%
+`a5fb5b11f05eb81a541ad40c5525975fe860c8ff` with 19 hosted Checks queued after
+a current-head Ruff repair. Local PR34 evidence passes 126 tests, 100%
 statement-and-branch coverage (436 statements/162 branches), Ruff, and
 repository validation; current PR35 evidence
 passes 698 tests, 100% statement-and-branch coverage (3250 statements/900
@@ -30,6 +30,14 @@ branches), Ruff, repository validation (`48 tables, 399 columns, 22 indexes,
 25 ADRs`), clean PostgreSQL 18 SQL acceptance through migration 0050, and
 runtime privilege acceptance. These local results do
 not prove hosted Checks, merge, release, or deployment.
+
+The public Checks pages currently show PR18 with 10 queued jobs and PR33, PR34,
+and PR35 with 19 queued jobs each, with no current-head failures observed. PR14
+still has two failures on its unchanged `main` head: runtime readiness could
+not download `astral-sh/setup-uv` because codeload returned HTTP 429, and
+protected-main attestation rejected the old SPDX payload as unsupported. The
+latter is addressed by PR34; neither failure is converted to success or rerun
+unchanged.
 
 ## Executive decision
 
@@ -98,11 +106,11 @@ recollected after any push or base change.
 | [22](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/22) | Complete started target-state transformation | `target-state-start-v1` → `target-state-complete-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Verify only an authoritative started transformation can complete. |
 | [21](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/21) | Run repository acceptance on protected `develop` pushes | `main` → `fix/develop-push-acceptance` | Ready; exact current head `4ada32a811c2f5ba7ac2138c0826229c5d62e78b`; repository Checks terminal green; exact-head OpenCode dispatch was accepted; no qualifying independent current-head approval | Obtain a formal same-head approval, then re-fetch and re-check before merge. |
 | [19](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/19) | Start scheduled target-state transformation | `target-state-schedule-v1` → `target-state-start-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Review the schedule-to-start authority boundary before advancing. |
-| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` at current base `1c0fa8b15ceb9e72186274aeb255d6777eb84ef4` → `cursor/ea-core-customer-docs-609e` | Ready; exact head `2f10b05b7f149831324388e2c93efdfc3c4baad6`; exact-head OpenCode dispatch accepted and its review job is pending; no formal approval | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
+| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` at current base `1c0fa8b15ceb9e72186274aeb255d6777eb84ef4` → `cursor/ea-core-customer-docs-609e` | Draft; exact head `22722e23c8d9b240011e8a90171b2852cffc108f`; exact-head OpenCode dispatch accepted and its review job is queued; hosted Checks are queued; no formal approval | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
 | [17](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/17) | Schedule approved target-state transformation | `target-state-approval-v1` → `target-state-schedule-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Review milestone binding and exact replay semantics. |
 | [16](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/16) | Govern target-state approval command | `target-state-planner-api-v1` → `target-state-approval-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Require operation-specific Keyverse authority and immutable evidence. |
 | [15](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/15) | Expose authenticated target-state planner query | `target-state-planner-v1` → `target-state-planner-api-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Verify issuer, audience, tenant, role, bitemporal cutoff, and no direct-table access. |
-| [14](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/14) | Synchronize `main` into protected `develop` | `develop` ← `main` | Ready; exact head `ca6889497728e1a3f09d68790a9096576e13a3ff`; latest required Checks pass; older attestation/runtime failures are stale; exact-head OpenCode review dispatched | Rebuild after prerequisite merges; do not transfer predecessor checks or reviews. |
+| [14](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/14) | Synchronize `main` into protected `develop` | `develop` ← `main` | Draft; exact head `ca6889497728e1a3f09d68790a9096576e13a3ff`; current page retains `installed-process-readiness` failure from setup-uv codeload HTTP 429 and `attest-protected-main` failure from the old unsupported SPDX payload; no current-head approval | Wait for PR34's protected-main fix to integrate into `main`, then rebuild/recheck PR14; do not rerun unchanged external 429 evidence or transfer predecessor checks. |
 | [12](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/12) | Joined technology target-state planner projection | `cross-domain-impact-projection-v1` → `target-state-planner-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Preserve receipt-bound foreign evidence and deterministic next actions. |
 | [11](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/11) | Cross-domain technology impact evidence | `main` → `cross-domain-impact-projection-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Obtain review, then re-check exact base after integration changes. |
 
@@ -131,11 +139,11 @@ after any push or base-branch change.
 | 22 | `a47a49c7baa415733a0d455f898de397b54999cd` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state completion ancestor; 392 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
 | 21 | `4ada32a811c2f5ba7ac2138c0826229c5d62e78b` | `2026-08-20T14:22:40Z` | `implementation_candidate` | Repository Checks terminal green; exact-head OpenCode dispatch was accepted; no qualifying independent current-head approval observed. |
 | 19 | `03a5898cc7a73eb55ed87198c8392965ff9ee793` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state start ancestor; 341 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
-| 18 | `d65bb9e78623f62139f6ef2a340eade703aeed4f` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Documentation snapshot source head; exact-head OpenCode dispatch accepted and its review job is pending; no formal current-head approval observed. |
+| 18 | `22722e23c8d9b240011e8a90171b2852cffc108f` | `2026-08-20T23:12:06Z` | `implementation_candidate` | Documentation snapshot source head; exact-head OpenCode dispatch accepted and its review job is queued; hosted Checks queued; no formal current-head approval observed. |
 | 17 | `272571a480bda9ed75267af1617fac5a6f9018a0` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state schedule ancestor; 287 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
 | 16 | `cb342b116a55b14d8caf4600141295ae35f7309d` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state approval ancestor; 231 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
 | 15 | `cda7aa69c853d3ea2292c14a47d51eaea4b0fe0d` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state planner API ancestor; local stack propagation completed and exact-head review dispatch is required; no protected integration or formal approval. |
-| 14 | `ca6889497728e1a3f09d68790a9096576e13a3ff` | `2026-08-20T13:06:28Z` | `implementation_candidate` | Open draft integration candidate; no protected integration, immutable release, or live deployment evidence observed. |
+| 14 | `ca6889497728e1a3f09d68790a9096576e13a3ff` | `2026-08-20T23:12:06Z` | `implementation_candidate` | Unchanged `main` integration candidate; current Checks retain setup-uv codeload HTTP 429 and old SPDX attestation failures; wait for PR34/main integration before rebuilding. |
 | 12 | `3e070cd57f8aafdb5a87560b4e6089bdf2ebbd1c` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state planner ancestor; exact-head review dispatch and protected current-head checks remain required. |
 | 11 | `1282d46af8f65a970a337d6496b15397c29ecd41` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current cross-domain impact ancestor; exact-head review dispatch and protected current-head checks remain required. |
 
