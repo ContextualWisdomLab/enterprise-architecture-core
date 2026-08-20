@@ -30,6 +30,7 @@ FROM (
     SELECT
         requested.assessment_recheck_request_id,
         requested.outbox_event_id,
+        requested.replayed,
         requested.next_action
     FROM architecture_core.request_data_management_assessment_recheck_for_tenant(
         :'tenant_record_id'::uuid,
@@ -43,6 +44,7 @@ FROM (
 _RECHECK_RECEIPT_FIELDS = {
     "assessment_recheck_request_id",
     "outbox_event_id",
+    "replayed",
     "next_action",
 }
 
@@ -221,6 +223,7 @@ def build_data_management_recheck_writer(
         if (
             not isinstance(response, Mapping)
             or set(response) != _RECHECK_RECEIPT_FIELDS
+            or type(response.get("replayed")) is not bool
         ):
             raise PlannerExecutionError(
                 "data-management recheck returned invalid reassessment receipt"
