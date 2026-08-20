@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -35,7 +36,7 @@ def _context() -> AuthorizationContext:
 
 
 def _payload(**changes: object) -> dict[str, object]:
-    """Return one database-shaped completed reassessment status."""
+    """Return one database-shaped reassessment status with remaining evidence gaps."""
 
     payload: dict[str, object] = {
         "assessment_recheck_request_id": _RECHECK_ID,
@@ -51,6 +52,16 @@ def _payload(**changes: object) -> dict[str, object]:
     return payload
 
 
+def _runner_with_stdout(stdout: str):
+    """Return one deterministic successful subprocess adapter."""
+
+    def runner(command, **kwargs):
+        del command, kwargs
+        return SimpleNamespace(returncode=0, stdout=stdout, stderr="")
+
+    return runner
+
+
 def test_parse_recheck_status_binds_one_canonical_request_identity() -> None:
     """The status route accepts only one local-origin canonical UUIDv7 resource."""
 
@@ -64,6 +75,7 @@ def test_parse_recheck_status_binds_one_canonical_request_identity() -> None:
         "//attacker.example" + _PATH,
         "/v1/data-management-assessment-rechecks/not-a-uuid",
         _PATH + "/nested",
+        "/v1/not-a-recheck-status",
     ):
         with pytest.raises(PlannerRequestError):
             parse_data_management_recheck_status_request(invalid_path)
@@ -99,6 +111,7 @@ def test_recheck_status_reader_uses_purpose_bound_port_and_validates_meaning() -
     def runner(command, **kwargs):
         captured["command"] = command
         captured["environment"] = kwargs["env"]
+        captured["timeout"] = kwargs["timeout"]
         return SimpleNamespace(
             returncode=0,
             stdout=json.dumps(_payload()),
@@ -117,6 +130,7 @@ def test_recheck_status_reader_uses_purpose_bound_port_and_validates_meaning() -
     assert "assessment_recheck_request " not in command_text
     assert "data-governance-lead-123" not in command_text
     assert "secret" not in command_text
+    assert captured["timeout"] == 10
     assert result["recheck_state_code"] == "evidence_gap"
     assert result["next_action"] == "plan_remaining_assessment_gap"
 
@@ -153,29 +167,87 @@ def test_recheck_status_reader_accepts_waiting_and_complete_states() -> None:
     for payload, expected_action in cases:
         reader = build_data_management_recheck_status_reader(
             "postgresql://ea_runtime@db.example/ea_core",
-            runner=lambda command, payload=payload, **kwargs: SimpleNamespace(
-                returncode=0,
-                stdout=json.dumps(payload),
-                stderr="",
-            ),
+            runner=_runner_with_stdout(json.dumps(payload)),
         )
         assert reader(_context(), request)["next_action"] == expected_action
 
 
-def test_recheck_status_reader_fails_closed_on_invalid_storage_evidence() -> None:
-    """Unavailable transport and malformed or inconsistent receipts never pass."""
+def test_recheck_status_reader_fails_closed_when_storage_is_unavailable() -> None:
+    """Missing and non-PostgreSQL storage configuration cannot create fake status."""
 
     request = parse_data_management_recheck_status_request(_PATH)
-    with pytest.raises(PlannerExecutionError, match="unavailable"):
-        build_data_management_recheck_status_reader(None)(_context(), request)
+    for dsn in (None, "https://db.example/ea_core"):
+        with pytest.raises(PlannerExecutionError, match="unavailable"):
+            build_data_management_recheck_status_reader(dsn)(_context(), request)
 
+
+def test_recheck_status_reader_fails_closed_on_transport_errors() -> None:
+    """Process failures, missing psql, and timeouts remain non-successful reads."""
+
+    request = parse_data_management_recheck_status_request(_PATH)
+
+    def failed_runner(command, **kwargs):
+        del command, kwargs
+        return SimpleNamespace(returncode=1, stdout="", stderr="boom")
+
+    with pytest.raises(PlannerExecutionError, match="query failed"):
+        build_data_management_recheck_status_reader(
+            "postgresql://ea_runtime@db.example/ea_core",
+            runner=failed_runner,
+        )(_context(), request)
+
+    def unavailable_runner(command, **kwargs):
+        del command, kwargs
+        raise OSError("psql unavailable")
+
+    with pytest.raises(PlannerExecutionError, match="command failed"):
+        build_data_management_recheck_status_reader(
+            "postgresql://ea_runtime@db.example/ea_core",
+            runner=unavailable_runner,
+        )(_context(), request)
+
+    def timeout_runner(command, **kwargs):
+        del kwargs
+        raise subprocess.TimeoutExpired(command, 10)
+
+    with pytest.raises(PlannerExecutionError, match="command failed"):
+        build_data_management_recheck_status_reader(
+            "postgresql://ea_runtime@db.example/ea_core",
+            runner=timeout_runner,
+        )(_context(), request)
+
+
+def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
+    """Malformed JSON, expanded shapes, invalid IDs, and state drift fail closed."""
+
+    request = parse_data_management_recheck_status_request(_PATH)
     invalid_payloads = (
         "not-json",
         json.dumps([]),
+        json.dumps(_payload(extra_field="unsafe")),
         json.dumps(_payload(assessment_recheck_request_id=_SUCCESSOR_ID)),
+        json.dumps(_payload(data_management_assessment_projection_id=1)),
         json.dumps(_payload(successor_assessment_projection_id="not-a-uuid")),
+        json.dumps(_payload(successor_assessment_projection_id=None)),
+        json.dumps(_payload(successor_overall_score_basis_points=True)),
+        json.dumps(_payload(successor_overall_score_basis_points=10001)),
+        json.dumps(_payload(successor_missing_evidence_count=True)),
         json.dumps(_payload(successor_missing_evidence_count=-1)),
+        json.dumps(_payload(recheck_state_code="unknown")),
         json.dumps(_payload(next_action="approve_without_evidence")),
+        json.dumps(_payload(successor_missing_evidence_count=0)),
+        json.dumps(
+            {
+                "assessment_recheck_request_id": _RECHECK_ID,
+                "data_management_assessment_projection_id": _ASSESSMENT_ID,
+                "successor_assessment_projection_id": _SUCCESSOR_ID,
+                "recheck_state_code": "awaiting_result",
+                "successor_readiness_code": None,
+                "successor_overall_score_basis_points": None,
+                "successor_missing_evidence_count": None,
+                "next_action": "await_assessment_recheck",
+            }
+        ),
         json.dumps(
             _payload(
                 recheck_state_code="evidence_complete",
@@ -188,11 +260,7 @@ def test_recheck_status_reader_fails_closed_on_invalid_storage_evidence() -> Non
     for stdout in invalid_payloads:
         reader = build_data_management_recheck_status_reader(
             "postgresql://ea_runtime@db.example/ea_core",
-            runner=lambda command, stdout=stdout, **kwargs: SimpleNamespace(
-                returncode=0,
-                stdout=stdout,
-                stderr="",
-            ),
+            runner=_runner_with_stdout(stdout),
         )
         with pytest.raises(PlannerExecutionError):
             reader(_context(), request)
