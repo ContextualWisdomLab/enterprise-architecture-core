@@ -159,7 +159,7 @@ BEGIN
   IF requested_requested_at < trigger_acceptance.accepted_at THEN
     RAISE EXCEPTION USING
       ERRCODE = '23514',
-      MESSAGE = 'reassessment request cannot predate its causal evidence acceptance';
+      MESSAGE = 'assessment reassessment request cannot predate triggering evidence acceptance';
   END IF;
 
   IF EXISTS (
