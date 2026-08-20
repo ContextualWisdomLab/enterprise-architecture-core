@@ -359,8 +359,9 @@ BEFORE DELETE ON architecture_core.scenario_object_delta
 FOR EACH ROW
 EXECUTE FUNCTION architecture_core.reject_scenario_history_delete();
 
-CREATE FUNCTION architecture_core.project_scenario_objects(
-    requested_scenario_id uuid
+CREATE FUNCTION architecture_core.project_scenario_objects_at(
+    requested_scenario_id uuid,
+    requested_recorded_at timestamptz
 )
 RETURNS TABLE (
     architecture_object_id uuid,
@@ -384,7 +385,11 @@ BEGIN
          architecture_core.current_tenant_id()
      AND architecture_scenario.architecture_scenario_id =
          requested_scenario_id
-     AND architecture_scenario.superseded_at IS NULL
+     AND (
+        requested_recorded_at IS NULL
+        OR architecture_scenario.superseded_at IS NULL
+        OR architecture_scenario.superseded_at > requested_recorded_at
+     )
      AND architecture_scenario.truth_status_code NOT IN
          ('superseded', 'rejected');
 
@@ -411,7 +416,11 @@ BEGIN
          architecture_core.current_tenant_id()
      AND architecture_scenario.architecture_scenario_id =
          requested_scenario_id
-     AND architecture_scenario.superseded_at IS NULL
+     AND (
+        requested_recorded_at IS NULL
+        OR architecture_scenario.superseded_at IS NULL
+        OR architecture_scenario.superseded_at > requested_recorded_at
+     )
      AND architecture_scenario.truth_status_code NOT IN
          ('superseded', 'rejected')
   ),
@@ -452,7 +461,11 @@ BEGIN
            scenario_context.tenant_record_id
        AND scenario_object_delta.architecture_scenario_id =
            requested_scenario_id
-       AND scenario_object_delta.superseded_at IS NULL
+       AND (
+          requested_recorded_at IS NULL
+          OR scenario_object_delta.superseded_at IS NULL
+          OR scenario_object_delta.superseded_at > requested_recorded_at
+       )
        AND scenario_object_delta.truth_status_code NOT IN
            ('superseded', 'rejected')
        AND scenario_object_delta.effective_from <=
@@ -504,6 +517,26 @@ BEGIN
          candidate_object.architecture_object_id
    ORDER BY candidate_object.architecture_object_id;
 END;
+$$;
+
+CREATE FUNCTION architecture_core.project_scenario_objects(
+    requested_scenario_id uuid
+)
+RETURNS TABLE (
+    architecture_object_id uuid,
+    is_present boolean,
+    projection_origin_code text,
+    applied_sequence_number integer,
+    projection_truth_status_code text
+)
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT *
+    FROM architecture_core.project_scenario_objects_at(
+        requested_scenario_id,
+        NULL::timestamptz
+    );
 $$;
 
 CREATE INDEX scenario_object_delta_projection_index
