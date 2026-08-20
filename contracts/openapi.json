@@ -3,7 +3,7 @@
   "info": {
     "title": "Enterprise Architecture Core API",
     "version": "0.1.0",
-    "description": "Implemented governed Enterprise Architecture decision surface from technology impact through approved, scheduled, started, completed, verified, monitored, and replanned transformation evidence, plus evidence-backed data-management reassessment requests."
+    "description": "Implemented governed Enterprise Architecture decision surface from technology impact through approved, scheduled, started, completed, verified, monitored, and replanned transformation evidence, plus evidence-backed data-management reassessment requests and status reads."
   },
   "servers": [
     {
@@ -937,6 +937,82 @@
           }
         }
       }
+    },
+    "/v1/data-management-assessment-rechecks/{assessment_recheck_request_id}": {
+      "get": {
+        "operationId": "getDataManagementAssessmentRecheckStatus",
+        "summary": "Follow one evidence-backed data-management reassessment",
+        "description": "Read the tenant-scoped projected successor assessment and the buyer's next action without mutating the authoritative Data/AI Context assessment.",
+        "security": [
+          {
+            "keyverseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assessment_recheck_request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reassessment is still pending or a unique direct successor projection determines the next action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataManagementAssessmentRecheckStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See response schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorStatus"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1209,6 +1285,21 @@
           "next_action": {"type": "string", "const": "await_assessment_recheck"}
         }
       },
+      "DataManagementAssessmentRecheckStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["assessment_recheck_request_id", "data_management_assessment_projection_id", "successor_assessment_projection_id", "recheck_state_code", "successor_readiness_code", "successor_overall_score_basis_points", "successor_missing_evidence_count", "next_action"],
+        "properties": {
+          "assessment_recheck_request_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "data_management_assessment_projection_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "successor_assessment_projection_id": {"type": ["string", "null"], "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "recheck_state_code": {"type": "string", "enum": ["awaiting_result", "evidence_gap", "evidence_complete"]},
+          "successor_readiness_code": {"type": ["string", "null"], "enum": ["evidence_gap", "evidence_complete", null]},
+          "successor_overall_score_basis_points": {"type": ["integer", "null"], "minimum": 0, "maximum": 10000},
+          "successor_missing_evidence_count": {"type": ["integer", "null"], "minimum": 0},
+          "next_action": {"type": "string", "enum": ["await_assessment_recheck", "plan_remaining_assessment_gap", "close_assessment_improvement_loop"]}
+        }
+      },
       "ErrorStatus": {
         "type": "object",
         "additionalProperties": false,
@@ -1235,7 +1326,8 @@
       "EA_VERIFY_ROLES",
       "EA_MONITOR_ROLES",
       "EA_REPLAN_ROLES",
-      "EA_DATA_MANAGEMENT_RECHECK_ROLES"
+      "EA_DATA_MANAGEMENT_RECHECK_ROLES",
+      "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES"
     ],
     "requiredChecks": ["signature", "issuer", "audience", "expiration", "tenant", "role"]
   }
