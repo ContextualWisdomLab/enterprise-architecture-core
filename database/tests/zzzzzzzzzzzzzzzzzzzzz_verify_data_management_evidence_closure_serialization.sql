@@ -156,7 +156,7 @@ $$;
 -- A commits. It must wait, then re-read the durable decision and return the
 -- same receipt instead of misclassifying the retry as a conflicting decision.
 \! rm -f /tmp/ea_core_closure_replay_ready /tmp/ea_core_closure_replay_pid /tmp/ea_core_closure_replay.log
-\! sh -c '(printf "%s\n" "BEGIN;" "SELECT set_config('"'"'app.tenant_record_id'"'"', '"'"'0195d145-64e8-7f4f-8a23-a0cc784cb711'"'"', false);" "SELECT * FROM architecture_core.accept_data_management_improvement_evidence((SELECT improvement_plan_id FROM architecture_core.assessment_improvement_plan WHERE tenant_record_id = '"'"'0195d145-64e8-7f4f-8a23-a0cc784cb711'"'"' AND initiative_action_code = '"'"'close_serialization_evidence_gap'"'"'), '"'"'0196f500-1111-7111-8111-111111111205'"'"', '"'"'urn:cwl:tenant_001:data_context:assessment_evidence:0196f500-1111-7111-8111-111111111206'"'"', '"'"'observed'"'"', repeat('"'"'1'"'"', 64), '"'"'0196f500-1111-7111-8111-111111111207'"'"', '"'"'2026-08-19T01:10:04Z'"'"');" "\\! touch /tmp/ea_core_closure_replay_ready" "SELECT pg_sleep(3);" "COMMIT;" | psql --host 127.0.0.1 --username ea_app --dbname ea_core --set ON_ERROR_STOP=1 >/tmp/ea_core_closure_replay.log 2>&1) & echo $! >/tmp/ea_core_closure_replay_pid'
+\! sh -c '(printf "%s\n" "BEGIN;" "SELECT set_config('"'"'app.tenant_record_id'"'"', '"'"'0195d145-64e8-7f4f-8a23-a0cc784cb711'"'"', false);" "SELECT * FROM architecture_core.accept_data_management_improvement_evidence((SELECT plan_record.assessment_improvement_plan_id FROM architecture_core.assessment_improvement_plan AS plan_record JOIN architecture_core.data_management_assessment_projection AS projection_record ON projection_record.tenant_record_id = plan_record.tenant_record_id AND projection_record.data_management_assessment_projection_id = plan_record.data_management_assessment_projection_id WHERE plan_record.tenant_record_id = '"'"'0195d145-64e8-7f4f-8a23-a0cc784cb711'"'"' AND projection_record.assessment_result_uri = '"'"'urn:cwl:tenant_001:data_context:data_management_assessment:0196f500-1111-7111-8111-111111111202'"'"' AND plan_record.missing_evidence_code = '"'"'serialization_evidence'"'"'), '"'"'0196f500-1111-7111-8111-111111111205'"'"', '"'"'urn:cwl:tenant_001:data_context:assessment_evidence:0196f500-1111-7111-8111-111111111206'"'"', '"'"'observed'"'"', repeat('"'"'1'"'"', 64), '"'"'0196f500-1111-7111-8111-111111111207'"'"', '"'"'2026-08-19T01:10:04Z'"'"');" "\\! touch /tmp/ea_core_closure_replay_ready" "SELECT pg_sleep(3);" "COMMIT;" | psql --host 127.0.0.1 --username ea_app --dbname ea_core --set ON_ERROR_STOP=1 >/tmp/ea_core_closure_replay.log 2>&1) & echo $! >/tmp/ea_core_closure_replay_pid'
 \! sh -c 'i=0; while [ ! -f /tmp/ea_core_closure_replay_ready ]; do i=$((i+1)); if [ "$i" -gt 100 ]; then cat /tmp/ea_core_closure_replay.log >&2; exit 1; fi; sleep 0.05; done'
 
 CREATE TEMP TABLE evidence_closure_exact_replay_receipt AS
@@ -188,15 +188,22 @@ BEGIN
     INTO replay_receipt
     FROM evidence_closure_exact_replay_receipt;
 
-  SELECT
-      count(*),
-      min(acceptance_record.assessment_evidence_acceptance_id)
-    INTO durable_acceptance_count, durable_acceptance_id
+  SELECT count(*)
+    INTO durable_acceptance_count
     FROM architecture_core.assessment_evidence_acceptance AS acceptance_record
    WHERE acceptance_record.tenant_record_id =
          '0195d145-64e8-7f4f-8a23-a0cc784cb711'
      AND acceptance_record.decision_request_id =
          '0196f500-1111-7111-8111-111111111207';
+
+  SELECT acceptance_record.assessment_evidence_acceptance_id
+    INTO durable_acceptance_id
+    FROM architecture_core.assessment_evidence_acceptance AS acceptance_record
+   WHERE acceptance_record.tenant_record_id =
+         '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND acceptance_record.decision_request_id =
+         '0196f500-1111-7111-8111-111111111207'
+   LIMIT 1;
 
   SELECT completion_record.milestone_completion_record_id
     INTO durable_completion_id
@@ -205,10 +212,8 @@ BEGIN
          '0195d145-64e8-7f4f-8a23-a0cc784cb711'
      AND completion_record.assessment_evidence_acceptance_id = durable_acceptance_id;
 
-  SELECT
-      count(*),
-      min(event_record.outbox_event_id)
-    INTO durable_evidence_event_count, durable_evidence_event_id
+  SELECT count(*)
+    INTO durable_evidence_event_count
     FROM architecture_core.outbox_event AS event_record
    WHERE event_record.tenant_record_id =
          '0195d145-64e8-7f4f-8a23-a0cc784cb711'
@@ -216,6 +221,17 @@ BEGIN
          '0196f500-1111-7111-8111-111111111207'
      AND event_record.event_type_code =
          'org.contextualwisdomlab.ea.data_management.evidence_accepted.v1';
+
+  SELECT event_record.outbox_event_id
+    INTO durable_evidence_event_id
+    FROM architecture_core.outbox_event AS event_record
+   WHERE event_record.tenant_record_id =
+         '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND event_record.decision_request_id =
+         '0196f500-1111-7111-8111-111111111207'
+     AND event_record.event_type_code =
+         'org.contextualwisdomlab.ea.data_management.evidence_accepted.v1'
+   LIMIT 1;
 
   SELECT event_record.outbox_event_id
     INTO durable_milestone_event_id
