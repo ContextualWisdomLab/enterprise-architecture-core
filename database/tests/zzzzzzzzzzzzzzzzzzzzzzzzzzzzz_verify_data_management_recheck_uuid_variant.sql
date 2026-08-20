@@ -55,7 +55,9 @@ BEGIN
     RAISE EXCEPTION
       'non-RFC UUID variant reassessment decision was accepted';
   EXCEPTION WHEN check_violation THEN
-    NULL;
+    IF SQLERRM NOT LIKE '%assessment_recheck_request_decision_uuid_version%' THEN
+      RAISE;
+    END IF;
   END;
 END;
 $$;
