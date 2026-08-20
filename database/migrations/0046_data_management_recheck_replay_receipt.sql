@@ -156,6 +156,12 @@ BEGIN
       MESSAGE = 'triggering evidence acceptance does not belong to the assessment';
   END IF;
 
+  IF requested_requested_at < trigger_acceptance.accepted_at THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'reassessment request cannot predate its causal evidence acceptance';
+  END IF;
+
   IF EXISTS (
       SELECT 1
         FROM architecture_core.assessment_missing_evidence_projection AS missing_record
@@ -378,7 +384,7 @@ COMMENT ON FUNCTION architecture_core.request_data_management_assessment_recheck
     uuid,
     timestamptz
 ) IS
-'Purpose-bound reassessment command with explicit replay evidence. It serializes on the tenant-local immutable assessment projection so concurrent exact decisions converge on one durable request/outbox pair. A new decision returns replayed=false; an exact durable retry returns replayed=true. Conflicting meaning, incomplete evidence, invalid causation, and foreign tenant state fail closed. PUBLIC execution remains revoked.';
+'Purpose-bound reassessment command with explicit replay evidence. It serializes on the tenant-local immutable assessment projection so concurrent exact decisions converge on one durable request/outbox pair. A new decision returns replayed=false; an exact durable retry returns replayed=true. New requests cannot predate the causal evidence acceptance that closed the final gap. Conflicting meaning, incomplete evidence, invalid causation, and foreign tenant state fail closed. PUBLIC execution remains revoked.';
 
 COMMENT ON FUNCTION architecture_core.request_data_management_assessment_recheck_for_tenant(
     uuid,
