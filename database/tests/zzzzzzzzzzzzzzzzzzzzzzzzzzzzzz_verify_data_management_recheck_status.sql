@@ -88,6 +88,7 @@ BEGIN
       source_projection.framework_code,
       source_projection.framework_version_label,
       source_projection.profile_code,
+      source_projection.profile_version,
       '2026-08-19T00:39:58Z',
       '2026-08-19T00:39:59Z',
       10000,
