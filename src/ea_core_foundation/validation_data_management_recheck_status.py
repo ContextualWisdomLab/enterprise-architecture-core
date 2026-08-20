@@ -1,4 +1,4 @@
-"""Validation extension for the executable data-management reassessment command."""
+"""Validation extension for the executable data-management reassessment status read."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from . import validation_core as core
-from . import validation_data_management_closure as base
+from . import validation_data_management_recheck as base
 
 ContractValidationError = base.ContractValidationError
 RepositoryReport = base.RepositoryReport
@@ -17,23 +17,16 @@ validate_connector_catalog = base.validate_connector_catalog
 validate_migration_inventory = base.validate_migration_inventory
 validate_migration_sql = base.validate_migration_sql
 
-_DATA_MANAGEMENT_RECHECK_RUNTIME_PATH = (
-    "/v1/data-management-assessments/"
-    "{data_management_assessment_projection_id}/recheck"
-)
 _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH = (
-    "/v1/data-management-assessment-rechecks/{assessment_recheck_request_id}"
+    "/v1/data-management-assessment-rechecks/"
+    "{assessment_recheck_request_id}"
 )
-_DATA_MANAGEMENT_RECHECK_OPERATION_ID = "requestDataManagementAssessmentRecheck"
-_DATA_MANAGEMENT_RECHECK_ROLE_CONFIGURATION = "EA_DATA_MANAGEMENT_RECHECK_ROLES"
 _DATA_MANAGEMENT_RECHECK_STATUS_OPERATION_ID = (
     "getDataManagementAssessmentRecheckStatus"
 )
 _DATA_MANAGEMENT_RECHECK_STATUS_ROLE_CONFIGURATION = (
     "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES"
 )
-_DATA_MANAGEMENT_RECHECK_REQUEST_SCHEMA = "DataManagementAssessmentRecheckRequest"
-_DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA = "DataManagementAssessmentRecheckReceipt"
 _DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA = "DataManagementAssessmentRecheckStatus"
 _CANONICAL_UUID7_SCHEMA = {
     "type": "string",
@@ -45,124 +38,48 @@ _CANONICAL_UUID7_SCHEMA = {
 }
 
 
-def _without_recheck_roles(document: dict[str, Any]) -> dict[str, Any]:
-    """Return the evidence-closure contract view without reassessment roles."""
+def _without_status_role(document: dict[str, Any]) -> dict[str, Any]:
+    """Return the command-generation contract without status-read authority."""
 
     changed = deepcopy(document)
     configuration = changed["x-keyverse-contract"]["requiredConfiguration"]
-    if _DATA_MANAGEMENT_RECHECK_ROLE_CONFIGURATION not in configuration:
+    if _DATA_MANAGEMENT_RECHECK_STATUS_ROLE_CONFIGURATION not in configuration:
         raise ContractValidationError(
             "x-keyverse-contract requiredConfiguration must include "
-            "EA_DATA_MANAGEMENT_RECHECK_ROLES"
+            "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES"
         )
     changed["x-keyverse-contract"]["requiredConfiguration"] = [
         value
         for value in configuration
-        if value
-        not in {
-            _DATA_MANAGEMENT_RECHECK_ROLE_CONFIGURATION,
-            _DATA_MANAGEMENT_RECHECK_STATUS_ROLE_CONFIGURATION,
-        }
+        if value != _DATA_MANAGEMENT_RECHECK_STATUS_ROLE_CONFIGURATION
     ]
     return changed
 
 
-def _without_recheck_role(document: dict[str, Any]) -> dict[str, Any]:
-    """Keep the predecessor helper name for layered validator compatibility."""
-
-    return _without_recheck_roles(document)
-
-
 def validate_openapi_document(document: dict[str, Any]) -> int:
-    """Validate OpenAPI plus the distinct reassessment authorization role."""
+    """Validate OpenAPI plus the purpose-bound reassessment status read role."""
 
     try:
-        changed = _without_recheck_roles(document)
+        changed = _without_status_role(document)
     except (KeyError, TypeError):
         return base.validate_openapi_document(document)
     return base.validate_openapi_document(changed)
 
 
-def _without_recheck_openapi(document: dict[str, Any]) -> dict[str, Any]:
-    """Return the evidence-closure runtime view without reassessment additions."""
+def _without_status_openapi(document: dict[str, Any]) -> dict[str, Any]:
+    """Return the predecessor runtime view without reassessment-status additions."""
 
     changed = deepcopy(document)
-    paths = changed["paths"]
-    paths.pop(_DATA_MANAGEMENT_RECHECK_RUNTIME_PATH, None)
-    paths.pop(_DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH, None)
-    schemas = changed["components"]["schemas"]
-    schemas.pop(_DATA_MANAGEMENT_RECHECK_REQUEST_SCHEMA, None)
-    schemas.pop(_DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA, None)
-    schemas.pop(_DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA, None)
+    changed["paths"].pop(_DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH, None)
+    changed["components"]["schemas"].pop(
+        _DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA,
+        None,
+    )
     return changed
 
 
-def _validate_recheck_operation(paths: dict[str, Any]) -> None:
-    """Bind the published reassessment route to its strict executable parser."""
-
-    path_item = core._require_mapping(
-        paths.get(_DATA_MANAGEMENT_RECHECK_RUNTIME_PATH),
-        f"path {_DATA_MANAGEMENT_RECHECK_RUNTIME_PATH}",
-    )
-    operation = core._require_mapping(
-        path_item.get("post"),
-        f"{_DATA_MANAGEMENT_RECHECK_RUNTIME_PATH} post",
-    )
-    if operation.get("operationId") != _DATA_MANAGEMENT_RECHECK_OPERATION_ID:
-        raise ContractValidationError(
-            "data-management reassessment operationId must be "
-            "requestDataManagementAssessmentRecheck"
-        )
-    if operation.get("security") != [{"keyverseBearer": []}]:
-        raise ContractValidationError(
-            "data-management reassessment must require Keyverse bearer authorization"
-        )
-    parameters = core._parameter_index(operation)
-    parameter_identity = ("data_management_assessment_projection_id", "path")
-    if set(parameters) != {parameter_identity}:
-        raise ContractValidationError(
-            "data-management reassessment parameters must match executable parsing"
-        )
-    core._require_parameter(
-        parameters,
-        parameter_identity,
-        required=True,
-        schema=_CANONICAL_UUID7_SCHEMA,
-    )
-    expected_request_body = {
-        "required": True,
-        "content": {
-            "application/json": {
-                "schema": {
-                    "$ref": (
-                        "#/components/schemas/"
-                        f"{_DATA_MANAGEMENT_RECHECK_REQUEST_SCHEMA}"
-                    )
-                }
-            }
-        },
-    }
-    if operation.get("requestBody") != expected_request_body:
-        raise ContractValidationError(
-            "data-management reassessment request body must match executable parsing"
-        )
-    core._require_json_schema_ref(
-        operation,
-        _DATA_MANAGEMENT_RECHECK_RUNTIME_PATH,
-        "200",
-        _DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA,
-    )
-    for status_code in ("400", "401", "403", "503"):
-        core._require_json_schema_ref(
-            operation,
-            _DATA_MANAGEMENT_RECHECK_RUNTIME_PATH,
-            status_code,
-            "ErrorStatus",
-        )
-
-
-def _validate_recheck_status_operation(paths: dict[str, Any]) -> None:
-    """Bind the published status route to its strict executable read port."""
+def _validate_status_operation(paths: dict[str, Any]) -> None:
+    """Bind the published status route to its strict executable request shape."""
 
     path_item = core._require_mapping(
         paths.get(_DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH),
@@ -211,10 +128,10 @@ def _validate_recheck_status_operation(paths: dict[str, Any]) -> None:
 
 
 def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
-    """Require reassessment behavior in addition to every preceding runtime route."""
+    """Require reassessment-status behavior after every predecessor runtime route."""
 
     try:
-        legacy_document = _without_recheck_openapi(document)
+        legacy_document = _without_status_openapi(document)
     except (KeyError, TypeError):
         base.validate_openapi_runtime_surface(document)
         return
@@ -224,23 +141,15 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
         core._require_mapping(document.get("components"), "components").get("schemas"),
         "schemas",
     )
-    missing_schemas = {
-        _DATA_MANAGEMENT_RECHECK_REQUEST_SCHEMA,
-        _DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA,
-    }.difference(schemas)
-    if _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH in paths:
-        missing_schemas.add(_DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA)
-    if missing_schemas:
+    if _DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA not in schemas:
         raise ContractValidationError(
-            f"missing OpenAPI schemas: {sorted(missing_schemas)!r}"
+            "missing OpenAPI schema: DataManagementAssessmentRecheckStatus"
         )
-    _validate_recheck_operation(paths)
-    if _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH in paths:
-        _validate_recheck_status_operation(paths)
+    _validate_status_operation(paths)
 
 
 def validate_repository(repository_root: Path) -> RepositoryReport:
-    """Validate repository artifacts with executable reassessment contracts."""
+    """Validate repository artifacts with executable reassessment-status contracts."""
 
     migration_directory = repository_root / "database/migrations"
     openapi_path = repository_root / "contracts/openapi.json"
