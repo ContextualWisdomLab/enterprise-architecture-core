@@ -55,6 +55,7 @@ DECLARE
   inserted_plan_id uuid;
   inserted_initiative_id uuid;
   replay_plan_id uuid;
+  superseded_replay_plan_id uuid;
   dependency_set_count integer;
   dependency_relation_count integer;
 BEGIN
@@ -155,6 +156,34 @@ BEGIN
 
   IF replay_plan_id IS DISTINCT FROM inserted_plan_id THEN
     RAISE EXCEPTION 'exact dependency replay changed plan identity';
+  END IF;
+
+  UPDATE architecture_core.remediation_initiative
+     SET superseded_at = clock_timestamp()
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND remediation_initiative_id =
+         '0196f120-1111-7111-8111-111111111122';
+
+  SELECT result.assessment_improvement_plan_id
+    INTO superseded_replay_plan_id
+    FROM architecture_core.create_data_management_improvement_plan(
+      source_projection_id,
+      'stewardship_evidence',
+      '0196f120-1111-7111-8111-111111111123',
+      target_capability_id,
+      accountable_organization_id,
+      'close_stewardship_dependency_gap',
+      'Close stewardship dependency gap',
+      'stewardship_dependency_evidence',
+      'Stewardship dependency evidence',
+      '2027-01-31T00:00:00Z',
+      'portfolio://fy2027/data-governance',
+      ARRAY['0196f120-1111-7111-8111-111111111122'::uuid],
+      ARRAY['0196f120-1111-7111-8111-111111111121'::uuid]
+    ) AS result;
+
+  IF superseded_replay_plan_id IS DISTINCT FROM inserted_plan_id THEN
+    RAISE EXCEPTION 'exact replay after prerequisite supersession changed plan identity';
   END IF;
 
   BEGIN
