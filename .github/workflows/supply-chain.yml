@@ -108,6 +108,8 @@ jobs:
         with:
           name: package-evidence-${{ github.sha }}
           path: evidence
+      - name: Verify downloaded package evidence before attestation
+        run: python scripts/verify_package_evidence_bundle.py evidence
       - name: Attest SLSA build provenance
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
