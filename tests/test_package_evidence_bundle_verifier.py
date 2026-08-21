@@ -9,8 +9,8 @@ from pathlib import Path
 
 _SCRIPT_PATH = Path("scripts/verify_package_evidence_bundle.py")
 _SBOM_NAME = "enterprise-architecture-core.spdx.json"
-_WHEEL_NAME = "enterprise_architecture_core-0.1-py3-none-any.whl"
-_SDIST_NAME = "enterprise_architecture_core-0.1.tar.gz"
+_WHEEL_NAME = "enterprise_architecture_core-0.1.0-py3-none-any.whl"
+_SDIST_NAME = "enterprise_architecture_core-0.1.0.tar.gz"
 
 
 def _digest(path: Path) -> str:
@@ -18,12 +18,17 @@ def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _write_valid_bundle(tmp_path: Path) -> Path:
+def _write_valid_bundle(
+    tmp_path: Path,
+    *,
+    wheel_name: str = _WHEEL_NAME,
+    sdist_name: str = _SDIST_NAME,
+) -> Path:
     """Create one minimal internally coherent package-evidence bundle."""
     evidence_dir = tmp_path / "evidence"
     evidence_dir.mkdir()
-    wheel = evidence_dir / _WHEEL_NAME
-    sdist = evidence_dir / _SDIST_NAME
+    wheel = evidence_dir / wheel_name
+    sdist = evidence_dir / sdist_name
     sbom = evidence_dir / _SBOM_NAME
     wheel.write_bytes(b"wheel")
     sdist.write_bytes(b"sdist")
@@ -90,6 +95,34 @@ def test_package_evidence_bundle_rejects_extra_distribution(tmp_path: Path) -> N
 
     assert result.returncode != 0
     assert "exactly one wheel and one source distribution" in result.stderr
+
+
+def test_package_evidence_bundle_rejects_foreign_distribution(tmp_path: Path) -> None:
+    """Never sign a coherent wheel bundle for a different project identity."""
+    evidence_dir = _write_valid_bundle(
+        tmp_path,
+        wheel_name="other_project-0.1.0-py3-none-any.whl",
+    )
+
+    result = _run_verifier(evidence_dir)
+
+    assert result.returncode != 0
+    assert "distribution identity/version" in result.stderr
+
+
+def test_package_evidence_bundle_rejects_mixed_distribution_versions(
+    tmp_path: Path,
+) -> None:
+    """Never sign wheel and sdist evidence from different project versions."""
+    evidence_dir = _write_valid_bundle(
+        tmp_path,
+        sdist_name="enterprise_architecture_core-0.2.0.tar.gz",
+    )
+
+    result = _run_verifier(evidence_dir)
+
+    assert result.returncode != 0
+    assert "distribution identity/version" in result.stderr
 
 
 def test_package_evidence_bundle_rejects_symlinked_evidence(tmp_path: Path) -> None:
