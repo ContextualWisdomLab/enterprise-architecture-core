@@ -14,7 +14,7 @@ _SHARED_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
 def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
     """The checked-in contract defines every implemented publisher operation."""
 
-    assert validate_asyncapi_document(asyncapi_document) == 4
+    assert validate_asyncapi_document(asyncapi_document) == 5
 
 
 def test_asyncapi_rejects_wrong_version(asyncapi_document) -> None:
@@ -123,6 +123,9 @@ def test_asyncapi_messages_reuse_shared_context_graph_envelope(
         ),
         "TransformationScheduled": (
             "org.contextualwisdomlab.ea.transformation.scheduled.v1"
+        ),
+        "TransformationStarted": (
+            "org.contextualwisdomlab.ea.transformation.started.v1"
         ),
     }
     for message_name, event_type in event_types.items():
