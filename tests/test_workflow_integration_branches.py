@@ -81,11 +81,9 @@ def test_protected_main_verifies_and_retains_exact_attestations() -> None:
     assert 'SOURCE_SHA: ${{ github.sha }}' in workflow_text
     assert 'SOURCE_REF: ${{ github.ref }}' in workflow_text
     assert 'EXPECTED_SOURCE_REF: refs/heads/main' in workflow_text
+    assert 'REPOSITORY: ${{ github.repository }}' in workflow_text
     assert (
-        'REPOSITORY: ContextualWisdomLab/enterprise-architecture-core' in workflow_text
-    )
-    assert (
-        'SIGNER_WORKFLOW: ContextualWisdomLab/enterprise-architecture-core/'
+        'SIGNER_WORKFLOW: ${{ github.repository }}/'
         '.github/workflows/supply-chain.yml'
     ) in workflow_text
     assert 'SPDX_PREDICATE: https://spdx.dev/Document/v3' in workflow_text
