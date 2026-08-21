@@ -112,7 +112,9 @@ def _require_bundle_shape(evidence_dir: Path) -> tuple[Path, Path, Path, Path]:
         unexpected = sorted(actual_names - expected_names)
         missing = sorted(expected_names - actual_names)
         detail = f"unexpected={unexpected}, missing={missing}"
-        raise ValueError(f"package evidence bundle has non-canonical contents: {detail}")
+        raise ValueError(
+            f"package evidence bundle has non-canonical contents: {detail}"
+        )
 
     for path, label in (
         (wheel, "wheel evidence"),
