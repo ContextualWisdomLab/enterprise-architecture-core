@@ -58,7 +58,7 @@ jobs:
         env:
           POSTGRES_DB: ea_core
           POSTGRES_USER: ea_app
-          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
         ports:
           - 5432:5432
         options: >-
@@ -75,6 +75,7 @@ jobs:
           PGHOST: 127.0.0.1
           PGPORT: "5432"
           PGUSER: ea_app
+          PGPASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
           PGDATABASE: ea_core
         run: bash database/scripts/apply_migrations.sh database/migrations
       - name: Rehearse idempotent upgrade and checksum drift rejection
@@ -82,6 +83,7 @@ jobs:
           PGHOST: 127.0.0.1
           PGPORT: "5432"
           PGUSER: ea_app
+          PGPASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
           PGDATABASE: ea_core
         run: |
           set -euo pipefail
@@ -100,6 +102,7 @@ jobs:
           PGHOST: 127.0.0.1
           PGPORT: "5432"
           PGUSER: ea_app
+          PGPASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
           probe_database="ea_core_upgrade_probe"
@@ -209,6 +212,7 @@ jobs:
           PGHOST: 127.0.0.1
           PGPORT: "5432"
           PGUSER: ea_app
+          PGPASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
           probe_database="ea_core_atomicity_probe"
@@ -235,6 +239,8 @@ jobs:
           )"
           test "$schema_absent" = "t"
       - name: Verify required tables, views, and migration ledger
+        env:
+          PGPASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           table_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
@@ -255,6 +261,8 @@ jobs:
           )"
           test "$ledger_count" -eq 19
       - name: Exercise database invariants
+        env:
+          PGPASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
           for acceptance_path in database/tests/*.sql; do

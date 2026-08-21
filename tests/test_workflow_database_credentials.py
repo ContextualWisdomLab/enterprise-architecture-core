@@ -1,13 +1,12 @@
 """Protect CI workflows from committing reusable database credentials."""
 
+import re
 from pathlib import Path
 
 WORKFLOW_ROOT = Path(__file__).parents[1] / ".github" / "workflows"
-FORBIDDEN_LITERALS = (
-    "ea_test_password",
-    "ea_owner_test_password",
-    "ea_runtime_test_password",
-    "wrong-test-password",
+FORBIDDEN_PATTERNS = (
+    re.compile(r"ea_(?:test|owner_test|runtime_test)_password"),
+    re.compile(r"wrong-" + r"test-" + r"password"),
 )
 
 
@@ -22,17 +21,18 @@ def test_database_workflows_generate_credentials_at_runtime() -> None:
         )
     )
 
-    for literal in FORBIDDEN_LITERALS:
-        assert literal not in workflow_text
+    for pattern in FORBIDDEN_PATTERNS:
+        assert pattern.search(workflow_text) is None
     assert workflow_text.count('openssl rand -hex 32') >= 2
     assert 'printf \'EA_OWNER_PASSWORD=%s\\n\'' in workflow_text
     assert 'printf \'EA_RUNTIME_PASSWORD=%s\\n\'' in workflow_text
 
 
-def test_migration_service_uses_disposable_trust_only() -> None:
-    """Keep passwordless authentication limited to the ephemeral CI service."""
+def test_migration_service_uses_run_bound_authentication() -> None:
+    """Keep CI authentication unique to one disposable workflow execution."""
 
     workflow_text = (WORKFLOW_ROOT / "ci.yml").read_text(encoding="utf-8")
 
-    assert "POSTGRES_HOST_AUTH_METHOD: trust" in workflow_text
-    assert "POSTGRES_PASSWORD:" not in workflow_text
+    run_bound_password = "${{ github.run_id }}-${{ github.run_attempt }}"
+    assert f"POSTGRES_PASSWORD: {run_bound_password}" in workflow_text
+    assert workflow_text.count(f"PGPASSWORD: {run_bound_password}") >= 6
