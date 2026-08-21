@@ -214,7 +214,10 @@ def test_verifier_rejects_attested_spdx_predicate_drift(tmp_path: Path) -> None:
     )
 
     assert result.returncode != 0
-    assert "attested SPDX predicate does not match downloaded package SBOM" in result.stderr
+    assert (
+        "attested SPDX predicate does not match downloaded package SBOM"
+        in result.stderr
+    )
 
 
 def test_verifier_rejects_mid_verification_downloaded_sbom_replacement(
@@ -241,4 +244,7 @@ def test_verifier_rejects_mid_verification_downloaded_sbom_replacement(
     )
 
     assert result.returncode != 0
-    assert "attested SPDX predicate does not match downloaded package SBOM" in result.stderr
+    assert (
+        "attested SPDX predicate does not match downloaded package SBOM"
+        in result.stderr
+    )
