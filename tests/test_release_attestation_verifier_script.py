@@ -96,7 +96,13 @@ def test_verifier_executes_both_attestation_policies(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     log_lines = (tmp_path / "gh.log").read_text(encoding="utf-8").splitlines()
     assert len(log_lines) == 4
-    assert sum("--predicate-type https://spdx.dev/Document/v3" in line for line in log_lines) == 2
+    assert (
+        sum(
+            "--predicate-type https://spdx.dev/Document/v3" in line
+            for line in log_lines
+        )
+        == 2
+    )
     assert all(f"--repo {_REPOSITORY}" in line for line in log_lines)
     assert all(f"--source-digest {_SOURCE_SHA}" in line for line in log_lines)
     assert all("--source-ref refs/heads/main" in line for line in log_lines)

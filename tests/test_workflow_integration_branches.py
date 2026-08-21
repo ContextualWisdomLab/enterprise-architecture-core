@@ -15,6 +15,7 @@ _PUSH_BRANCHES_PATTERN = re.compile(
 )
 _CI_PATH = Path(".github/workflows/ci.yml")
 _SUPPLY_CHAIN_PATH = Path(".github/workflows/supply-chain.yml")
+_VERIFIER_PATH = Path("scripts/verify_release_attestations.sh")
 
 
 def _push_branches(workflow_path: Path) -> set[str]:
@@ -72,6 +73,7 @@ def test_spdx3_attestation_uses_canonical_sbom_without_compatibility_copy() -> N
 def test_protected_main_verifies_and_retains_exact_attestations() -> None:
     """Bind provenance and SBOM attestations to one stable source/workflow identity."""
     workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
+    verifier_text = _VERIFIER_PATH.read_text(encoding="utf-8")
 
     assert (
         "name: Verify protected-main provenance and SBOM attestations" in workflow_text
@@ -87,12 +89,12 @@ def test_protected_main_verifies_and_retains_exact_attestations() -> None:
         '.github/workflows/supply-chain.yml'
     ) in workflow_text
     assert 'SPDX_PREDICATE: https://spdx.dev/Document/v3' in workflow_text
-    assert '--source-digest "$SOURCE_SHA"' in workflow_text
-    assert '--source-ref "$EXPECTED_SOURCE_REF"' in workflow_text
-    assert '--signer-digest "$SOURCE_SHA"' in workflow_text
-    assert '--signer-workflow "$SIGNER_WORKFLOW"' in workflow_text
-    assert '--deny-self-hosted-runners' in workflow_text
-    assert workflow_text.count('gh attestation verify "$artifact"') == 2
+    assert '--source-digest "$SOURCE_SHA"' in verifier_text
+    assert '--source-ref "$EXPECTED_SOURCE_REF"' in verifier_text
+    assert '--signer-digest "$SOURCE_SHA"' in verifier_text
+    assert '--signer-workflow "$SIGNER_WORKFLOW"' in verifier_text
+    assert '--deny-self-hosted-runners' in verifier_text
+    assert verifier_text.count('gh attestation verify "$artifact"') == 2
     assert "name: attestation-verification-${{ github.sha }}" in workflow_text
     assert "path: attestation-verification/*.json" in workflow_text
     assert "retention-days: 90" in workflow_text
