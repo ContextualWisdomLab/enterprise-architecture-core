@@ -1,6 +1,6 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-21T01:54:28Z, GitHub inspection and repository inspection<br>
+**Snapshot:** 2026-08-21T01:57:04Z, GitHub inspection and repository inspection<br>
 **Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
@@ -9,7 +9,7 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-21T01:54:28Z` — PR #31 was inspected at exact head
+**Live refresh:** `2026-08-21T01:57:04Z` — PR #31 was inspected at exact head
 `a2ef7af1b6242a81773d4b0eb3671619f97be0fa`; a duplicate projection-receipt
 fixture identity was isolated, the reassessment validator now requires the
 status response schema only when that route is published, and the fail-closed
@@ -18,7 +18,7 @@ head passes 649 tests with 100% statement-and-branch coverage, Ruff, and the
 full PostgreSQL 18 migration/acceptance suite; hosted Checks are 19 queued and
 7 skipped with no current failure, while PR31 remains Draft and has no formal
 same-head approval. This PR18 documentation refresh is based on source head
-`de74fca30a3353383ac364a65ad1e0f9206d9dcf`, based on protected
+`f9443e8c8a81bfd7cce1a2aa0f5411384a1d82c3`, based on protected
 `develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks are
 queued after an exact-head dispatch and no formal approval is observed.
 The current stacked candidates are PR #31
@@ -69,6 +69,10 @@ old SPDX payload as unsupported, while `installed-process-readiness` run
 `32036084876` failed after three codeload HTTP 429 attempts for
 `astral-sh/setup-uv`. The attestation failure is addressed by PR34; neither
 unchanged failure is converted to success or rerun.
+PR #29's exact head has failed `Semgrep OSS` and multi-language SAST, while
+PR #30's exact head has failed multi-language SAST; the public log endpoints
+return 404 and expose no source finding. These unchanged external gates are
+not rerun or converted into source defects.
 
 ## Executive decision
 
@@ -129,8 +133,8 @@ recollected after any push or base change.
 | [33](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/33) | Publish deterministic portfolio assessment summary | `portfolio-assessment-api` at current base `03b3d560ce29a9441119995134a028a69edab315` → `portfolio-assessment-summary` | Draft; exact head `648acc360778f9dfae579745a567e4ec1703e267`; portfolio contract count remains 14 operations, the inferred fixture assertion is dimension-scoped, and the full local PostgreSQL 18 suite passes; hosted Checks queued; no formal approval | Keep the external Draft state intact, then obtain terminal Checks and an independent same-head review. |
 | [32](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/32) | Expose portfolio assessment read port | `data-management-recheck-status-v1` at base `172f439736753a14cdb6569b954adb1cf905bc44` → `portfolio-assessment-api` | Draft; exact head `783c66e9f7361daedc6992f0ecd02720ad293ef0`; hosted Checks are 19 queued and 7 skipped with no current failure; no current-head local verification or formal approval | Keep the external Draft state intact, then rebase/propagate the repaired PR31 head and obtain terminal Checks plus an independent same-head review. |
 | [31](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/31) | Expose data-management reassessment status | `data-management-recheck-v1` at current base `073b6420f9c74033c166580a1f01c13d20c8ee30` → `data-management-recheck-status-v1` | Draft; exact head `a2ef7af1b6242a81773d4b0eb3671619f97be0fa`; 649 tests, 100% statement-and-branch coverage, Ruff, and full PostgreSQL 18 acceptance pass after the fixture/validator repair; hosted Checks are 19 queued and 7 skipped with no current failure; no formal approval | Keep the external Draft state intact, then obtain terminal Checks and an independent same-head review before propagating this repaired parent. |
-| [30](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/30) | Request data-management assessment recheck | `data-management-evidence-closure-v1` at current base `25a83ab1b61892b5376284b9e396ccf134a55aee` → `data-management-recheck-v1` | Ready; exact head `073b6420f9c74033c166580a1f01c13d20c8ee30`; 614 tests, 100% coverage, repository validation, clean PostgreSQL 18 acceptance, and no unresolved current CodeRabbit finding; hosted Checks were re-queued; no formal approval | Validate the causal evidence boundary and terminal Checks before advancing the stack. |
-| [29](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/29) | Accept data-management evidence and complete milestone | `data-management-improvement-v1` → `data-management-evidence-closure-v1` | Ready; last visible repository gates green; exact-head OpenCode review dispatched | Re-fetch the exact head and obtain review before treating the slice as merge-ready. |
+| [30](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/30) | Request data-management assessment recheck | `data-management-evidence-closure-v1` at current base `25a83ab1b61892b5376284b9e396ccf134a55aee` → `data-management-recheck-v1` | Draft; exact head `073b6420f9c74033c166580a1f01c13d20c8ee30`; 614 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass, but multi-language SAST is failed and its public log endpoint returns 404 without a source finding; no formal approval | Keep the external Draft state intact; obtain a bounded Semgrep result before treating the causal evidence boundary as merge-ready. |
+| [29](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/29) | Accept data-management evidence and complete milestone | `data-management-improvement-v1` → `data-management-evidence-closure-v1` | Draft; exact head `25a83ab1b61892b5376284b9e396ccf134a55aee`; Semgrep OSS and multi-language SAST are failed with public log endpoints returning 404 and no source finding exposed; no formal approval | Keep the external Draft state intact; obtain bounded Semgrep evidence before advancing the milestone. |
 | [27](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/27) | Turn data-management gaps into improvement work | `target-state-replan-v1` → `data-management-improvement-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Review the proposed remediation authority and preserve foreign-system ownership. |
 | [26](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/26) | Make target-state replanning executable | `target-state-monitoring-v1` → `target-state-replan-v1` | Draft; exact head `311c52c9957f2a6f17ed251cb47a5d27d9b3b4e2`; full local PostgreSQL 18 SQL acceptance passes after moving the historical planner fixture after target-state tests; current Checks have no reported failure and remain queued | Keep the external Draft state intact, then verify terminal `gap_detected` semantics and exact replay behavior. |
 | [24](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/24) | Expose target-state monitoring freshness | `target-state-verification-v1` → `target-state-monitoring-v1` | Draft; exact head `d19a5e70b9746eb0f4bcfdc27b87d445ac4ec7f8`; full local PostgreSQL 18 SQL acceptance passes after the fixture-order repair; current Checks have no reported failure and remain queued | Keep the external Draft state intact, then verify explicit valid/system cutoffs and stale-evidence next actions. |
@@ -163,8 +167,8 @@ after any push or base-branch change.
 | 33 | `648acc360778f9dfae579745a567e4ec1703e267` | `2026-08-21T01:27:22Z` | `implementation_candidate` | Portfolio summary contract count remains 14 operations; the inferred assessment assertion is scoped to its dimension and the full local PostgreSQL 18 suite passes; hosted Checks queued; Draft; no formal approval. |
 | 32 | `783c66e9f7361daedc6992f0ecd02720ad293ef0` | `2026-08-21T01:54:28Z` | `implementation_candidate` | Current portfolio API head is based on the unrepaired PR31 parent `172f439`; hosted Checks are 19 queued and 7 skipped with no current failure, but no current-head local verification or formal approval is observed. |
 | 31 | `a2ef7af1b6242a81773d4b0eb3671619f97be0fa` | `2026-08-21T01:54:28Z` | `implementation_candidate` | Repaired duplicate projection-receipt fixture identity and status-validator schema gate; 649 tests, 100% statement-and-branch coverage, Ruff, and full PostgreSQL 18 migration/acceptance pass; hosted Checks 19 queued and 7 skipped with no current failure; Draft; no formal approval, merge, release, or deployment claim. |
-| 30 | `073b6420f9c74033c166580a1f01c13d20c8ee30` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current ancestor with 614-test/100%-coverage, repository, clean PostgreSQL 18 acceptance, and terminal local evidence; no formal approval or protected integration is observed. |
-| 29 | `25a83ab1b61892b5376284b9e396ccf134a55aee` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current data-management evidence-closure ancestor; 579 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
+| 30 | `073b6420f9c74033c166580a1f01c13d20c8ee30` | `2026-08-21T01:57:04Z` | `implementation_candidate` | Current ancestor with 614-test/100%-coverage, repository, and clean PostgreSQL 18 acceptance evidence; multi-language SAST failed with a public log endpoint 404 and no source finding; Draft; no formal approval or protected integration. |
+| 29 | `25a83ab1b61892b5376284b9e396ccf134a55aee` | `2026-08-21T01:57:04Z` | `implementation_candidate` | Current data-management evidence-closure ancestor with local validation evidence; Semgrep OSS and multi-language SAST failed with public log endpoints 404 and no source finding; Draft; no formal approval or protected integration. |
 | 27 | `8815b281f1ec5804bc1d2e9a3d210fbc1187e6f1` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current improvement ancestor; replay-before-liveness and test-isolation fixes pass 542 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance; no protected integration or formal approval. |
 | 26 | `311c52c9957f2a6f17ed251cb47a5d27d9b3b4e2` | `2026-08-21T01:27:22Z` | `implementation_candidate` | Current target-state replan head; full local PostgreSQL 18 SQL acceptance passes after moving the historical planner fixture after dependent target-state tests; hosted Checks queued; Draft; no protected integration or formal approval. |
 | 24 | `d19a5e70b9746eb0f4bcfdc27b87d445ac4ec7f8` | `2026-08-21T01:27:22Z` | `implementation_candidate` | Current target-state monitoring head; full local PostgreSQL 18 SQL acceptance passes after the fixture-order repair; hosted Checks queued; Draft; no protected integration or formal approval. |
