@@ -10,8 +10,9 @@ traffic.
 
 `GET /v1/technology-target-state-plans/{technology_version_id}` is the first
 buyer-facing authenticated read. Supply explicit `valid_at` and `recorded_at`
-RFC 3339 timestamps and, optionally, `planning_horizon_days` from 1 through
-3650. The response preserves lifecycle impact, affected application/capability,
+CWL leap-second-free timestamps (RFC 3339-compatible with seconds `00` through
+`59`) and, optionally, `planning_horizon_days` from 1 through 3650. The response
+preserves lifecycle impact, affected application/capability,
 receipt-backed foreign evidence, remediation initiative, target scenario,
 transformation state, decision readiness, and an actionable next step.
 

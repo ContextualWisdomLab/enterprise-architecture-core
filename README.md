@@ -29,8 +29,8 @@ The planner endpoint is:
 
 ```text
 GET /v1/technology-target-state-plans/{technology_version_id}
-    ?valid_at=<RFC3339 timestamp>
-    &recorded_at=<RFC3339 timestamp>
+    ?valid_at=<CWL leap-second-free timestamp>
+    &recorded_at=<CWL leap-second-free timestamp>
     &planning_horizon_days=<1..3650>
 ```
 
