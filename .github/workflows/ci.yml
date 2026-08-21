@@ -284,6 +284,8 @@ jobs:
           runtime_password="$(openssl rand -hex 32)"
           echo "::add-mask::${owner_password}"
           echo "::add-mask::${runtime_password}"
+          export EA_OWNER_PASSWORD="$owner_password"
+          export EA_RUNTIME_PASSWORD="$runtime_password"
           {
             printf 'EA_OWNER_PASSWORD=%s\n' "$owner_password"
             printf 'EA_RUNTIME_PASSWORD=%s\n' "$runtime_password"

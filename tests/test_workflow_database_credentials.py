@@ -24,6 +24,8 @@ def test_database_workflows_generate_credentials_at_runtime() -> None:
     for pattern in FORBIDDEN_PATTERNS:
         assert pattern.search(workflow_text) is None
     assert workflow_text.count('openssl rand -hex 32') >= 2
+    assert 'export EA_OWNER_PASSWORD="$owner_password"' in workflow_text
+    assert 'export EA_RUNTIME_PASSWORD="$runtime_password"' in workflow_text
     assert 'printf \'EA_OWNER_PASSWORD=%s\\n\'' in workflow_text
     assert 'printf \'EA_RUNTIME_PASSWORD=%s\\n\'' in workflow_text
 
