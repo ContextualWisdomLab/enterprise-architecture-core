@@ -34,3 +34,17 @@ END;
 $$;
 
 SELECT 'hot-write-capacity-snapshot-ok' AS verification;
+
+RESET app.tenant_record_id;
+\ir ../reports/hot_write_capacity_snapshot.sql
+
+DO $$
+BEGIN
+    IF pg_catalog.current_setting('app.tenant_record_id', true) IS DISTINCT FROM '' THEN
+        RAISE EXCEPTION
+          'hot-write snapshot changed an unset caller tenant context';
+    END IF;
+END;
+$$;
+
+SELECT 'hot-write-capacity-snapshot-unset-context-ok' AS verification;

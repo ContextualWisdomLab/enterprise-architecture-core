@@ -3,15 +3,20 @@
 \if :{?tenant_id}
 \else
 \echo 'tenant_id is required: psql --set tenant_id=<uuid> --file database/reports/hot_write_capacity_snapshot.sql'
-\quit 2
+DO $$
+BEGIN
+    RAISE EXCEPTION 'tenant_id is required';
+END;
+$$;
 \endif
 
 -- Preserve the caller's tenant context so an operator can include this report in
 -- a longer psql session without changing the authorization context of later SQL.
-SELECT COALESCE(
-    pg_catalog.current_setting('app.tenant_record_id', true),
-    ''
-) AS cwl_capacity_previous_tenant_record_id \gset
+SELECT pg_catalog.current_setting('app.tenant_record_id', true)
+    AS cwl_capacity_previous_tenant_record_id \gset
+
+\set cwl_capacity_report_failed false
+\set ON_ERROR_STOP off
 
 -- The explicit tenant predicate remains in every branch even for owner
 -- connections, so this report does not accidentally become cross-tenant.
@@ -22,6 +27,10 @@ SELECT pg_catalog.set_config(
     :'tenant_id',
     false
 ) AS cwl_capacity_installed_tenant_record_id \gset
+
+\if :ERROR
+\set cwl_capacity_report_failed true
+\endif
 
 WITH snapshot AS (
     SELECT
@@ -115,12 +124,32 @@ JOIN pg_catalog.pg_stat_user_tables AS table_stats
  AND table_stats.relname = boundary_metrics.boundary_name
 ORDER BY boundary_metrics.boundary_name;
 
+\if :ERROR
+\set cwl_capacity_report_failed true
+\endif
+
+\if :{?cwl_capacity_previous_tenant_record_id}
 SELECT pg_catalog.set_config(
     'app.tenant_record_id',
     :'cwl_capacity_previous_tenant_record_id',
     false
 ) AS cwl_capacity_restored_tenant_record_id \gset
+\else
+RESET app.tenant_record_id;
+\endif
+
+\if :ERROR
+\set cwl_capacity_report_failed true
+\endif
+
+\set ON_ERROR_STOP on
+\if :cwl_capacity_report_failed
+\echo 'hot-write capacity snapshot failed after restoring caller tenant context'
+-- Force psql to return a failure after the caller context has been restored.
+SELECT 1 / 0;
+\endif
 
 \unset cwl_capacity_previous_tenant_record_id
 \unset cwl_capacity_installed_tenant_record_id
 \unset cwl_capacity_restored_tenant_record_id
+\unset cwl_capacity_report_failed
