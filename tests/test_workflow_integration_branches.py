@@ -98,7 +98,10 @@ def test_protected_main_revalidates_downloaded_evidence_before_attesting() -> No
 
     assert download_index < verify_index < attest_index
     verification_step = workflow_text[verify_index:attest_index]
-    assert "python scripts/verify_package_evidence_bundle.py evidence" in verification_step
+    assert (
+        "python scripts/verify_package_evidence_bundle.py evidence"
+        in verification_step
+    )
 
 
 def test_spdx3_attestation_uses_canonical_sbom_without_compatibility_copy() -> None:
