@@ -53,6 +53,22 @@ def test_package_evidence_name_matches_the_default_checkout_commit() -> None:
     assert "github.event.pull_request.head.sha || github.sha" not in workflow_text
 
 
+def test_protected_main_revalidates_downloaded_evidence_before_attesting() -> None:
+    """Never sign downloaded package bytes before their bundle is re-admitted."""
+    workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
+    download_marker = "- name: Download exact-head package evidence"
+    verify_marker = "- name: Verify downloaded package evidence before attestation"
+    attest_marker = "- name: Attest SLSA build provenance"
+
+    download_index = workflow_text.index(download_marker)
+    verify_index = workflow_text.index(verify_marker)
+    attest_index = workflow_text.index(attest_marker)
+
+    assert download_index < verify_index < attest_index
+    verification_step = workflow_text[verify_index:attest_index]
+    assert "python scripts/verify_package_evidence_bundle.py evidence" in verification_step
+
+
 def test_spdx3_attestation_uses_canonical_sbom_without_compatibility_copy() -> None:
     """Sign the canonical SPDX 3 JSON-LD as an explicit in-toto predicate."""
     workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
