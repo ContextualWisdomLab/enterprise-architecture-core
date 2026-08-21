@@ -18,6 +18,7 @@ _SIGNER_WORKFLOW = (
 )
 _PROVENANCE_PREDICATE = "https://slsa.dev/provenance/v1"
 _SPDX_PREDICATE = "https://spdx.dev/Document/v3"
+_SPDX_CLI_ARGUMENT = f"--predicate-type {_SPDX_PREDICATE}"
 _ARTIFACT_BYTES = b"artifact"
 _ARTIFACT_DIGEST = hashlib.sha256(_ARTIFACT_BYTES).hexdigest()
 _EXPECTED_SBOM: dict[str, Any] = {
@@ -72,7 +73,7 @@ def _write_fake_gh(tmp_path: Path) -> tuple[Path, Path]:
         'if [[ -n "${GH_FAKE_REPLACEMENT_SBOM:-}" ]]; then\n'
         '  printf \'%s\\n\' "$GH_FAKE_REPLACEMENT_SBOM" > "$GH_FAKE_SBOM_PATH"\n'
         "fi\n"
-        "if [[ \" $* \" == *\" --predicate-type https://spdx.dev/Document/v3 \"* ]]; then\n"
+        f'if [[ " $* " == *" {_SPDX_CLI_ARGUMENT} "* ]]; then\n'
         "  printf '%s\\n' \"$GH_FAKE_SBOM_RESULT\"\n"
         '  if [[ -n "${GH_FAKE_SYMLINK_TARGET:-}" ]]; then\n'
         '    artifact_name="${3##*/}"\n'
