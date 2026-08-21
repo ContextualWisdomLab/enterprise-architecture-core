@@ -1,7 +1,7 @@
 # CSAP and SOC 2 control evidence pack
 
-**Status:** preparation evidence only  
-**Snapshot:** 2026-08-21  
+**Status:** preparation evidence only<br>
+**Snapshot:** 2026-08-21<br>
 **Scope:** Enterprise Architecture Core repository and its proposed runtime boundary
 
 This is a control crosswalk and evidence index. It is not a CSAP certificate,
