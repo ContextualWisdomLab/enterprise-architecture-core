@@ -14,8 +14,8 @@ Run the read-only snapshot from an approved database owner or observability
 connection, not from `ea_runtime`:
 
 ```bash
-PGHOST=<host> PGPORT=<port> PGUSER=<approved_operator> PGDATABASE=<database> \\
-  psql --set=tenant_id=<tenant_uuid> \\
+PGHOST=<host> PGPORT=<port> PGUSER=<approved_operator> PGDATABASE=<database> \
+  psql --set=tenant_id=<tenant_uuid> \
   --file=database/reports/hot_write_capacity_snapshot.sql
 ```
 
