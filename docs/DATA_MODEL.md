@@ -122,13 +122,30 @@ For an authoritative/observed path with complete evidence, `recommended_action_c
 
 The caller chooses a planning horizon between 1 and 3650 days. An unknown technology version or out-of-range horizon fails closed. The function is read-only and never creates or approves scenarios, initiatives, or transformations, and it never promotes inferred/proposed evidence into authority.
 
-This slice intentionally stops at EA-owned capability impact. Physical schema/design evidence remains owned by pg-erd-cloud; catalog assets, data products, dashboards/models/AI projections and governed lineage remain owned by Semantic Data Portal; inferred lineage remains owned by LineageWeave. Those products can later enrich this impact path through their published contracts/events without direct cross-service application-table SQL or duplicated authority.
+The technology projector intentionally ends at EA-owned application/capability impact. Foreign evidence is joined through the separate receipt-bound projection below instead of by querying another product's tables or copying its source-of-truth payload.
+
+## Cross-domain application impact projection
+
+Migrations 0016-0019 extend the buyer decision path with normalized, receipt-bound foreign references while preserving each product's authority and the history of the evidence that supplied those references:
+
+- `external_context_reference` stores an immutable local reference to a foreign canonical object. It records only tenant, local UUIDv7 reference identity, canonical URI, owning product code, object-kind code, and recording time.
+- `application_context_projection` records one bitemporal, truth-labelled relation from an EA `application_record` to an external reference plus the exact processed `projection_receipt` that supplied that relation.
+- `project_application_context_impact(uuid,timestamptz,timestamptz)` returns the foreign references visible for one application at explicit valid-time and system-recording cutoffs together with source event identity, payload digest, truth status, evidence state, and a deterministic next action.
+
+The current authority/kind vocabulary is deliberately narrow. `pg_erd_cloud` owns `database_schema` references and its direct projections are accepted only as `observed` physical-schema evidence. `semantic_data_portal` owns `data_product`, `dashboard`, `model`, and `ai_agent` references. A `lineage_weave` receipt may propose/infer a link to an existing canonical reference but may never mark that relation authoritative or observed. This keeps foreign object ownership separate from the product that supplied a relationship proposal.
+
+Projection insertion fails closed unless the receipt is already `processed`, its `processed_at` is no later than the local projection `recorded_at`, the referenced EA object is an application, and the source product obeys its responsibility boundary. Canonical foreign URIs must encode the same tenant, owner, and kind as the reference row. Migration 0005 establishes the exact Context Graph canonical-authority URI grammar, and migration 0018 promotes that existing guard to the explicit cross-domain contract name without adding a duplicate check. Composite tenant foreign keys and forced RLS protect both projection tables.
+
+Projection and receipt meaning are append-preserving. External references reject update/delete; application projections reject hard delete and semantic in-place edits, allow only one-time supersession, and prevent overlapping active authoritative/observed facts. Migration 0017 makes the receipt/application/reference/relation tuple unique so replaying the same processed event cannot create duplicate inferred/proposed rows. Migration 0019 makes receipt identity and payload digest immutable, rejects receipt hard deletion, makes `processed`/`rejected` receipts terminal, and prevents processing-state regression while still allowing failed receipt processing to be retried.
+
+Historical reads filter both projection system time and receipt process time. Because processed receipts are terminal and their evidence identity cannot be rewritten, a later operational action cannot erase or substitute evidence that was visible at an earlier system-time cutoff. Inferred/proposed truth is returned as `requires_truth_review` with `review_truth_origin`; complete owner evidence yields object-specific next actions such as `review_schema_dependency`, `review_data_product_impact`, `review_dashboard_impact`, `review_model_impact`, or `review_ai_agent_impact`. The function is read-only: it does not create initiatives, scenarios, transformation history, foreign catalog state, schema snapshots, or lineage graphs.
 
 ## Integration
 
 - `outbox_event` provides atomic publication and object-shaped JSON payloads.
-- `projection_receipt` makes inbound event replay idempotent and validates authority URI plus UUIDv7 event identity.
+- `projection_receipt` makes inbound event replay idempotent, enforces the Context Graph canonical-authority source-URI shape, validates same-tenant source authority, and preserves terminal evidence identity/history.
+- `external_context_reference` and `application_context_projection` reuse processed receipts to expose foreign impact evidence without importing foreign source-of-truth payloads.
 - `evidence_record` stores opaque, tenant-consistent evidence references and byte digests.
 - `identity_link` stores Keyverse subject links, not credentials.
 
-Operational event timestamps preserve system-time causality: an outbox event cannot be marked published before `recorded_at`, and an inbound projection cannot be marked processed before `received_at`. These invariants are exercised on clean installation and migration upgrade paths. Service-to-service direct application-table SQL is not an integration contract.
+Operational event timestamps preserve system-time causality: an outbox event cannot be marked published before `recorded_at`, and an inbound projection cannot be marked processed before `received_at`. Processed/rejected inbound receipts cannot later be rewritten or hard-deleted, while failed receipt processing remains retryable. These invariants are exercised on clean installation and migration upgrade paths. Service-to-service direct application-table SQL is not an integration contract.
