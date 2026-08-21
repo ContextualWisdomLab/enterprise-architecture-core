@@ -16,6 +16,10 @@ _RECHECK_PATH = (
     "/v1/data-management-assessments/"
     "{data_management_assessment_projection_id}/recheck"
 )
+_STATUS_PATH = (
+    "/v1/data-management-assessment-rechecks/"
+    "{assessment_recheck_request_id}"
+)
 _PORTFOLIO_PATH = (
     "/v1/architecture-objects/"
     "{architecture_object_id}/portfolio-assessments"
@@ -432,6 +436,49 @@ def test_recheck_runtime_requires_both_reassessment_schemas(
             recheck_validation.validate_openapi_runtime_surface(changed)
 
 
+def test_recheck_runtime_validates_command_and_status_routes(
+    openapi_document: dict[str, object],
+) -> None:
+    """The reassessment layer validates both its write and status-read ports."""
+
+    recheck_validation.validate_openapi_runtime_surface(openapi_document)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value", "message"),
+    [
+        (
+            "operationId",
+            "getSomeOtherStatus",
+            "operationId must be getDataManagementAssessmentRecheckStatus",
+        ),
+        (
+            "security",
+            [],
+            "must require Keyverse bearer authorization",
+        ),
+        (
+            "parameters",
+            [],
+            "parameters must match executable parsing",
+        ),
+    ],
+)
+def test_recheck_status_operation_fails_closed_when_published_boundary_drifts(
+    openapi_document: dict[str, object],
+    field_name: str,
+    invalid_value: object,
+    message: str,
+) -> None:
+    """The reassessment validator rejects drift in the status-read boundary."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_STATUS_PATH]["get"][field_name] = invalid_value
+
+    with pytest.raises(recheck_validation.ContractValidationError, match=message):
+        recheck_validation.validate_openapi_runtime_surface(changed)
+
+
 @pytest.mark.parametrize(
     "path",
     [_PORTFOLIO_PATH, _PORTFOLIO_SUMMARY_PATH],
@@ -478,3 +525,18 @@ def test_portfolio_read_runtime_requires_its_response_schemas(
             match="missing OpenAPI schemas",
         ):
             recheck_validation.validate_openapi_runtime_surface(changed)
+
+
+def test_recheck_runtime_requires_status_schema_when_status_route_is_published(
+    openapi_document: dict[str, object],
+) -> None:
+    """A published reassessment status route must retain its response schema."""
+
+    changed = deepcopy(openapi_document)
+    changed["components"]["schemas"].pop("DataManagementAssessmentRecheckStatus")
+
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="missing OpenAPI schemas",
+    ):
+        recheck_validation.validate_openapi_runtime_surface(changed)

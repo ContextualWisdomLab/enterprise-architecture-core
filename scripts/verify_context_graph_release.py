@@ -9,7 +9,9 @@ from collections.abc import Callable, Mapping
 from importlib import import_module
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as distribution_version
-from importlib.resources import files
+
+# Python >=3.11 is the supported runtime contract; importlib.resources is stdlib.
+from importlib.resources import files  # nosemgrep
 from pathlib import Path
 
 _EXPECTED_REPOSITORY = "ContextualWisdomLab/context-graph-contracts"
