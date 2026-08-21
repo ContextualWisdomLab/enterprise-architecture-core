@@ -73,7 +73,8 @@ Migration 0012 implements the immutable object baseline of ADR 0008 with three n
 - `architecture_scenario`: the versioned scenario decision, including one `target_valid_at` instant and explicit truth/evidence.
 - `scenario_baseline`: the single immutable pair of `baseline_valid_at` and `baseline_recorded_at` cutoffs for a scenario.
 - `scenario_object_delta`: append-only ordered object-presence changes with target-effective intervals, truth/evidence, and positive sequence numbers.
-- `project_scenario_objects(uuid)`: a tenant-bound projection that overlays the latest active delta per object on the authoritative object-revision baseline.
+- `project_scenario_objects(uuid)`: a tenant-bound current projection that overlays the latest active delta per object on the authoritative object-revision baseline.
+- `project_scenario_objects_at(uuid,timestamptz)`: the same projection at an explicit system-recording cutoff, used by historical decision reads so later scenario supersession cannot erase an earlier result.
 
 Baseline membership is reconstructed from authoritative `object_revision` facts that were valid at `baseline_valid_at`, recorded no later than `baseline_recorded_at`, and not yet superseded at that system-time cutoff. This preserves the distinction between real-world validity and system-recording history: later backfills or later supersession do not silently rewrite an existing baseline.
 
