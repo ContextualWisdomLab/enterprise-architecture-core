@@ -28,7 +28,8 @@ def _read_bounded_stdin() -> bytes:
 def _require_nonempty_verification_array(verification: Any) -> list[Any]:
     """Require the documented non-empty array shape emitted by ``gh attestation``."""
     if not isinstance(verification, list) or not verification:
-        raise ValueError("gh attestation verification must return a non-empty JSON array")
+        message = "gh attestation verification must return a non-empty JSON array"
+        raise ValueError(message)
     return verification
 
 
@@ -60,7 +61,8 @@ def _signed_statement_from_verified_candidate(candidate: Any) -> dict[str, Any] 
     try:
         payload = base64.b64decode(encoded_payload, validate=True)
     except (binascii.Error, ValueError) as exc:
-        raise ValueError("verified attestation has invalid base64 DSSE payload") from exc
+        message = "verified attestation has invalid base64 DSSE payload"
+        raise ValueError(message) from exc
     if len(payload) > MAX_JSON_BYTES:
         raise ValueError("signed DSSE statement exceeds 16 MiB")
 
@@ -102,7 +104,8 @@ def _matching_artifact_statements(
     if statements:
         return statements
     if subject_matched:
-        raise ValueError("signed attestation predicate type does not match expected policy")
+        message = "signed attestation predicate type does not match expected policy"
+        raise ValueError(message)
     raise ValueError("signed attestation subject does not match release artifact")
 
 
@@ -144,13 +147,17 @@ def _write_exclusive_regular_file(path: Path, data: bytes) -> None:
         path_stat = os.stat(path, follow_symlinks=False)
         if not stat.S_ISREG(path_stat.st_mode):
             raise ValueError(f"verification output path stopped being regular: {path}")
-        if opened_stat.st_size != len(data) or stat.S_IMODE(opened_stat.st_mode) != 0o600:
-            raise ValueError(f"verification output was not retained completely/private: {path}")
+        private_mode = stat.S_IMODE(opened_stat.st_mode) == 0o600
+        complete_size = opened_stat.st_size == len(data)
+        if not complete_size or not private_mode:
+            message = f"verification output was not retained completely/private: {path}"
+            raise ValueError(message)
         if (opened_stat.st_dev, opened_stat.st_ino) != (
             path_stat.st_dev,
             path_stat.st_ino,
         ):
-            raise ValueError(f"verification output path changed while being written: {path}")
+            message = f"verification output path changed while being written: {path}"
+            raise ValueError(message)
     except BaseException:
         try:
             os.unlink(path)
