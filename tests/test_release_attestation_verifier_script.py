@@ -40,6 +40,12 @@ def _write_fake_gh(tmp_path: Path) -> tuple[Path, Path]:
         "fi\n"
         "if [[ \" $* \" == *\" --predicate-type \"* ]]; then\n"
         "  printf '%s\\n' \"$GH_FAKE_SBOM_RESULT\"\n"
+        '  if [[ -n "${GH_FAKE_SYMLINK_TARGET:-}" ]]; then\n'
+        '    artifact_name="${3##*/}"\n'
+        '    verification_path="$GH_FAKE_VERIFICATION_DIR/$artifact_name.sbom.json"\n'
+        '    rm -f "$verification_path"\n'
+        '    ln -s "$GH_FAKE_SYMLINK_TARGET" "$verification_path"\n'
+        "  fi\n"
         "else\n"
         "  printf '[{\"verificationResult\":{\"statement\":{\"predicate\":{}}}}]\\n'\n"
         "fi\n",
@@ -57,6 +63,8 @@ def _run_verifier(
     attested_sbom: dict[str, Any] | None = None,
     include_downloaded_sbom: bool = True,
     replacement_downloaded_sbom: dict[str, Any] | None = None,
+    verification_dir_kind: str | None = None,
+    symlink_verification_output: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run the verifier with isolated evidence and a fake GitHub CLI."""
     evidence_dir = tmp_path / "evidence"
@@ -69,6 +77,16 @@ def _run_verifier(
 
     bin_dir, log_path = _write_fake_gh(tmp_path)
     verification_dir = tmp_path / "verification"
+    if verification_dir_kind == "directory":
+        verification_dir.mkdir()
+    elif verification_dir_kind == "symlink":
+        existing_dir = tmp_path / "existing-verification"
+        existing_dir.mkdir()
+        verification_dir.symlink_to(existing_dir, target_is_directory=True)
+    elif verification_dir_kind is not None:
+        raise ValueError(
+            f"unknown verification directory kind: {verification_dir_kind}"
+        )
     signed_sbom = _EXPECTED_SBOM if attested_sbom is None else attested_sbom
     sbom_result = [
         {
@@ -96,6 +114,11 @@ def _run_verifier(
     )
     if replacement_downloaded_sbom is not None:
         env["GH_FAKE_REPLACEMENT_SBOM"] = json.dumps(replacement_downloaded_sbom)
+    if symlink_verification_output:
+        symlink_target = tmp_path / "attacker-verification.json"
+        symlink_target.write_text(json.dumps(sbom_result), encoding="utf-8")
+        env["GH_FAKE_VERIFICATION_DIR"] = str(verification_dir)
+        env["GH_FAKE_SYMLINK_TARGET"] = str(symlink_target)
     return subprocess.run(
         ["bash", str(_SCRIPT_PATH)],
         check=False,
@@ -135,6 +158,46 @@ def test_verifier_requires_downloaded_spdx_document(tmp_path: Path) -> None:
     assert not (tmp_path / "gh.log").exists()
 
 
+def test_verifier_rejects_existing_verification_directory(tmp_path: Path) -> None:
+    """Reject a reused output directory before invoking GitHub CLI."""
+    result = _run_verifier(
+        tmp_path,
+        (
+            "enterprise_architecture_core-0.1-py3-none-any.whl",
+            "enterprise_architecture_core-0.1.tar.gz",
+        ),
+        verification_dir_kind="directory",
+    )
+
+    assert result.returncode != 0
+    assert (
+        "refusing to reuse existing attestation verification directory"
+        in result.stderr
+    )
+    assert not (tmp_path / "gh.log").exists()
+
+
+def test_verifier_rejects_existing_verification_directory_symlink(
+    tmp_path: Path,
+) -> None:
+    """Reject a symlink occupying the verification output namespace."""
+    result = _run_verifier(
+        tmp_path,
+        (
+            "enterprise_architecture_core-0.1-py3-none-any.whl",
+            "enterprise_architecture_core-0.1.tar.gz",
+        ),
+        verification_dir_kind="symlink",
+    )
+
+    assert result.returncode != 0
+    assert (
+        "refusing to reuse existing attestation verification directory"
+        in result.stderr
+    )
+    assert not (tmp_path / "gh.log").exists()
+
+
 def test_verifier_executes_both_attestation_policies(tmp_path: Path) -> None:
     """Verify exact producer identity and both predicates for both release artifacts."""
     result = _run_verifier(
@@ -169,6 +232,7 @@ def test_verifier_executes_both_attestation_policies(tmp_path: Path) -> None:
     verification_files = sorted(
         path.name for path in (tmp_path / "verification").glob("*.json")
     )
+    assert (tmp_path / "verification").stat().st_mode & 0o777 == 0o700
     assert verification_files == [
         "enterprise_architecture_core-0.1-py3-none-any.whl.provenance.json",
         "enterprise_architecture_core-0.1-py3-none-any.whl.sbom.json",
@@ -248,3 +312,18 @@ def test_verifier_rejects_mid_verification_downloaded_sbom_replacement(
         "attested SPDX predicate does not match downloaded package SBOM"
         in result.stderr
     )
+
+
+def test_verifier_rejects_replaced_verification_output_symlink(tmp_path: Path) -> None:
+    """Reject a verification result path replaced by a symlink during gh output."""
+    result = _run_verifier(
+        tmp_path,
+        (
+            "enterprise_architecture_core-0.1-py3-none-any.whl",
+            "enterprise_architecture_core-0.1.tar.gz",
+        ),
+        symlink_verification_output=True,
+    )
+
+    assert result.returncode != 0
+    assert "unable to parse attestation/SBOM evidence strictly" in result.stderr

@@ -135,7 +135,14 @@ PY
 
 expected_sbom_digest="$(snapshot_downloaded_sbom_digest)"
 
-mkdir -p "$VERIFICATION_DIR"
+if [[ -e "$VERIFICATION_DIR" || -L "$VERIFICATION_DIR" ]]; then
+  echo "refusing to reuse existing attestation verification directory" >&2
+  exit 1
+fi
+if ! (umask 077 && mkdir "$VERIFICATION_DIR"); then
+  echo "unable to create a private attestation verification directory" >&2
+  exit 1
+fi
 common_policy=(
   --repo "$REPOSITORY"
   --source-digest "$SOURCE_SHA"
@@ -153,6 +160,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import stat
 import sys
 from pathlib import Path
 from typing import Any
@@ -177,14 +186,40 @@ def reject_nonstandard_constant(value: str) -> None:
     raise ValueError(f"non-standard JSON numeric constant: {value}")
 
 
+def read_stable_regular_file(path: Path) -> bytes:
+    """Read one bounded regular file without following a replacement symlink."""
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    try:
+        opened_stat = os.fstat(descriptor)
+        if not stat.S_ISREG(opened_stat.st_mode):
+            raise ValueError(f"verification evidence is not a regular file: {path}")
+        chunks: list[bytes] = []
+        remaining = 16 * 1024 * 1024 + 1
+        while remaining > 0:
+            chunk = os.read(descriptor, min(1024 * 1024, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b"".join(chunks)
+        if len(data) > 16 * 1024 * 1024:
+            raise ValueError(f"JSON evidence exceeds 16 MiB: {path}")
+    finally:
+        os.close(descriptor)
+
+    path_stat = os.stat(path, follow_symlinks=False)
+    if not stat.S_ISREG(path_stat.st_mode):
+        raise ValueError(f"verification evidence path stopped being a regular file: {path}")
+    if (opened_stat.st_dev, opened_stat.st_ino) != (path_stat.st_dev, path_stat.st_ino):
+        raise ValueError(f"verification evidence path changed while being read: {path}")
+    return data
+
+
 def load_strict_json(path: Path) -> Any:
     """Parse one bounded evidence document with strict JSON member semantics."""
-    with path.open("rb") as stream:
-        data = stream.read(16 * 1024 * 1024 + 1)
-    if len(data) > 16 * 1024 * 1024:
-        raise ValueError(f"JSON evidence exceeds 16 MiB: {path}")
     return json.loads(
-        data.decode("utf-8"),
+        read_stable_regular_file(path).decode("utf-8"),
         object_pairs_hook=reject_duplicate_members,
         parse_constant=reject_nonstandard_constant,
     )
