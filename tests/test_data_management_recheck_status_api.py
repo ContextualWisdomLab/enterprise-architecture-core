@@ -275,7 +275,7 @@ def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
                 "successor_readiness_code": None,
                 "successor_overall_score_basis_points": None,
                 "successor_missing_evidence_count": None,
-                "next_action": "retry_assessment_recheck",
+                "next_action": "plan_remaining_assessment_gap",
             }
         ),
         json.dumps(
