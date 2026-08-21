@@ -263,6 +263,8 @@ def retain_verified_bytes(path: Path, data: bytes) -> None:
         path_stat = os.stat(path, follow_symlinks=False)
         if not stat.S_ISREG(opened_stat.st_mode) or not stat.S_ISREG(path_stat.st_mode):
             raise OSError(f"attestation evidence is not a regular file: {path}")
+        if opened_stat.st_size != len(data) or stat.S_IMODE(opened_stat.st_mode) != 0o600:
+            raise OSError(f"attestation evidence was not retained completely and privately: {path}")
         if (opened_stat.st_dev, opened_stat.st_ino) != (path_stat.st_dev, path_stat.st_ino):
             raise OSError(f"attestation evidence path changed while being retained: {path}")
     except BaseException:
