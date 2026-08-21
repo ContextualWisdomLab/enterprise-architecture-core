@@ -1,0 +1,10 @@
+.codegraph/
+.venv/
+__pycache__/
+*.py[cod]
+.coverage
+coverage.xml
+htmlcov/
+.env
+.env.*
+!.env.example
