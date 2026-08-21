@@ -1,4 +1,4 @@
-"""Protect CI workflows from committing reusable database credentials."""
+"""Protect CI workflows from committing or misrouting database credentials."""
 
 from pathlib import Path
 
@@ -29,6 +29,24 @@ def test_database_workflows_generate_credentials_at_runtime() -> None:
     assert 'export EA_RUNTIME_PASSWORD="$runtime_password"' in workflow_text
     assert 'printf \'EA_OWNER_PASSWORD=%s\\n\'' in workflow_text
     assert 'printf \'EA_RUNTIME_PASSWORD=%s\\n\'' in workflow_text
+
+
+def test_runtime_readiness_passes_ephemeral_password_through_owned_dsn() -> None:
+    """Keep runtime auth inside the DSN because the service drops ambient PG* vars."""
+
+    workflow_text = (WORKFLOW_ROOT / "runtime-readiness.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert (
+        'export EA_DATABASE_DSN="postgresql://ea_runtime:${EA_RUNTIME_PASSWORD}'
+        '@127.0.0.1:54328/ea_core"' in workflow_text
+    )
+    assert (
+        'export EA_DATABASE_DSN="postgresql://ea_runtime:${EA_RUNTIME_PASSWORD}wrong'
+        '@127.0.0.1:54328/ea_core"' in workflow_text
+    )
+    assert "export PGPASSWORD=" not in workflow_text
 
 
 def test_migration_service_uses_disposable_trust_only() -> None:
