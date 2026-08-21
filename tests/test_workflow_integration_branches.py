@@ -54,19 +54,35 @@ def test_package_evidence_name_matches_the_default_checkout_commit() -> None:
 
 
 def test_generated_package_evidence_uses_the_release_admission_verifier() -> None:
-    """Exercise strict package admission on the actual bundle before uploading it."""
+    """Assemble an exact bundle before strict package admission and artifact upload."""
     workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
     checksum_marker = "- name: Validate SPDX 3.0.1 SBOM and artifact checksums"
+    assemble_marker = "- name: Assemble canonical package evidence"
     verify_marker = "- name: Verify generated package evidence"
     upload_marker = "- name: Upload checked-out commit package evidence"
 
     checksum_index = workflow_text.index(checksum_marker)
+    assemble_index = workflow_text.index(assemble_marker)
     verify_index = workflow_text.index(verify_marker)
     upload_index = workflow_text.index(upload_marker)
 
-    assert checksum_index < verify_index < upload_index
+    assert checksum_index < assemble_index < verify_index < upload_index
+    assembly_step = workflow_text[assemble_index:verify_index]
+    assert "install -d -m 0700 package-evidence" in assembly_step
+    assert "dist/enterprise-architecture-core.spdx.json" in assembly_step
+    assert "dist/SHA256SUMS" in assembly_step
+
     verification_step = workflow_text[verify_index:upload_index]
-    assert "python scripts/verify_package_evidence_bundle.py dist" in verification_step
+    assert (
+        "python scripts/verify_package_evidence_bundle.py package-evidence"
+        in verification_step
+    )
+
+    upload_step = workflow_text[upload_index:]
+    assert "package-evidence/*.whl" in upload_step
+    assert "package-evidence/*.tar.gz" in upload_step
+    assert "package-evidence/enterprise-architecture-core.spdx.json" in upload_step
+    assert "package-evidence/SHA256SUMS" in upload_step
 
 
 def test_protected_main_revalidates_downloaded_evidence_before_attesting() -> None:
