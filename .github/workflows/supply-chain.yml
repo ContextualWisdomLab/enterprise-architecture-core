@@ -29,17 +29,17 @@ jobs:
           enable-cache: false
       - run: uv lock --check
       - run: uv build --wheel --sdist --out-dir dist
-      - name: Generate SPDX 3 JSON SBOM from built distributions
+      - name: Generate SPDX JSON SBOM from built distributions
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           path: dist
-          format: spdx-json@3.0
+          format: spdx-json
           output-file: dist/enterprise-architecture-core.spdx.json
           upload-artifact: false
           upload-release-assets: false
           dependency-snapshot: false
           syft-version: v1.51.0
-      - name: Validate SPDX 3.0.1 SBOM and artifact checksums
+      - name: Validate SPDX 2.3 SBOM and artifact checksums
         run: |
           python - <<'PY'
           import json
@@ -47,26 +47,16 @@ jobs:
 
           sbom_path = Path("dist/enterprise-architecture-core.spdx.json")
           sbom = json.loads(sbom_path.read_text(encoding="utf-8"))
-          assert sbom.get("@context") == "https://spdx.org/rdf/3.0.1/spdx-context.jsonld"
-          graph = sbom.get("@graph")
-          assert isinstance(graph, list) and graph
-          assert any(
-              item.get("type") == "CreationInfo"
-              and item.get("specVersion") == "3.0.1"
-              for item in graph
-              if isinstance(item, dict)
-          )
-          assert any(
-              item.get("type") == "software_Package"
-              for item in graph
-              if isinstance(item, dict)
-          )
+          assert sbom.get("spdxVersion") == "SPDX-2.3"
+          assert sbom.get("SPDXID") == "SPDXRef-DOCUMENT"
+          packages = sbom.get("packages")
+          assert isinstance(packages, list) and packages
           assert any(Path("dist").glob("*.whl"))
           assert any(Path("dist").glob("*.tar.gz"))
           PY
           (
             cd dist
-            sha256sum *.whl *.tar.gz enterprise-architecture-core.spdx.json > SHA256SUMS
+            sha256sum -- *.whl *.tar.gz enterprise-architecture-core.spdx.json > SHA256SUMS
             sha256sum -c SHA256SUMS
           )
       - name: Upload exact-head package evidence

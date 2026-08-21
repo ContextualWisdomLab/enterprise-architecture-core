@@ -44,6 +44,6 @@ PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Row s
 
 SLSA Community. (2025). *SLSA specification* (Version 1.2). https://slsa.dev/spec/v1.2/
 
-SPDX Project. (2024). *SPDX specification* (Version 3.0.1). The Linux Foundation. https://spdx.github.io/spdx-spec/v3.0.1/
+SPDX Project. (2022). *SPDX specification* (Version 2.3). The Linux Foundation. https://spdx.github.io/spdx-spec/v2.3/
 
 World Wide Web Consortium. (2024, December 12). *Web Content Accessibility Guidelines (WCAG) 2.2*. https://www.w3.org/TR/WCAG22/
