@@ -53,6 +53,22 @@ def test_package_evidence_name_matches_the_default_checkout_commit() -> None:
     assert "github.event.pull_request.head.sha || github.sha" not in workflow_text
 
 
+def test_generated_package_evidence_uses_the_release_admission_verifier() -> None:
+    """Exercise strict package admission on the actual bundle before uploading it."""
+    workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
+    checksum_marker = "- name: Validate SPDX 3.0.1 SBOM and artifact checksums"
+    verify_marker = "- name: Verify generated package evidence"
+    upload_marker = "- name: Upload checked-out commit package evidence"
+
+    checksum_index = workflow_text.index(checksum_marker)
+    verify_index = workflow_text.index(verify_marker)
+    upload_index = workflow_text.index(upload_marker)
+
+    assert checksum_index < verify_index < upload_index
+    verification_step = workflow_text[verify_index:upload_index]
+    assert "python scripts/verify_package_evidence_bundle.py dist" in verification_step
+
+
 def test_protected_main_revalidates_downloaded_evidence_before_attesting() -> None:
     """Never sign downloaded package bytes before their bundle is re-admitted."""
     workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
