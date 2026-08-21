@@ -31,21 +31,24 @@ def test_database_workflows_generate_credentials_at_runtime() -> None:
     assert 'printf \'EA_RUNTIME_PASSWORD=%s\\n\'' in workflow_text
 
 
-def test_runtime_readiness_passes_ephemeral_password_through_owned_dsn() -> None:
-    """Keep runtime auth inside the DSN because the service drops ambient PG* vars."""
+def test_runtime_readiness_uses_purpose_bound_passfiles() -> None:
+    """Authenticate readiness through the DSN-owned passfile, not ambient PG* vars."""
 
     workflow_text = (WORKFLOW_ROOT / "runtime-readiness.yml").read_text(
         encoding="utf-8"
     )
 
+    assert workflow_text.count('runtime_passfile="$RUNNER_TEMP/ea-runtime.pgpass"') == 2
+    assert workflow_text.count('passfile=${runtime_passfile}') == 2
     assert (
-        'export EA_DATABASE_DSN="postgresql://ea_runtime:${EA_RUNTIME_PASSWORD}'
-        '@127.0.0.1:54328/ea_core"' in workflow_text
+        'printf \'127.0.0.1:54328:ea_core:ea_runtime:%s\\n\' '
+        '"$EA_RUNTIME_PASSWORD" > "$runtime_passfile"' in workflow_text
     )
     assert (
-        'export EA_DATABASE_DSN="postgresql://ea_runtime:${EA_RUNTIME_PASSWORD}wrong'
-        '@127.0.0.1:54328/ea_core"' in workflow_text
+        'printf \'127.0.0.1:54328:ea_core:ea_runtime:%swrong\\n\' '
+        '"$EA_RUNTIME_PASSWORD" > "$runtime_passfile"' in workflow_text
     )
+    assert workflow_text.count('chmod 600 "$runtime_passfile"') == 2
     assert "export PGPASSWORD=" not in workflow_text
 
 
