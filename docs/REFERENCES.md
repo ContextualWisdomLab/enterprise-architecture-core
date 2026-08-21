@@ -14,6 +14,8 @@ Association of International Certified Professional Accountants. (2023). *2017 T
 
 Cloud Native Computing Foundation. (2022). *CloudEvents specification* (Version 1.0.2). https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md
 
+Ministry of Science and ICT. (2023). *클라우드컴퓨팅서비스 보안인증에 관한 고시* [Notice on cloud computing service security certification; 시행 2023-01-31, 과학기술정보통신부고시 제2023-4호]. 국가법령정보센터. https://law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000218804
+
 National Institute of Standards and Technology. (2024). *The NIST Cybersecurity Framework (CSF) 2.0* (NIST CSWP 29). https://doi.org/10.6028/NIST.CSWP.29
 
 OpenAPI Initiative. (2025). *OpenAPI Specification* (Version 3.2.0). https://spec.openapis.org/oas/v3.2.0.html
@@ -28,5 +30,6 @@ OpenAPI Initiative. (2025). *OpenAPI Specification* (Version 3.2.0). https://spe
 | ArchiMate 3.2 Specification | Document C226; US ISBN 1-957866-02-4; published 19 October 2022; supersedes C197; superseded by C260 | https://publications.opengroup.org/c226 | — | Legacy 3.x edition for interoperability with existing 3.2 models and tools. Not the current standard. |
 | 2017 Trust Services Criteria | AICPA 2017 TSC with Revised Points of Focus 2022 | https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022 | — | Control-criteria source only; no SOC 2 certification is claimed by this repository. |
 | CloudEvents 1.0.2 | CNCF CloudEvents release tag `v1.0.2` | https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md | https://github.com/cloudevents/spec/tree/v1.0.2; https://cloudevents.io/ | Event-envelope interoperability source; a released Context Graph dependency is still required for positive integration readiness. |
+| Korean CSAP governing rule | *클라우드컴퓨팅서비스 보안인증에 관한 고시*, 시행 2023-01-31, 과학기술정보통신부고시 제2023-4호 | https://law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000218804 | — | Preparation boundary only; confirm the applicable current service type, grade, and revision before certification work. |
 | NIST CSF 2.0 | NIST CSWP 29, final 2024-02-26 | https://doi.org/10.6028/NIST.CSWP.29 | https://www.nist.gov/cyberframework | Security-risk governance and evidence-mapping source; it is not a certification. |
 | OpenAPI 3.2.0 | OpenAPI Specification version 3.2.0, 2025-09-19 | https://spec.openapis.org/oas/v3.2.0.html | https://spec.openapis.org/oas/ | Current HTTP contract language used by the implementation line. |

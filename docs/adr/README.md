@@ -9,3 +9,4 @@ Accepted decisions for Enterprise Architecture Core. Each record has Context, De
 | [0003](0003-archimate-viewpoint-language.md) | Viewpoint language follows the current ArchiMate 4 Specification |
 | [0004](0004-cwl-msa-composition-hubs.md) | Designed for independent operation and hub composition once a deployable runtime and versioned contracts are released; the current protected baseline remains documentation-only |
 | [0005](0005-product-technical-gap-baseline.md) | Product and technical gaps remain evidence-backed and separate from unreleased branch intent |
+| [0006](0006-security-control-evidence-boundary.md) | CSAP/SOC 2 preparation evidence is a role-owned crosswalk, not a certification or attestation claim |
