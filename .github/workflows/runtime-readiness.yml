@@ -66,13 +66,16 @@ jobs:
       - name: Prove healthy database and absent immutable contract fail closed independently
         run: |
           set -euo pipefail
+          runtime_passfile="$RUNNER_TEMP/ea-runtime.pgpass"
+          printf '127.0.0.1:54328:ea_core:ea_runtime:%s\n' "$EA_RUNTIME_PASSWORD" > "$runtime_passfile"
+          chmod 600 "$runtime_passfile"
           export EA_BIND_HOST=127.0.0.1
           export PORT=18080
-          export EA_DATABASE_DSN=postgresql://ea_runtime@127.0.0.1:54328/ea_core
-          export PGPASSWORD="$EA_RUNTIME_PASSWORD"
+          export EA_DATABASE_DSN="postgresql://ea_runtime@127.0.0.1:54328/ea_core?passfile=${runtime_passfile}"
           .runtime-smoke/bin/ea-core >runtime.log 2>&1 &
           service_pid="$!"
           cleanup() {
+            rm -f "$runtime_passfile"
             kill "$service_pid" 2>/dev/null || true
             wait "$service_pid" 2>/dev/null || true
           }
@@ -101,13 +104,16 @@ jobs:
       - name: Prove broken database configuration reports the database dimension
         run: |
           set -euo pipefail
+          runtime_passfile="$RUNNER_TEMP/ea-runtime.pgpass"
+          printf '127.0.0.1:54328:ea_core:ea_runtime:%swrong\n' "$EA_RUNTIME_PASSWORD" > "$runtime_passfile"
+          chmod 600 "$runtime_passfile"
           export EA_BIND_HOST=127.0.0.1
           export PORT=18081
-          export EA_DATABASE_DSN=postgresql://ea_runtime@127.0.0.1:54328/ea_core
-          export PGPASSWORD="${EA_RUNTIME_PASSWORD}wrong"
+          export EA_DATABASE_DSN="postgresql://ea_runtime@127.0.0.1:54328/ea_core?passfile=${runtime_passfile}"
           .runtime-smoke/bin/ea-core >runtime-bad-db.log 2>&1 &
           service_pid="$!"
           cleanup() {
+            rm -f "$runtime_passfile"
             kill "$service_pid" 2>/dev/null || true
             wait "$service_pid" 2>/dev/null || true
           }
