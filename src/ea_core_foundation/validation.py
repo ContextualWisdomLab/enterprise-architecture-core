@@ -51,6 +51,15 @@ _TARGET_STATE_RUNTIME_PATH = (
     "/v1/technology-target-state-plans/{technology_version_id}"
 )
 _TARGET_STATE_OPERATION_ID = "getTechnologyTargetStatePlan"
+_CWL_TIMESTAMP_SCHEMA = {
+    "type": "string",
+    "format": "date-time",
+    "pattern": (
+        r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]"
+        r"(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?"
+        r"(?:[Zz]|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$"
+    ),
+}
 _REQUIRED_CONNECTOR_NAMES = {
     "keyverse_oidc",
     "context_graph_contracts",
@@ -415,7 +424,7 @@ def _validate_target_state_operation(paths: Mapping[str, Any]) -> None:
             parameters,
             (timestamp_name, "query"),
             required=True,
-            schema={"type": "string", "format": "date-time"},
+            schema=_CWL_TIMESTAMP_SCHEMA,
         )
     _require_parameter(
         parameters,
