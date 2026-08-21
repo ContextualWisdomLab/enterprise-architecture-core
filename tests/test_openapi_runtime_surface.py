@@ -3,6 +3,7 @@
 from copy import deepcopy
 
 import pytest
+from jsonschema import ValidationError, validate
 
 from ea_core_foundation import (
     ContractValidationError,
@@ -218,6 +219,27 @@ def test_planner_requires_exact_parameter_required_state_and_schema(
     }
     with pytest.raises(ContractValidationError, match="incorrect schema"):
         validate_openapi_runtime_surface(changed)
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_PLANNER_PATH]["get"]["parameters"][0]["schema"][
+        "pattern"
+    ] = "^[0-9a-f-]+$"
+    with pytest.raises(ContractValidationError, match="incorrect schema"):
+        validate_openapi_runtime_surface(changed)
+
+
+def test_planner_uuid_schema_matches_uuidv7_runtime_boundary(openapi_document) -> None:
+    """Generated clients cannot send UUIDv4 values the runtime rejects."""
+
+    schema = openapi_document["paths"][_PLANNER_PATH]["get"]["parameters"][0][
+        "schema"
+    ]
+    validate(
+        "0196f100-1111-7111-8111-111111111111",
+        schema,
+    )
+    with pytest.raises(ValidationError):
+        validate("550e8400-e29b-41d4-a716-446655440000", schema)
 
 
 def test_planner_requires_success_and_error_response_shapes(openapi_document) -> None:
