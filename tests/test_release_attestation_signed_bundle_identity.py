@@ -76,7 +76,8 @@ def test_verifier_uses_exact_signed_spdx_payload_not_lossy_parsed_view(
     gh_path.write_text(
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
-        'if [[ " $* " == *" --predicate-type https://spdx.dev/Document/v3 "* ]]; then\n'
+        'if [[ " $* " == *" --predicate-type '
+        'https://spdx.dev/Document/v3 "* ]]; then\n'
         '  printf \'%s\\n\' "$GH_FAKE_SBOM_RESULT"\n'
         "else\n"
         '  printf \'%s\\n\' "$GH_FAKE_PROVENANCE_RESULT"\n'
