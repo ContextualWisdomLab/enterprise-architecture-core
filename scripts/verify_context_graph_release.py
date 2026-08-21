@@ -11,7 +11,8 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as distribution_version
 
 # Python >=3.11 is the supported runtime contract; importlib.resources is stdlib.
-from importlib.resources import files  # nosemgrep
+# nosemgrep: python.lang.compatibility.python37.python37-compatibility-importlib2
+from importlib.resources import files
 from pathlib import Path
 
 _EXPECTED_REPOSITORY = "ContextualWisdomLab/context-graph-contracts"
