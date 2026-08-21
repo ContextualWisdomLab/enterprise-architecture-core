@@ -270,6 +270,19 @@ def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
             }
         ),
         json.dumps(
+            {
+                "assessment_recheck_request_id": _RECHECK_ID,
+                "data_management_assessment_projection_id": _ASSESSMENT_ID,
+                "successor_assessment_projection_id": None,
+                "successor_truth_status_code": None,
+                "recheck_state_code": "awaiting_result",
+                "successor_readiness_code": None,
+                "successor_overall_score_basis_points": None,
+                "successor_missing_evidence_count": None,
+                "next_action": "plan_remaining_assessment_gap",
+            }
+        ),
+        json.dumps(
             _payload(
                 recheck_state_code="evidence_complete",
                 successor_readiness_code="evidence_complete",

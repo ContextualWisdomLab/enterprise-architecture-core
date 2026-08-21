@@ -228,7 +228,10 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
         _DATA_MANAGEMENT_RECHECK_REQUEST_SCHEMA,
         _DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA,
     }.difference(schemas)
-    if _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH in paths:
+    if (
+        _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH in paths
+        and _DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA not in schemas
+    ):
         missing_schemas.add(_DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA)
     if missing_schemas:
         raise ContractValidationError(
