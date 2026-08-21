@@ -201,6 +201,9 @@ $$;
 
 -- A historical planner read must still use a scenario that was active at the
 -- requested recording cutoff after that scenario was superseded later.
+-- Keep the irreversible fixture mutation local to this historical assertion;
+-- the following approval acceptance relies on the scenario remaining active.
+BEGIN;
 UPDATE architecture_core.architecture_scenario
    SET superseded_at = '2027-08-01T00:00:00Z'
  WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
@@ -228,6 +231,8 @@ BEGIN
   END IF;
 END;
 $$;
+
+ROLLBACK;
 
 SELECT set_config(
     'app.tenant_record_id',
