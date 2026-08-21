@@ -72,7 +72,7 @@ def _write_fake_gh(tmp_path: Path) -> tuple[Path, Path]:
         'if [[ -n "${GH_FAKE_REPLACEMENT_SBOM:-}" ]]; then\n'
         '  printf \'%s\\n\' "$GH_FAKE_REPLACEMENT_SBOM" > "$GH_FAKE_SBOM_PATH"\n'
         "fi\n"
-        "if [[ \" $* \" == *\" --predicate-type \"* ]]; then\n"
+        "if [[ \" $* \" == *\" --predicate-type https://spdx.dev/Document/v3 \"* ]]; then\n"
         "  printf '%s\\n' \"$GH_FAKE_SBOM_RESULT\"\n"
         '  if [[ -n "${GH_FAKE_SYMLINK_TARGET:-}" ]]; then\n'
         '    artifact_name="${3##*/}"\n'
@@ -258,6 +258,10 @@ def test_verifier_executes_both_attestation_policies(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     log_lines = (tmp_path / "gh.log").read_text(encoding="utf-8").splitlines()
     assert len(log_lines) == 4
+    assert (
+        sum(f"--predicate-type {_PROVENANCE_PREDICATE}" in line for line in log_lines)
+        == 2
+    )
     assert (
         sum(f"--predicate-type {_SPDX_PREDICATE}" in line for line in log_lines)
         == 2
