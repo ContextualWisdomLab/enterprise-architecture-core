@@ -1,4 +1,4 @@
-"""Protect CI workflows from committing reusable database credentials."""
+"""Protect CI workflows from committing or misrouting database credentials."""
 
 from pathlib import Path
 
@@ -29,6 +29,27 @@ def test_database_workflows_generate_credentials_at_runtime() -> None:
     assert 'export EA_RUNTIME_PASSWORD="$runtime_password"' in workflow_text
     assert 'printf \'EA_OWNER_PASSWORD=%s\\n\'' in workflow_text
     assert 'printf \'EA_RUNTIME_PASSWORD=%s\\n\'' in workflow_text
+
+
+def test_runtime_readiness_uses_purpose_bound_passfiles() -> None:
+    """Authenticate readiness through the DSN-owned passfile, not ambient PG* vars."""
+
+    workflow_text = (WORKFLOW_ROOT / "runtime-readiness.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert workflow_text.count('runtime_passfile="$RUNNER_TEMP/ea-runtime.pgpass"') == 2
+    assert workflow_text.count('passfile=${runtime_passfile}') == 2
+    assert (
+        'printf \'127.0.0.1:54328:ea_core:ea_runtime:%s\\n\' '
+        '"$EA_RUNTIME_PASSWORD" > "$runtime_passfile"' in workflow_text
+    )
+    assert (
+        'printf \'127.0.0.1:54328:ea_core:ea_runtime:%swrong\\n\' '
+        '"$EA_RUNTIME_PASSWORD" > "$runtime_passfile"' in workflow_text
+    )
+    assert workflow_text.count('chmod 600 "$runtime_passfile"') == 2
+    assert "export PGPASSWORD=" not in workflow_text
 
 
 def test_migration_service_uses_disposable_trust_only() -> None:
