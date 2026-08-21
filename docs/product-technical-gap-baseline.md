@@ -9,7 +9,7 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-21T00:50:51Z` — PR #16 was inspected at exact head
+**Live refresh:** `2026-08-21T01:04:40Z` — PR #16 was inspected at exact head
 `8f852ac54b3636d147c37b6c5b652bf7a16e1ee6`; the PostgreSQL acceptance
 failure was traced to a historical-planner fixture mutation leaking into the
 following approval test, and the mutation is now transaction-isolated. The
@@ -22,18 +22,16 @@ The synchronized stack is current at
 PR #31 `172f439736753a14cdb6569b954adb1cf905bc44`, PR #32
 `03b3d560ce29a9441119995134a028a69edab315`, PR #33
 `d024aab7031d628be64a589a846b15a6f883746f`, and PR #35
-`6eab7bae3e2e7424ac33fbd74a3953e2a3949596`; their exact bases are recorded
+`8155af3f37bf3a3b60f18316913cb31137225e27`; their exact bases are recorded
 below, hosted required Checks were re-queued after the current-head pushes, and
 no formal same-head approval is observed. PR #34 is an independent `main` candidate at exact head
-`a5fb5b11f05eb81a541ad40c5525975fe860c8ff` with 19 hosted Checks queued after
-a current-head Ruff repair. Local PR34 evidence passes 126 tests, 100%
-statement-and-branch coverage (436 statements/162 branches), Ruff, and
-repository validation; current PR35 evidence
-passes 698 tests, 100% statement-and-branch coverage (3250 statements/900
-branches), Ruff, repository validation (`48 tables, 399 columns, 22 indexes,
-416 constraints, 14 OpenAPI operations, 12 AsyncAPI operations, 7 connectors,
-25 ADRs`), clean PostgreSQL 18 SQL acceptance through migration 0050, and
-runtime privilege acceptance. These local results do
+`d0b07dc06733a61be8516b5fb67f6f0b8488a8bf` with 38 hosted Checks queued after
+the verifier-boundary test repair. Local current-head PR34 evidence passes 131
+tests, Ruff, `bash -n`, and actionlint. PR35's unchanged Python surface retains
+the prior 698-test, 100% statement-and-branch coverage (3250 statements/900
+branches), Ruff, and repository-validation evidence; its current head also
+passes clean PostgreSQL 18 SQL acceptance through migration 0050 and runtime
+privilege acceptance. These local results do
 not prove hosted Checks, merge, release, or deployment.
 
 PR #36 extends PR35 at exact head
@@ -109,8 +107,8 @@ recollected after any push or base change.
 | PR | Scope | Base → head | Observed state | Customer-safe next action |
 | ---: | --- | --- | --- | --- |
 | [36](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/36) | Add repeatable hot-write capacity snapshot | `hot-write-capacity` at current base `6eab7bae3e2e7424ac33fbd74a3953e2a3949596` → `codex/hot-write-capacity-report` | Draft; exact head `545245ef9f780bcdc321fc2223efa609429479a2`; tenant-scoped read-only report now restores caller context on success and failure, targeted PostgreSQL 18.6 acceptance passes, and the preceding head passed all 63 SQL acceptance files; hosted Checks queued; no formal approval | Obtain an independent same-head review and terminal Checks; merge only after PR35's protected gate and the exact current stack are valid. |
-| [35](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/35) | Prepare append-only write boundaries for hot partitioning | `portfolio-assessment-summary` at current base `d024aab7031d628be64a589a846b15a6f883746f` → `hot-write-capacity` | Ready; exact head `6eab7bae3e2e7424ac33fbd74a3953e2a3949596`; PR33 current head was propagated and the merge conflict was resolved without dropping either chain; current evidence is 698 tests, 100% statement-and-branch coverage, Ruff, repository validation, clean PostgreSQL 18 SQL/runtime acceptance; hosted required Checks were re-queued; no formal approval | Wait for terminal Checks and an independent same-head review; merge only after PR #33 and its ancestors are current and protected. |
-| [34](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/34) | Repair protected-main SPDX attestation compatibility | `main` at current base `ca6889497728e1a3f09d68790a9096576e13a3ff` → `codex/supply-chain-sbom-attestation` | Ready; exact head `a5fb5b11f05eb81a541ad40c5525975fe860c8ff`; current-head Ruff repair passes 126 tests, 100% statement-and-branch coverage (436 statements/162 branches), Ruff, and repository validation; hosted Checks are queued; no formal approval | Wait for terminal hosted Checks and an independent same-head review; merge only after the exact-head protected gate passes. |
+| [35](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/35) | Prepare append-only write boundaries for hot partitioning | `portfolio-assessment-summary` at current base `d024aab7031d628be64a589a846b15a6f883746f` → `hot-write-capacity` | Ready; exact head `8155af3f37bf3a3b60f18316913cb31137225e27`; PR33 current head was propagated and the merge conflict was resolved without dropping either chain; the current SQL acceptance failure was isolated to an unscoped inferred fixture row and the clean PostgreSQL 18.6 suite now passes; hosted Checks re-queued; no formal approval | Wait for terminal Checks and an independent same-head review; merge only after PR #33 and its ancestors are current and protected. |
+| [34](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/34) | Repair protected-main SPDX attestation compatibility | `main` at current base `ca6889497728e1a3f09d68790a9096576e13a3ff` → `codex/supply-chain-sbom-attestation` | Ready; exact head `d0b07dc06733a61be8516b5fb67f6f0b8488a8bf`; verifier-boundary test repair passes 131 tests, Ruff, `bash -n`, and actionlint; hosted Checks are queued; no formal approval | Wait for terminal hosted Checks and an independent same-head review; merge only after the exact-head protected gate passes. |
 | [33](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/33) | Publish deterministic portfolio assessment summary | `portfolio-assessment-api` at current base `03b3d560ce29a9441119995134a028a69edab315` → `portfolio-assessment-summary` | Ready; exact head `d024aab7031d628be64a589a846b15a6f883746f`; portfolio contract count was refreshed to 14 operations; current PR35 aggregate evidence covers the synchronized chain; hosted Checks were re-queued; no formal approval | Wait for terminal Checks and obtain an independent same-head review; merge only after the synchronized parent and descendant gates are current. |
 | [32](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/32) | Expose portfolio assessment read port | `data-management-recheck-status-v1` at current base `172f439736753a14cdb6569b954adb1cf905bc44` → `portfolio-assessment-api` | Ready; exact head `03b3d560ce29a9441119995134a028a69edab315`; 674 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; hosted Checks were re-queued; no formal approval | Wait for terminal Checks and obtain an independent same-head review; repair and revalidate before merge. |
 | [31](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/31) | Expose data-management reassessment status | `data-management-recheck-v1` at current base `073b6420f9c74033c166580a1f01c13d20c8ee30` → `data-management-recheck-status-v1` | Ready; exact head `172f439736753a14cdb6569b954adb1cf905bc44`; synchronized parent of the portfolio API; hosted Checks were re-queued; no formal approval | Wait for terminal Checks, inspect the independent review, then merge only with current-head evidence. |
@@ -143,8 +141,8 @@ after any push or base-branch change.
 | PR | Full head SHA | Collected | Delivery truth | Current evidence boundary |
 | ---: | --- | --- | --- | --- |
 | 36 | `545245ef9f780bcdc321fc2223efa609429479a2` | `2026-08-21T00:48:57Z` | `implementation_candidate` | Tenant-scoped read-only hot-write snapshot plus operator runbook; current targeted PostgreSQL 18.6 acceptance covers caller-context restoration on success/unset/failure paths, while the preceding SQL head passed all 63 SQL acceptance files; hosted Checks queued; no formal approval, merge, release, or production-capacity claim. |
-| 35 | `6eab7bae3e2e7424ac33fbd74a3953e2a3949596` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current head includes PR33 propagation and hot-write capacity; 698 tests, 100% statement-and-branch coverage (3250 statements/900 branches), Ruff, repository validation, clean PostgreSQL 18 migrations 0001–0050, every SQL acceptance file, and runtime privilege acceptance; hosted Checks re-queued; no formal approval. |
-| 34 | `a5fb5b11f05eb81a541ad40c5525975fe860c8ff` | `2026-08-20T23:00:52Z` | `implementation_candidate` | Current-head Ruff repair passes 126 tests, 100% statement-and-branch coverage (436 statements/162 branches), Ruff, and repository validation; workflow-specific hosted SBOM/attestation Checks are queued; no formal approval, merge, release, or live deployment is claimed. |
+| 35 | `8155af3f37bf3a3b60f18316913cb31137225e27` | `2026-08-21T01:04:40Z` | `implementation_candidate` | Current head includes PR33 propagation and hot-write capacity; the clean PostgreSQL 18.6 run passes every SQL acceptance file after scoping the portfolio query assertion to its intended dimension; hosted Checks re-queued; no formal approval. |
+| 34 | `d0b07dc06733a61be8516b5fb67f6f0b8488a8bf` | `2026-08-21T01:04:40Z` | `implementation_candidate` | Current-head verifier-boundary test repair passes 131 tests, Ruff, `bash -n`, and actionlint; workflow-specific hosted SBOM/attestation Checks are queued; no formal approval, merge, release, or live deployment is claimed. |
 | 33 | `d024aab7031d628be64a589a846b15a6f883746f` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Portfolio summary contract count refreshed to 14 operations; current PR35 aggregate local evidence covers this exact chain; hosted Checks re-queued; no formal approval. |
 | 32 | `03b3d560ce29a9441119995134a028a69edab315` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Portfolio API and isolated reassessment fixtures; 674 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; hosted Checks re-queued; no formal approval. |
 | 31 | `172f439736753a14cdb6569b954adb1cf905bc44` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Synchronized status parent of PR32; current PR35 aggregate local evidence covers the status contract and PostgreSQL fixture; hosted Checks re-queued; no formal approval. |
