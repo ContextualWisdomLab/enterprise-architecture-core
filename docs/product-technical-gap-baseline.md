@@ -9,13 +9,13 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-21T00:48:57Z` — PR #16 was inspected at exact head
+**Live refresh:** `2026-08-21T00:50:06Z` — PR #16 was inspected at exact head
 `8f852ac54b3636d147c37b6c5b652bf7a16e1ee6`; the PostgreSQL acceptance
 failure was traced to a historical-planner fixture mutation leaking into the
 following approval test, and the mutation is now transaction-isolated. The
 current-head dispatch was accepted; hosted Checks are queued and no formal
 approval is observed. PR #18 was inspected at exact head
-`f840d5577002ae2b4e352a5b7e4cdcea5c065311`, based on protected
+`45d31b90b6fded3ea158d8f3ab6a32b99a540004`, based on protected
 `develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks are
 queued after an exact-head dispatch and no formal approval is observed.
 The synchronized stack is current at
@@ -157,7 +157,7 @@ after any push or base-branch change.
 | 22 | `a85e4c6466545369c675f4055de99bd836bc7967` | `2026-08-21T00:21:15Z` | `implementation_candidate` | Current target-state completion ancestor; planner fixture supersession is transaction-isolated, all 29 local PostgreSQL 18.4 SQL acceptance files pass, and hosted Checks are queued after the push; no protected integration or formal approval. |
 | 21 | `4ada32a811c2f5ba7ac2138c0826229c5d62e78b` | `2026-08-20T14:22:40Z` | `implementation_candidate` | Repository Checks terminal green; exact-head OpenCode dispatch was accepted; no qualifying independent current-head approval observed. |
 | 19 | `03a5898cc7a73eb55ed87198c8392965ff9ee793` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state start ancestor; 341 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
-| 18 | `f840d5577002ae2b4e352a5b7e4cdcea5c065311` | `2026-08-21T00:38:20Z` | `implementation_candidate` | Documentation snapshot source head; evidence baseline includes the current PR16 and scheduler updates; hosted Checks queued; no formal current-head approval observed. |
+| 18 | `45d31b90b6fded3ea158d8f3ab6a32b99a540004` | `2026-08-21T00:50:06Z` | `implementation_candidate` | Documentation snapshot source head; evidence baseline includes the current PR16 and scheduler updates; hosted Checks queued; no formal current-head approval observed. |
 | 17 | `272571a480bda9ed75267af1617fac5a6f9018a0` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state schedule ancestor; 287 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
 | 16 | `8f852ac54b3636d147c37b6c5b652bf7a16e1ee6` | `2026-08-21T00:03:03Z` | `implementation_candidate` | Current target-state approval candidate; fixture-isolation repair passes 231 Python tests with 100% statement-and-branch coverage, Ruff, repository validation, and all 25 real PostgreSQL 18.6 acceptance files; exact-head OpenCode dispatch accepted; hosted Checks queued; no protected integration or formal approval. |
 | 15 | `cda7aa69c853d3ea2292c14a47d51eaea4b0fe0d` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state planner API ancestor; local stack propagation completed and exact-head review dispatch is required; no protected integration or formal approval. |
