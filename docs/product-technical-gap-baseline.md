@@ -69,10 +69,12 @@ queued jobs; all
 remain Draft with no formal same-head approval. PR22 has queued jobs after its
 current-head fixture-isolation repair, plus
 PR17, PR19, PR23, PR24, PR26, PR33, PR34, PR35, and PR36 with queued jobs.
-PR #11's exact-head Strix run
-failed after the `Run Strix (quick)` step timed out; the public job page
-exposes no vulnerability output and the GitHub log endpoint returns 404, so
-it remains an external security-gate failure rather than a source finding.
+PR #11's prior exact-head Strix run at `1282d46af8f65a970a337d6496b15397c29ecd41`
+reported one `CRITICAL` hardcoded-credential finding in the changed workflow
+surface and failed closed. Its current repair head is
+`251e9760056a4bfd5e241cb7b0c0dd91117c7fcb`; the fixed literals were removed,
+ephemeral credentials are generated at runtime, and the new Strix run is
+pending.
 PR14 still has two failures on its
 unchanged `main` head: `attest-protected-main` run `32036084953` rejected the
 old SPDX payload as unsupported, while `installed-process-readiness` run
@@ -160,7 +162,7 @@ recollected after any push or base change.
 | [15](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/15) | Expose authenticated target-state planner query | `target-state-planner-v1` → `target-state-planner-api-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Verify issuer, audience, tenant, role, bitemporal cutoff, and no direct-table access. |
 | [14](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/14) | Synchronize `main` into protected `develop` | `develop` ← `main` | Draft; exact head `ca6889497728e1a3f09d68790a9096576e13a3ff`; `attest-protected-main` run `32036084953` rejected the old SPDX payload as unsupported, and `installed-process-readiness` run `32036084876` failed after three setup-uv codeload HTTP 429 attempts; no current-head approval | Wait for PR34's protected-main fix to integrate into `main`, then rebuild/recheck PR14; do not rerun unchanged external 429 evidence or transfer predecessor checks. |
 | [12](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/12) | Joined technology target-state planner projection | `cross-domain-impact-projection-v1` → `target-state-planner-v1` | Draft; exact head `4f614fb96047fe1d6e844fec4998ac465b09ec06`; a RED regression reproduced superseded-current projection leakage, the predicate repair preserves historical visibility, and all 22 SQL acceptance files pass on clean PostgreSQL 18.6; hosted Checks 19 queued and 7 skipped; no formal approval | Preserve receipt-bound foreign evidence and deterministic next actions; obtain an independent same-head review and terminal Checks before protected merge. |
-| [11](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/11) | Cross-domain technology impact evidence | `main` → `cross-domain-impact-projection-v1` | Ready; exact head `1282d46af8f65a970a337d6496b15397c29ecd41`; current public Strix run timed out in `Run Strix (quick)` after 21m49s, while the repository's 21 SQL acceptance files pass locally; no source finding is exposed and the log endpoint returns 404 | Do not rerun unchanged external Strix evidence; obtain a fresh bounded security result or repair the central timeout handling, then re-check the exact head. |
+| [11](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/11) | Cross-domain technology impact evidence | `main` → `cross-domain-impact-projection-v1` | Draft; exact repair head `251e9760056a4bfd5e241cb7b0c0dd91117c7fcb`; prior Strix run at `1282d46af8f65a970a337d6496b15397c29ecd41` found one CRITICAL hardcoded-credential finding; workflow credential repair passes local contract tests, actionlint, repository validation, and real PostgreSQL runtime/RLS acceptance; current Checks are pending | Verify the new exact-head Strix result and obtain independent review before considering readiness or merge. |
 
 ### Current-head evidence packet
 
@@ -194,7 +196,7 @@ after any push or base-branch change.
 | 15 | `cda7aa69c853d3ea2292c14a47d51eaea4b0fe0d` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state planner API ancestor; local stack propagation completed and exact-head review dispatch is required; no protected integration or formal approval. |
 | 14 | `ca6889497728e1a3f09d68790a9096576e13a3ff` | `2026-08-21T00:34:02Z` | `implementation_candidate` | Unchanged `main` integration candidate; `attest-protected-main` run `32036084953` rejected the old SPDX payload, and `installed-process-readiness` run `32036084876` exhausted three setup-uv codeload HTTP 429 attempts; wait for PR34/main integration before rebuilding. |
 | 12 | `4f614fb96047fe1d6e844fec4998ac465b09ec06` | `2026-08-21T02:09:43Z` | `implementation_candidate` | Current target-state planner candidate; RED regression reproduced superseded-current projection leakage, the minimal predicate repair preserves historical visibility, and all 22 SQL acceptance files pass on clean PostgreSQL 18.6; hosted Checks 19 queued and 7 skipped; no formal approval, merge, release, or deployment claim. |
-| 11 | `1282d46af8f65a970a337d6496b15397c29ecd41` | `2026-08-21T00:34:02Z` | `implementation_candidate` | Current cross-domain impact ancestor; local SQL acceptance passes, but the public exact-head Strix run timed out without exposing a vulnerability finding and its log endpoint returns 404; protected current-head security evidence remains unresolved. |
+| 11 | `251e9760056a4bfd5e241cb7b0c0dd91117c7fcb` | `2026-08-21T05:54:03Z` | `implementation_candidate` | Current security-repair head removes committed workflow database credentials and generates ephemeral values at runtime; focused tests, actionlint, repository validation, and real PostgreSQL runtime/RLS acceptance pass locally; hosted Checks including Strix are pending, with no formal approval or protected merge. |
 
 ## Open issues and control-plane work
 
