@@ -46,6 +46,12 @@ def _write_fake_gh(tmp_path: Path) -> tuple[Path, Path]:
         '    rm -f "$verification_path"\n'
         '    ln -s "$GH_FAKE_SYMLINK_TARGET" "$verification_path"\n'
         "  fi\n"
+        '  if [[ -n "${GH_FAKE_REPLACEMENT_VERIFICATION:-}" ]]; then\n'
+        '    artifact_name="${3##*/}"\n'
+        '    verification_path="$GH_FAKE_VERIFICATION_DIR/$artifact_name.sbom.json"\n'
+        '    printf \'%s\\n\' "$GH_FAKE_REPLACEMENT_VERIFICATION" > '
+        '"$verification_path"\n'
+        "  fi\n"
         "else\n"
         "  printf '[{\"verificationResult\":{\"statement\":{\"predicate\":{}}}}]\\n'\n"
         "fi\n",
@@ -65,6 +71,7 @@ def _run_verifier(
     replacement_downloaded_sbom: dict[str, Any] | None = None,
     verification_dir_kind: str | None = None,
     symlink_verification_output: bool = False,
+    replacement_verification: list[dict[str, Any]] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run the verifier with isolated evidence and a fake GitHub CLI."""
     evidence_dir = tmp_path / "evidence"
@@ -119,6 +126,9 @@ def _run_verifier(
         symlink_target.write_text(json.dumps(sbom_result), encoding="utf-8")
         env["GH_FAKE_VERIFICATION_DIR"] = str(verification_dir)
         env["GH_FAKE_SYMLINK_TARGET"] = str(symlink_target)
+    if replacement_verification is not None:
+        env["GH_FAKE_VERIFICATION_DIR"] = str(verification_dir)
+        env["GH_FAKE_REPLACEMENT_VERIFICATION"] = json.dumps(replacement_verification)
     return subprocess.run(
         ["bash", str(_SCRIPT_PATH)],
         check=False,
@@ -326,4 +336,29 @@ def test_verifier_rejects_replaced_verification_output_symlink(tmp_path: Path) -
     )
 
     assert result.returncode != 0
-    assert "unable to parse attestation/SBOM evidence strictly" in result.stderr
+    assert "unable to capture or verify attestation evidence strictly" in result.stderr
+
+
+def test_verifier_binds_decision_to_attestation_stdout_not_replaced_path(
+    tmp_path: Path,
+) -> None:
+    """Reject an expected pathname replacement when producer stdout mismatches."""
+    mismatched_sbom = {
+        "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+        "@graph": [{"type": "software_Package", "name": "different"}],
+    }
+    expected_replacement = [
+        {"verificationResult": {"statement": {"predicate": _EXPECTED_SBOM}}}
+    ]
+    result = _run_verifier(
+        tmp_path,
+        (
+            "enterprise_architecture_core-0.1-py3-none-any.whl",
+            "enterprise_architecture_core-0.1.tar.gz",
+        ),
+        attested_sbom=mismatched_sbom,
+        replacement_verification=expected_replacement,
+    )
+
+    assert result.returncode != 0
+    assert "does not match downloaded package SBOM" in result.stderr
