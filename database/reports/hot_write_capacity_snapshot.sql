@@ -6,11 +6,22 @@
 \quit 2
 \endif
 
+-- Preserve the caller's tenant context so an operator can include this report in
+-- a longer psql session without changing the authorization context of later SQL.
+SELECT COALESCE(
+    pg_catalog.current_setting('app.tenant_record_id', true),
+    ''
+) AS cwl_capacity_previous_tenant_record_id \gset
+
 -- The explicit tenant predicate remains in every branch even for owner
 -- connections, so this report does not accidentally become cross-tenant.
 -- Run it through an approved operator/owner connection; no runtime grant is
 -- installed for this direct read-only report.
-SELECT set_config('app.tenant_record_id', :'tenant_id', false) \gset
+SELECT pg_catalog.set_config(
+    'app.tenant_record_id',
+    :'tenant_id',
+    false
+) AS cwl_capacity_installed_tenant_record_id \gset
 
 WITH snapshot AS (
     SELECT
@@ -103,3 +114,13 @@ JOIN pg_catalog.pg_stat_user_tables AS table_stats
   ON table_stats.schemaname = 'architecture_core'
  AND table_stats.relname = boundary_metrics.boundary_name
 ORDER BY boundary_metrics.boundary_name;
+
+SELECT pg_catalog.set_config(
+    'app.tenant_record_id',
+    :'cwl_capacity_previous_tenant_record_id',
+    false
+) AS cwl_capacity_restored_tenant_record_id \gset
+
+\unset cwl_capacity_previous_tenant_record_id
+\unset cwl_capacity_installed_tenant_record_id
+\unset cwl_capacity_restored_tenant_record_id
