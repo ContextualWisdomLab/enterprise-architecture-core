@@ -148,7 +148,8 @@ def main(argv: list[str]) -> int:
             label="downloaded SPDX evidence",
         )
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
-        print(f"unable to snapshot downloaded SPDX evidence strictly: {exc}", file=sys.stderr)
+        message = f"unable to snapshot downloaded SPDX evidence strictly: {exc}"
+        print(message, file=sys.stderr)
         return 1
     print(digest)
     return 0
