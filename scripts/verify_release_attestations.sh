@@ -108,6 +108,7 @@ for artifact in "${artifacts[@]}"; do
 
   gh attestation verify "$artifact" \
     "${common_policy[@]}" \
+    --predicate-type "$PROVENANCE_PREDICATE" \
     --format json \
     | python "$SCRIPT_DIR/verify_attestation_output.py" \
         "$VERIFICATION_DIR/$artifact_name.provenance.json" \
