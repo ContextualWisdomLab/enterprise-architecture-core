@@ -74,17 +74,24 @@ jobs:
               enterprise-architecture-core.spdx.json > SHA256SUMS
             sha256sum -c SHA256SUMS
           )
+      - name: Assemble canonical package evidence
+        run: |
+          rm -rf package-evidence
+          install -d -m 0700 package-evidence
+          cp -- dist/*.whl dist/*.tar.gz \
+            dist/enterprise-architecture-core.spdx.json \
+            dist/SHA256SUMS package-evidence/
       - name: Verify generated package evidence
-        run: python scripts/verify_package_evidence_bundle.py dist
+        run: python scripts/verify_package_evidence_bundle.py package-evidence
       - name: Upload checked-out commit package evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: package-evidence-${{ github.sha }}
           path: |
-            dist/*.whl
-            dist/*.tar.gz
-            dist/enterprise-architecture-core.spdx.json
-            dist/SHA256SUMS
+            package-evidence/*.whl
+            package-evidence/*.tar.gz
+            package-evidence/enterprise-architecture-core.spdx.json
+            package-evidence/SHA256SUMS
           if-no-files-found: error
           retention-days: 7
 
