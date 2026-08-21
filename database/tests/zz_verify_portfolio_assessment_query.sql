@@ -70,6 +70,8 @@ BEGIN
       'app.portfolio_supersession_cutoff'
   )::timestamptz;
 
+  -- The preceding system-cutoff fixture adds another inferred dimension.
+  -- Scope this assertion to the review fact under test.
   SELECT count(*)
     INTO historical_count
     FROM architecture_core.read_portfolio_assessment_for_tenant(
@@ -95,7 +97,8 @@ BEGIN
         'technology_risk',
         'fy2026_q3'
     )
-   WHERE truth_status_code = 'inferred';
+   WHERE truth_status_code = 'inferred'
+     AND assessment_dimension_code = 'support_risk';
   IF current_count <> 1 THEN
     RAISE EXCEPTION 'inferred assessment was not preserved as review evidence: %', current_count;
   END IF;
