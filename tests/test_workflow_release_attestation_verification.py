@@ -19,13 +19,10 @@ def test_protected_main_invokes_executable_attestation_verifier() -> None:
     assert 'SOURCE_REF: ${{ github.ref }}' in workflow_text
     assert 'EXPECTED_SOURCE_REF: refs/heads/main' in workflow_text
     assert (
-        'SIGNER_WORKFLOW: ContextualWisdomLab/enterprise-architecture-core/'
+        'SIGNER_WORKFLOW: ${{ github.repository }}/'
         '.github/workflows/supply-chain.yml'
     ) in workflow_text
-    assert (
-        'REPOSITORY: ContextualWisdomLab/enterprise-architecture-core'
-        in workflow_text
-    )
+    assert 'REPOSITORY: ${{ github.repository }}' in workflow_text
     assert 'SPDX_PREDICATE: https://spdx.dev/Document/v3' in workflow_text
     assert 'EVIDENCE_DIR: evidence' in workflow_text
     assert 'VERIFICATION_DIR: attestation-verification' in workflow_text
