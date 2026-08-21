@@ -8,6 +8,7 @@ import os
 import re
 import stat
 import sys
+import tomllib
 from pathlib import Path
 
 from strict_json_identity import load_strict_json, read_stable_regular_file
@@ -16,6 +17,7 @@ _SBOM_NAME = "enterprise-architecture-core.spdx.json"
 _CHECKSUM_NAME = "SHA256SUMS"
 _SPDX_CONTEXT = "https://spdx.org/rdf/3.0.1/spdx-context.jsonld"
 _CHECKSUM_PATTERN = re.compile(r"^([0-9a-f]{64})  ([^\s]+)$")
+_PROJECT_FILE = Path(__file__).resolve().parent.parent / "pyproject.toml"
 
 
 def _stable_sha256(path: Path, *, label: str) -> str:
@@ -44,6 +46,43 @@ def _stable_sha256(path: Path, *, label: str) -> str:
         os.close(descriptor)
 
 
+def _project_distribution_identity() -> tuple[str, str]:
+    """Return the build-normalized project distribution name and exact version."""
+    document = tomllib.loads(_PROJECT_FILE.read_text(encoding="utf-8"))
+    project = document.get("project")
+    if not isinstance(project, dict):
+        raise ValueError("pyproject.toml is missing [project] metadata")
+    name = project.get("name")
+    version = project.get("version")
+    if not isinstance(name, str) or not name:
+        raise ValueError("project distribution name must be a non-empty string")
+    if not isinstance(version, str) or not version:
+        raise ValueError("project distribution version must be a non-empty string")
+    normalized_name = re.sub(r"[-_.]+", "_", name).lower()
+    return normalized_name, version
+
+
+def _require_distribution_identity(wheel: Path, sdist: Path) -> None:
+    """Bind wheel and sdist filenames to the checked-out project identity/version."""
+    distribution_name, version = _project_distribution_identity()
+    wheel_prefix = f"{distribution_name}-{version}-"
+    if not wheel.name.startswith(wheel_prefix) or not wheel.name.endswith(".whl"):
+        raise ValueError(
+            "wheel evidence does not match project distribution identity/version"
+        )
+    tag_text = wheel.name[len(wheel_prefix) : -len(".whl")]
+    tag_parts = tag_text.split("-")
+    if len(tag_parts) not in {3, 4} or any(not part for part in tag_parts):
+        raise ValueError("wheel evidence has a malformed wheel filename")
+
+    expected_sdist_name = f"{distribution_name}-{version}.tar.gz"
+    if sdist.name != expected_sdist_name:
+        raise ValueError(
+            "source-distribution evidence does not match project distribution "
+            "identity/version"
+        )
+
+
 def _require_bundle_shape(evidence_dir: Path) -> tuple[Path, Path, Path, Path]:
     """Return the four exact evidence paths after rejecting mixed bundle shapes."""
     if evidence_dir.is_symlink():
@@ -64,6 +103,7 @@ def _require_bundle_shape(evidence_dir: Path) -> tuple[Path, Path, Path, Path]:
 
     wheel = wheels[0]
     sdist = sdists[0]
+    _require_distribution_identity(wheel, sdist)
     sbom = evidence_dir / _SBOM_NAME
     checksums = evidence_dir / _CHECKSUM_NAME
     expected_names = {wheel.name, sdist.name, sbom.name, checksums.name}
