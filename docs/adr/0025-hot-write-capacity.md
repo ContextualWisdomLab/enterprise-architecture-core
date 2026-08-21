@@ -33,11 +33,14 @@ The read-only `database/reports/hot_write_capacity_snapshot.sql` query provides
 the repeatable baseline for that measurement. It requires one `tenant_id`,
 reports exact row volume and write-time range for each boundary, pending or
 active queue lag where applicable, the derived bucket, relation/index sizes,
-relation-wide cumulative tuple counters, and the database-wide cumulative WAL
-counter. Operators compare snapshots for the same tenant and interval; the
-counters are not a production capacity claim or a tenant-isolated WAL metric.
-Negative queue-lag values indicate fixture or clock data that is in the future
-relative to the snapshot and require investigation rather than clamping.
+relation-wide cumulative tuple counters, and the cluster-wide cumulative WAL
+counter from PostgreSQL `pg_stat_wal`. Operators compare tenant-scoped metrics
+between snapshots for the same tenant and interval. Relation tuple counters
+remain relation-wide, while `pg_stat_wal` is one cluster-wide row; neither is a
+tenant-isolated metric and neither may be attributed to the selected tenant.
+The counters are not a production capacity claim. Negative queue-lag values
+indicate fixture or clock data that is in the future relative to the snapshot
+and require investigation rather than clamping.
 
 ## Consequence
 
@@ -58,3 +61,6 @@ Table partitioning*. https://www.postgresql.org/docs/18/ddl-partitioning.html
 
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation:
 CREATE INDEX*. https://www.postgresql.org/docs/18/sql-createindex.html
+
+PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation:
+The cumulative statistics system*. https://www.postgresql.org/docs/18/monitoring-stats.html
