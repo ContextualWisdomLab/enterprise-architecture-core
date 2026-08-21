@@ -9,13 +9,13 @@ Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
 
-**Live refresh:** `2026-08-21T00:21:15Z` — PR #16 was inspected at exact head
+**Live refresh:** `2026-08-21T00:34:02Z` — PR #16 was inspected at exact head
 `8f852ac54b3636d147c37b6c5b652bf7a16e1ee6`; the PostgreSQL acceptance
 failure was traced to a historical-planner fixture mutation leaking into the
 following approval test, and the mutation is now transaction-isolated. The
 current-head dispatch was accepted; hosted Checks are queued and no formal
 approval is observed. PR #18 was inspected at exact head
-`3e81098f3d3025e53cb9d3e624844597db10262a`, based on protected
+`55bf0a94f94f2dfa66dcd1151cb701c9ea8bc813`, based on protected
 `develop@1c0fa8b15ceb9e72186274aeb255d6777eb84ef4`; its hosted checks are
 queued after an exact-head dispatch and no formal approval is observed.
 The synchronized stack is current at
@@ -43,15 +43,15 @@ repeatable tenant-scoped hot-write snapshot; its preceding clean PostgreSQL
 acceptance. The public Checks pages currently show PR18 with queued jobs and
 PR22 with queued jobs after its current-head fixture-isolation repair, plus
 PR33, PR34, PR35, and PR36 with queued jobs. PR #11's exact-head Strix run
-failed after the `Run Strix (quick)` step timed out; no vulnerability output
-was exposed on the public job page, so it remains an external security-gate
-failure rather than a source finding. PR12 currently has no failed Checks.
-PR14 still
-has two failures on its unchanged `main` head: runtime readiness could
-not download `astral-sh/setup-uv` because codeload returned HTTP 429, and
-protected-main attestation rejected the old SPDX payload as unsupported. The
-latter is addressed by PR34; neither failure is converted to success or rerun
-unchanged.
+failed after the `Run Strix (quick)` step timed out; the public job page
+exposes no vulnerability output and the GitHub log endpoint returns 404, so
+it remains an external security-gate failure rather than a source finding.
+PR12 currently has no failed Checks. PR14 still has two failures on its
+unchanged `main` head: `attest-protected-main` run `32036084953` rejected the
+old SPDX payload as unsupported, while `installed-process-readiness` run
+`32036084876` failed after three codeload HTTP 429 attempts for
+`astral-sh/setup-uv`. The attestation failure is addressed by PR34; neither
+unchanged failure is converted to success or rerun.
 
 ## Executive decision
 
@@ -121,19 +121,19 @@ recollected after any push or base change.
 | [22](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/22) | Complete started target-state transformation | `target-state-start-v1` → `target-state-complete-v1` | Ready; exact head `a85e4c6466545369c675f4055de99bd836bc7967`; planner fixture supersession is transaction-isolated, and all 29 local PostgreSQL 18.4 SQL acceptance files pass; hosted Checks re-queued; no formal approval | Obtain an independent same-head review and terminal Checks; verify only an authoritative started transformation can complete. |
 | [21](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/21) | Run repository acceptance on protected `develop` pushes | `main` → `fix/develop-push-acceptance` | Ready; exact current head `4ada32a811c2f5ba7ac2138c0826229c5d62e78b`; repository Checks terminal green; exact-head OpenCode dispatch was accepted; no qualifying independent current-head approval | Obtain a formal same-head approval, then re-fetch and re-check before merge. |
 | [19](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/19) | Start scheduled target-state transformation | `target-state-schedule-v1` → `target-state-start-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Review the schedule-to-start authority boundary before advancing. |
-| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` at current base `1c0fa8b15ceb9e72186274aeb255d6777eb84ef4` → `cursor/ea-core-customer-docs-609e` | Draft; exact head `3e81098f3d3025e53cb9d3e624844597db10262a`; evidence baseline includes the current PR16 and scheduler updates; hosted Checks are queued; no formal approval | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
+| [18](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/18) | Buyer README and architecture decision records | `develop` at current base `1c0fa8b15ceb9e72186274aeb255d6777eb84ef4` → `cursor/ea-core-customer-docs-609e` | Draft; exact head `55bf0a94f94f2dfa66dcd1151cb701c9ea8bc813`; evidence baseline includes the current PR16 and scheduler updates; hosted Checks are queued; no formal approval | Obtain an independent same-head review, diagnose only current-head failures, and re-fetch all terminal Checks before merge. |
 | [17](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/17) | Schedule approved target-state transformation | `target-state-approval-v1` → `target-state-schedule-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Review milestone binding and exact replay semantics. |
 | [16](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/16) | Govern target-state approval command | `target-state-planner-api-v1` → `target-state-approval-v1` | Draft; exact head `8f852ac54b3636d147c37b6c5b652bf7a16e1ee6`; fixture-isolation repair passes 231 Python tests with 100% statement-and-branch coverage, Ruff, repository validation, and all 25 real PostgreSQL 18.6 acceptance files; exact-head OpenCode dispatch accepted; hosted Checks queued; no formal approval | Obtain an independent same-head review and terminal Checks; merge only after the approval role boundary and immutable database acceptance remain green. |
 | [15](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/15) | Expose authenticated target-state planner query | `target-state-planner-v1` → `target-state-planner-api-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Verify issuer, audience, tenant, role, bitemporal cutoff, and no direct-table access. |
-| [14](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/14) | Synchronize `main` into protected `develop` | `develop` ← `main` | Draft; exact head `ca6889497728e1a3f09d68790a9096576e13a3ff`; current page retains `installed-process-readiness` failure from setup-uv codeload HTTP 429 and `attest-protected-main` failure from the old unsupported SPDX payload; no current-head approval | Wait for PR34's protected-main fix to integrate into `main`, then rebuild/recheck PR14; do not rerun unchanged external 429 evidence or transfer predecessor checks. |
+| [14](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/14) | Synchronize `main` into protected `develop` | `develop` ← `main` | Draft; exact head `ca6889497728e1a3f09d68790a9096576e13a3ff`; `attest-protected-main` run `32036084953` rejected the old SPDX payload as unsupported, and `installed-process-readiness` run `32036084876` failed after three setup-uv codeload HTTP 429 attempts; no current-head approval | Wait for PR34's protected-main fix to integrate into `main`, then rebuild/recheck PR14; do not rerun unchanged external 429 evidence or transfer predecessor checks. |
 | [12](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/12) | Joined technology target-state planner projection | `cross-domain-impact-projection-v1` → `target-state-planner-v1` | Ready; visible repository gates green; exact-head OpenCode review dispatched | Preserve receipt-bound foreign evidence and deterministic next actions. |
-| [11](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/11) | Cross-domain technology impact evidence | `main` → `cross-domain-impact-projection-v1` | Ready; exact head `1282d46af8f65a970a337d6496b15397c29ecd41`; current public Strix run timed out in `Run Strix (quick)` after 21m49s, while the repository's 21 SQL acceptance files pass locally; no source finding is exposed | Do not rerun unchanged external Strix evidence; obtain a fresh bounded security result or repair the central timeout handling, then re-check the exact head. |
+| [11](https://github.com/ContextualWisdomLab/enterprise-architecture-core/pull/11) | Cross-domain technology impact evidence | `main` → `cross-domain-impact-projection-v1` | Ready; exact head `1282d46af8f65a970a337d6496b15397c29ecd41`; current public Strix run timed out in `Run Strix (quick)` after 21m49s, while the repository's 21 SQL acceptance files pass locally; no source finding is exposed and the log endpoint returns 404 | Do not rerun unchanged external Strix evidence; obtain a fresh bounded security result or repair the central timeout handling, then re-check the exact head. |
 
 ### Current-head evidence packet
 
 The original exact-head packet was collected at `2026-08-20T13:06:28Z`; the
-current synchronized stack and PR18/PR35 rows were refreshed at
-`2026-08-20T22:53:58Z` from GitHub inspection and local acceptance runs. Every open PR is classified as
+current PR18 row and failed-check evidence were refreshed at
+`2026-08-21T00:34:02Z` from GitHub inspection and local acceptance runs. Every open PR is classified as
 an `implementation_candidate`; that class does not imply merge, release,
 deployment, or buyer availability. The full SHA is the identity to re-fetch
 after any push or base-branch change.
@@ -155,13 +155,13 @@ after any push or base-branch change.
 | 22 | `a85e4c6466545369c675f4055de99bd836bc7967` | `2026-08-21T00:21:15Z` | `implementation_candidate` | Current target-state completion ancestor; planner fixture supersession is transaction-isolated, all 29 local PostgreSQL 18.4 SQL acceptance files pass, and hosted Checks are queued after the push; no protected integration or formal approval. |
 | 21 | `4ada32a811c2f5ba7ac2138c0826229c5d62e78b` | `2026-08-20T14:22:40Z` | `implementation_candidate` | Repository Checks terminal green; exact-head OpenCode dispatch was accepted; no qualifying independent current-head approval observed. |
 | 19 | `03a5898cc7a73eb55ed87198c8392965ff9ee793` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state start ancestor; 341 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
-| 18 | `3e81098f3d3025e53cb9d3e624844597db10262a` | `2026-08-21T00:21:15Z` | `implementation_candidate` | Documentation snapshot source head; evidence baseline includes the current PR16 and scheduler updates; hosted Checks queued; no formal current-head approval observed. |
+| 18 | `55bf0a94f94f2dfa66dcd1151cb701c9ea8bc813` | `2026-08-21T00:34:02Z` | `implementation_candidate` | Documentation snapshot source head; evidence baseline includes the current PR16 and scheduler updates; hosted Checks queued; no formal current-head approval observed. |
 | 17 | `272571a480bda9ed75267af1617fac5a6f9018a0` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state schedule ancestor; 287 tests, 100% coverage, repository validation, and clean PostgreSQL 18 acceptance pass; no protected integration or formal approval. |
 | 16 | `8f852ac54b3636d147c37b6c5b652bf7a16e1ee6` | `2026-08-21T00:03:03Z` | `implementation_candidate` | Current target-state approval candidate; fixture-isolation repair passes 231 Python tests with 100% statement-and-branch coverage, Ruff, repository validation, and all 25 real PostgreSQL 18.6 acceptance files; exact-head OpenCode dispatch accepted; hosted Checks queued; no protected integration or formal approval. |
 | 15 | `cda7aa69c853d3ea2292c14a47d51eaea4b0fe0d` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state planner API ancestor; local stack propagation completed and exact-head review dispatch is required; no protected integration or formal approval. |
-| 14 | `ca6889497728e1a3f09d68790a9096576e13a3ff` | `2026-08-20T23:12:06Z` | `implementation_candidate` | Unchanged `main` integration candidate; current Checks retain setup-uv codeload HTTP 429 and old SPDX attestation failures; wait for PR34/main integration before rebuilding. |
+| 14 | `ca6889497728e1a3f09d68790a9096576e13a3ff` | `2026-08-21T00:34:02Z` | `implementation_candidate` | Unchanged `main` integration candidate; `attest-protected-main` run `32036084953` rejected the old SPDX payload, and `installed-process-readiness` run `32036084876` exhausted three setup-uv codeload HTTP 429 attempts; wait for PR34/main integration before rebuilding. |
 | 12 | `3e070cd57f8aafdb5a87560b4e6089bdf2ebbd1c` | `2026-08-20T22:53:58Z` | `implementation_candidate` | Current target-state planner ancestor; exact-head review dispatch and protected current-head checks remain required. |
-| 11 | `1282d46af8f65a970a337d6496b15397c29ecd41` | `2026-08-21T00:21:15Z` | `implementation_candidate` | Current cross-domain impact ancestor; local SQL acceptance passes, but the public exact-head Strix run timed out without exposing a vulnerability finding; protected current-head security evidence remains unresolved. |
+| 11 | `1282d46af8f65a970a337d6496b15397c29ecd41` | `2026-08-21T00:34:02Z` | `implementation_candidate` | Current cross-domain impact ancestor; local SQL acceptance passes, but the public exact-head Strix run timed out without exposing a vulnerability finding and its log endpoint returns 404; protected current-head security evidence remains unresolved. |
 
 ## Open issues and control-plane work
 
