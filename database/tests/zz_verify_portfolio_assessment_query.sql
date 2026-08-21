@@ -95,7 +95,10 @@ BEGIN
         'technology_risk',
         'fy2026_q3'
     )
-   WHERE truth_status_code = 'inferred';
+   -- The preceding system-cutoff fixture adds another inferred dimension.
+   -- Scope this assertion to the review fact under test.
+   WHERE truth_status_code = 'inferred'
+     AND assessment_dimension_code = 'support_risk';
   IF current_count <> 1 THEN
     RAISE EXCEPTION 'inferred assessment was not preserved as review evidence: %', current_count;
   END IF;
