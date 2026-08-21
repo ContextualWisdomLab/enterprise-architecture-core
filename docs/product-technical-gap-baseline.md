@@ -1,6 +1,6 @@
 # Product and technical gap baseline
 
-**Snapshot:** 2026-08-21T02:41:49Z, GitHub inspection and repository inspection<br>
+**Snapshot:** 2026-08-21T03:36:26Z, GitHub inspection, repository inspection, and local runtime probe<br>
 **Repository:** `ContextualWisdomLab/enterprise-architecture-core`<br>
 **Decision record:** [ADR 0005](adr/0005-product-technical-gap-baseline.md)
 
@@ -8,6 +8,12 @@ This is an evidence snapshot, not a claim that every open branch is shipped.
 Refresh it after a merge, base-branch change, release, failed check, or
 material runtime change. The customer action in each row is the acceptance
 test for the next loop.
+
+**Runtime refresh:** At exact PR36 head `2957eaf860ed2dc8a90e1f1594026e5aeb828777`,
+the project-local virtualenv served `GET /health` with HTTP 200 and
+`GET /ready` with HTTP 503 (`contract_ready=false`, `database_ready=false`).
+This proves the local process probe and intentional fail-closed behavior only;
+it is not protected integration, release, deployment, or production evidence.
 
 **Live refresh:** `2026-08-21T02:41:49Z` — PR #31 was inspected at exact head
 `a2ef7af1b6242a81773d4b0eb3671619f97be0fa`; a duplicate projection-receipt
