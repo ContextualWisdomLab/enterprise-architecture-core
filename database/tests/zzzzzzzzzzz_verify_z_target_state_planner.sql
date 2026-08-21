@@ -1,5 +1,9 @@
 \set ON_ERROR_STOP on
 
+-- Keep the planner fixture isolated from acceptance files that share its
+-- scenario and transformation history.
+BEGIN;
+
 -- Buyer acceptance for the joined Technology Change Impact & Target-State
 -- Planner. This test intentionally lands before migration 0020 so the first
 -- branch commit is RED at the missing deterministic decision projection.
@@ -254,3 +258,5 @@ BEGIN
   END;
 END;
 $$;
+
+ROLLBACK;
