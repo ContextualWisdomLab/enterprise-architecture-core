@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import os
 import subprocess
@@ -14,6 +16,10 @@ _REPOSITORY = "ContextualWisdomLab/enterprise-architecture-core"
 _SIGNER_WORKFLOW = (
     "ContextualWisdomLab/enterprise-architecture-core/.github/workflows/supply-chain.yml"
 )
+_PROVENANCE_PREDICATE = "https://slsa.dev/provenance/v1"
+_SPDX_PREDICATE = "https://spdx.dev/Document/v3"
+_ARTIFACT_BYTES = b"artifact"
+_ARTIFACT_DIGEST = hashlib.sha256(_ARTIFACT_BYTES).hexdigest()
 _EXPECTED_SBOM: dict[str, Any] = {
     "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
     "@graph": [
@@ -23,6 +29,34 @@ _EXPECTED_SBOM: dict[str, Any] = {
         }
     ],
 }
+
+
+def _signed_result(predicate_type: str, predicate: dict[str, Any]) -> str:
+    """Build realistic paired parsed/DSSE evidence emitted by GitHub CLI."""
+    statement = {
+        "_type": "https://in-toto.io/Statement/v1",
+        "subject": [{"digest": {"sha256": _ARTIFACT_DIGEST}}],
+        "predicateType": predicate_type,
+        "predicate": predicate,
+    }
+    payload = base64.b64encode(
+        json.dumps(statement, separators=(",", ":")).encode("utf-8")
+    ).decode("ascii")
+    return json.dumps(
+        [
+            {
+                "verificationResult": {"statement": statement},
+                "attestation": {
+                    "bundle": {
+                        "dsseEnvelope": {
+                            "payloadType": "application/vnd.in-toto+json",
+                            "payload": payload,
+                        }
+                    }
+                },
+            }
+        ]
+    )
 
 
 def _write_fake_gh(tmp_path: Path) -> tuple[Path, Path]:
@@ -53,7 +87,7 @@ def _write_fake_gh(tmp_path: Path) -> tuple[Path, Path]:
         '"$verification_path"\n'
         "  fi\n"
         "else\n"
-        "  printf '[{\"verificationResult\":{\"statement\":{\"predicate\":{}}}}]\\n'\n"
+        "  printf '%s\\n' \"$GH_FAKE_PROVENANCE_RESULT\"\n"
         "fi\n",
         encoding="utf-8",
     )
@@ -77,7 +111,7 @@ def _run_verifier(
     evidence_dir = tmp_path / "evidence"
     evidence_dir.mkdir()
     for artifact_name in artifact_names:
-        (evidence_dir / artifact_name).write_bytes(b"artifact")
+        (evidence_dir / artifact_name).write_bytes(_ARTIFACT_BYTES)
     sbom_path = evidence_dir / "enterprise-architecture-core.spdx.json"
     if include_downloaded_sbom:
         sbom_path.write_text(json.dumps(_EXPECTED_SBOM), encoding="utf-8")
@@ -94,27 +128,25 @@ def _run_verifier(
         raise ValueError(
             f"unknown verification directory kind: {verification_dir_kind}"
         )
+
     signed_sbom = _EXPECTED_SBOM if attested_sbom is None else attested_sbom
-    sbom_result = [
-        {
-            "verificationResult": {
-                "statement": {"predicate": signed_sbom},
-            }
-        }
-    ]
     env = os.environ.copy()
     env.update(
         {
             "PATH": f"{bin_dir}{os.pathsep}{env['PATH']}",
             "GH_FAKE_LOG": str(log_path),
-            "GH_FAKE_SBOM_RESULT": json.dumps(sbom_result),
+            "GH_FAKE_PROVENANCE_RESULT": _signed_result(
+                _PROVENANCE_PREDICATE,
+                {},
+            ),
+            "GH_FAKE_SBOM_RESULT": _signed_result(_SPDX_PREDICATE, signed_sbom),
             "GH_FAKE_SBOM_PATH": str(sbom_path),
             "SOURCE_SHA": _SOURCE_SHA,
             "SOURCE_REF": source_ref,
             "EXPECTED_SOURCE_REF": "refs/heads/main",
             "REPOSITORY": _REPOSITORY,
             "SIGNER_WORKFLOW": _SIGNER_WORKFLOW,
-            "SPDX_PREDICATE": "https://spdx.dev/Document/v3",
+            "SPDX_PREDICATE": _SPDX_PREDICATE,
             "EVIDENCE_DIR": str(evidence_dir),
             "VERIFICATION_DIR": str(verification_dir),
         }
@@ -123,12 +155,17 @@ def _run_verifier(
         env["GH_FAKE_REPLACEMENT_SBOM"] = json.dumps(replacement_downloaded_sbom)
     if symlink_verification_output:
         symlink_target = tmp_path / "attacker-verification.json"
-        symlink_target.write_text(json.dumps(sbom_result), encoding="utf-8")
+        symlink_target.write_text(
+            _signed_result(_SPDX_PREDICATE, signed_sbom),
+            encoding="utf-8",
+        )
         env["GH_FAKE_VERIFICATION_DIR"] = str(verification_dir)
         env["GH_FAKE_SYMLINK_TARGET"] = str(symlink_target)
     if replacement_verification is not None:
         env["GH_FAKE_VERIFICATION_DIR"] = str(verification_dir)
-        env["GH_FAKE_REPLACEMENT_VERIFICATION"] = json.dumps(replacement_verification)
+        env["GH_FAKE_REPLACEMENT_VERIFICATION"] = json.dumps(
+            replacement_verification
+        )
     return subprocess.run(
         ["bash", str(_SCRIPT_PATH)],
         check=False,
@@ -222,10 +259,7 @@ def test_verifier_executes_both_attestation_policies(tmp_path: Path) -> None:
     log_lines = (tmp_path / "gh.log").read_text(encoding="utf-8").splitlines()
     assert len(log_lines) == 4
     assert (
-        sum(
-            "--predicate-type https://spdx.dev/Document/v3" in line
-            for line in log_lines
-        )
+        sum(f"--predicate-type {_SPDX_PREDICATE}" in line for line in log_lines)
         == 2
     )
     assert all(f"--repo {_REPOSITORY}" in line for line in log_lines)
@@ -239,16 +273,15 @@ def test_verifier_executes_both_attestation_policies(tmp_path: Path) -> None:
     )
     assert all("--deny-self-hosted-runners" in line for line in log_lines)
 
-    verification_files = sorted(
-        path.name for path in (tmp_path / "verification").glob("*.json")
-    )
+    verification_paths = sorted((tmp_path / "verification").glob("*.json"))
     assert (tmp_path / "verification").stat().st_mode & 0o777 == 0o700
-    assert verification_files == [
+    assert [path.name for path in verification_paths] == [
         "enterprise_architecture_core-0.1-py3-none-any.whl.provenance.json",
         "enterprise_architecture_core-0.1-py3-none-any.whl.sbom.json",
         "enterprise_architecture_core-0.1.tar.gz.provenance.json",
         "enterprise_architecture_core-0.1.tar.gz.sbom.json",
     ]
+    assert all(path.stat().st_mode & 0o777 == 0o600 for path in verification_paths)
 
 
 def test_verifier_rejects_non_release_ref_before_calling_gh(tmp_path: Path) -> None:
@@ -297,7 +330,7 @@ def test_verifier_rejects_attested_spdx_predicate_drift(tmp_path: Path) -> None:
 def test_verifier_rejects_mid_verification_downloaded_sbom_replacement(
     tmp_path: Path,
 ) -> None:
-    """Bind the attestation to the SBOM snapshot present before GitHub verification."""
+    """Bind attestation to the SBOM snapshot present before GitHub verification."""
     replacement_sbom = {
         **_EXPECTED_SBOM,
         "@graph": [
@@ -342,7 +375,7 @@ def test_verifier_rejects_replaced_verification_output_symlink(tmp_path: Path) -
 def test_verifier_binds_decision_to_attestation_stdout_not_replaced_path(
     tmp_path: Path,
 ) -> None:
-    """Reject an expected pathname replacement when producer stdout mismatches."""
+    """Reject expected pathname replacement when producer stdout mismatches."""
     mismatched_sbom = {
         "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
         "@graph": [{"type": "software_Package", "name": "different"}],
