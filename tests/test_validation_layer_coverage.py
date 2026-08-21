@@ -16,6 +16,10 @@ _RECHECK_PATH = (
     "/v1/data-management-assessments/"
     "{data_management_assessment_projection_id}/recheck"
 )
+_STATUS_PATH = (
+    "/v1/data-management-assessment-rechecks/"
+    "{assessment_recheck_request_id}"
+)
 _PORTFOLIO_PATH = (
     "/v1/architecture-objects/"
     "{architecture_object_id}/portfolio-assessments"
@@ -81,6 +85,41 @@ def _stub_closure_artifact_validators(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setattr(
         closure_validation,
+        "validate_connector_catalog",
+        lambda document: 7,
+    )
+
+
+def _stub_recheck_artifact_validators(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Isolate reassessment repository orchestration at its filesystem boundary."""
+
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_migration_inventory",
+        lambda paths: None,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_migration_sql",
+        lambda text: (1, 2, 3, 4),
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_openapi_document",
+        lambda document: 5,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_openapi_runtime_surface",
+        lambda document: None,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
+        "validate_asyncapi_document",
+        lambda document: 6,
+    )
+    monkeypatch.setattr(
+        recheck_validation,
         "validate_connector_catalog",
         lambda document: 7,
     )
@@ -341,6 +380,49 @@ def test_recheck_runtime_requires_both_reassessment_schemas(
             recheck_validation.validate_openapi_runtime_surface(changed)
 
 
+def test_recheck_runtime_validates_command_and_status_routes(
+    openapi_document: dict[str, object],
+) -> None:
+    """The reassessment layer validates both its write and status-read ports."""
+
+    recheck_validation.validate_openapi_runtime_surface(openapi_document)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value", "message"),
+    [
+        (
+            "operationId",
+            "getSomeOtherStatus",
+            "operationId must be getDataManagementAssessmentRecheckStatus",
+        ),
+        (
+            "security",
+            [],
+            "must require Keyverse bearer authorization",
+        ),
+        (
+            "parameters",
+            [],
+            "parameters must match executable parsing",
+        ),
+    ],
+)
+def test_recheck_status_operation_fails_closed_when_published_boundary_drifts(
+    openapi_document: dict[str, object],
+    field_name: str,
+    invalid_value: object,
+    message: str,
+) -> None:
+    """The reassessment validator rejects drift in the status-read boundary."""
+
+    changed = deepcopy(openapi_document)
+    changed["paths"][_STATUS_PATH]["get"][field_name] = invalid_value
+
+    with pytest.raises(recheck_validation.ContractValidationError, match=message):
+        recheck_validation.validate_openapi_runtime_surface(changed)
+
+
 @pytest.mark.parametrize(
     "path",
     [_PORTFOLIO_PATH, _PORTFOLIO_SUMMARY_PATH],
@@ -387,3 +469,74 @@ def test_portfolio_read_runtime_requires_its_response_schemas(
             match="missing OpenAPI schemas",
         ):
             recheck_validation.validate_openapi_runtime_surface(changed)
+
+
+def test_recheck_runtime_requires_status_schema_when_status_route_is_published(
+    openapi_document: dict[str, object],
+) -> None:
+    """A published reassessment status route must retain its response schema."""
+
+    changed = deepcopy(openapi_document)
+    changed["components"]["schemas"].pop("DataManagementAssessmentRecheckStatus")
+
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="missing OpenAPI schemas",
+    ):
+        recheck_validation.validate_openapi_runtime_surface(changed)
+
+
+def test_recheck_repository_orchestration_retains_all_evidence_dimensions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment validator composes every repository evidence dimension."""
+
+    root = _repository_fixture(tmp_path)
+    _stub_recheck_artifact_validators(monkeypatch)
+
+    report = recheck_validation.validate_repository(root)
+
+    assert (
+        report.table_count,
+        report.column_count,
+        report.index_count,
+        report.constraint_count,
+        report.openapi_operation_count,
+        report.asyncapi_operation_count,
+        report.adr_count,
+        report.connector_count,
+    ) == (1, 2, 3, 4, 5, 6, 10, 7)
+
+
+def test_recheck_repository_orchestration_rejects_missing_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Missing reassessment repository evidence fails before partial validation."""
+
+    root = _repository_fixture(tmp_path)
+    _stub_recheck_artifact_validators(monkeypatch)
+    (root / "contracts/asyncapi.json").unlink()
+
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="missing required file",
+    ):
+        recheck_validation.validate_repository(root)
+
+
+def test_recheck_repository_orchestration_requires_decision_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment validator retains the accepted ADR evidence baseline."""
+
+    root = _repository_fixture(tmp_path, adr_count=9)
+    _stub_recheck_artifact_validators(monkeypatch)
+
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="at least ten ADRs",
+    ):
+        recheck_validation.validate_repository(root)

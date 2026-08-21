@@ -70,6 +70,8 @@ BEGIN
       'app.portfolio_supersession_cutoff'
   )::timestamptz;
 
+  -- The preceding system-cutoff fixture adds another inferred dimension.
+  -- Scope this assertion to the review fact under test.
   SELECT count(*)
     INTO historical_count
     FROM architecture_core.read_portfolio_assessment_for_tenant(
