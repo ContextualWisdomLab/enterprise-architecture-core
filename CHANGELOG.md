@@ -4,6 +4,7 @@
 
 ### Added
 
+- Authenticated read-only Technology Change Impact & Target-State Planner API through `GET /v1/technology-target-state-plans/{technology_version_id}` and purpose-bound `read_technology_target_state_plan(...)`: Keyverse RS256 signature/issuer/audience/expiration/tenant/role verification, bounded same-origin JWKS retrieval, explicit bitemporal query parameters, no runtime table or underlying-projector privilege, and stable buyer `next_action` responses fail closed without widening foreign-product authority.
 - Joined Technology Change Impact & Target-State decision projection through `project_technology_target_state_plan(uuid,timestamptz,timestamptz,integer)`, composing lifecycle risk, capability impact, receipt-backed physical-schema/Data-AI evidence, remediation initiative, immutable target-state scenario membership, and bitemporal transformation state into deterministic buyer actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state` without mutating authoritative stores or copying foreign product state.
 - Receipt-bound cross-domain application impact projection through normalized `external_context_reference` and `application_context_projection` tables plus `project_application_context_impact(uuid,timestamptz,timestamptz)`, extending an affected EA application to canonical physical-schema and Data/AI evidence without copying foreign source-of-truth payloads or querying foreign application tables.
 - Cross-domain owner/truth/replay guards: pg-erd-cloud direct evidence is restricted to observed `database_schema` references, Semantic Data Portal references remain owned by that product, LineageWeave links remain `inferred`/`proposed`, unprocessed receipts fail closed, historical valid/system cutoffs exclude late evidence, and duplicate delivery of the same receipt-bound fact is idempotent.
@@ -34,3 +35,8 @@
 - Real PostgreSQL acceptance for RLS, tenant isolation, temporal exclusion, typed relations, evidence tenant integrity, event chronology, payload shape, projection identity, and outbox rollback.
 - Clean-install, idempotent replay, checksum-drift, failed-migration atomicity, and previous-boundary upgrade rehearsal.
 - OpenAPI and AsyncAPI contract baselines, Keyverse OIDC boundary requirements, accepted ADRs, doctoring references, standard-to-test traceability, and threat-model distinctions between enforced and planned surfaces.
+
+### Fixed
+
+- Reject every JWS `crit` protected-header form at the Keyverse bearer boundary because EA Core implements no critical JWS extensions, preventing signed tokens with unsupported extension semantics from being accepted as ordinary JWTs.
+- Fail closed on literal and percent-encoded URI dot-segment aliases in configured Keyverse JWKS paths before the issuer-scope confinement check, preventing path normalization from escaping or ambiguously rewriting the trusted issuer hierarchy.

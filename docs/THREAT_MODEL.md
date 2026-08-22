@@ -2,62 +2,58 @@
 
 ## Scope and status
 
-This threat model covers the Enterprise Architecture Core foundation implemented on the current active foundation branch: the HTTP liveness/readiness surface, PostgreSQL architecture write model and migrations, transactional outbox/projection receipt records, evidence and canonical Context Graph identifiers, and the documented Keyverse identity boundary. Domain command/query endpoints and buyer-facing graph/scenario UI are not yet implemented; the controls below distinguish current database/runtime enforcement from requirements that must be satisfied before those surfaces ship.
+This threat model covers the current Enterprise Architecture Core branch: health/readiness, the authenticated read-only Technology Change Impact & Target-State Planner API, PostgreSQL write model and migrations, transactional outbox/projection receipts, evidence/canonical Context Graph identifiers, and the Keyverse relying-party boundary. Mutating domain APIs and buyer-facing graph/scenario UI are not yet shipped.
 
-The service is an authoritative Enterprise Architecture Decision Plane. It must not accept inferred or proposed cross-product evidence as authoritative merely because a caller can construct a syntactically valid payload.
+EA Core is the authoritative Enterprise Architecture Decision Plane. It must not accept inferred/proposed cross-product evidence as authoritative merely because a caller can construct syntactically valid input.
 
 ## Protected assets
 
-- tenant-separated architecture inventory and bitemporal revision history;
-- business capability, application, interface, technology and lifecycle facts;
+- tenant-separated architecture inventory and bitemporal history;
+- lifecycle, portfolio, scenario, transformation and target-state decisions;
 - evidence references and truth-status provenance;
-- transformation/scenario decisions when those capabilities are implemented;
 - transactional outbox and projection-receipt history;
-- Keyverse-derived actor, tenant, role and purpose context once command/query APIs are enabled;
-- database credentials, TLS material and connector credentials supplied by deployment infrastructure.
+- Keyverse-derived subject, tenant and role context;
+- database credentials, TLS material and connector credentials.
 
 ## Trust boundaries
 
-1. **Caller to service.** Future domain APIs must authenticate and authorize before an architecture mutation or protected query. `GET /health` is process-only and `GET /ready` proves dependency state; neither grants tenant authority.
-2. **Keyverse to service.** Keyverse is the identity provider boundary. Tokens are untrusted input until signature, issuer, audience, expiry, tenant and role claims are verified for the requested purpose.
-3. **Service to PostgreSQL.** The runtime database role is deliberately not general application-table authority. Migrations, forced RLS, composite tenant keys, temporal exclusions and database integrity constraints are defense-in-depth, not a substitute for purpose-bound service authorization.
-4. **External evidence/event producer to EA Core.** Canonical CWL identifiers, tenant binding, truth origin, payload shape and replay/idempotency semantics must be validated before an assertion influences authoritative state.
-5. **EA Core to downstream projections.** Transactional outbox publication and projection receipts preserve commit ordering and provenance. A projection must not become a second authoritative write model.
-6. **Connector/egress boundary.** External calls must use explicit destination policy and bounded resources; credentials, DSNs, tokens and unnecessary raw PII must not enter Context Graph event bundles.
+1. **Caller to service.** `/health` and `/ready` are unauthenticated probes. The target-state planner requires a verified Keyverse bearer before tenant evidence is queried.
+2. **Keyverse to service.** JWT/JWK bytes are untrusted until signature, issuer, audience, expiration/not-before, subject, tenant and role checks pass. JWKS retrieval is same-origin, no-redirect, bounded and fail-closed.
+3. **Service to PostgreSQL.** `ea_runtime` has no application-table or underlying-projector authority. It receives only the purpose-bound planner read wrapper after service-side identity verification. The subprocess drops inherited `PG*` state and reconstructs libpq settings solely from the validated EA database DSN plus the bounded service timeout.
+4. **External evidence producer to EA Core.** Canonical identity, tenant, truth origin, payload and replay semantics are validated before evidence influences authoritative decisions.
+5. **EA Core to projections.** Outbox publication and projection receipts preserve commit/provenance semantics; projections are not second write authorities.
+6. **Connector/egress boundary.** Destinations and resource use must be explicit; credentials, DSNs, tokens and unnecessary raw PII do not enter Context Fabric bundles.
 
-## Threats and required controls
+## Threats and controls
 
-| Threat | Current or required control | Acceptance evidence |
-| --- | --- | --- |
-| Cross-tenant read/write | Composite tenant/object foreign keys and forced PostgreSQL RLS are implemented; future service commands must derive tenant context only from verified Keyverse claims. | Real PostgreSQL tenant-isolation and RLS acceptance; future API authorization tests before command/query release. |
-| Forged or confused identity | Future command/query surface must validate JWT signature, issuer, audience, expiration, tenant and role/purpose claims and must not trust arbitrary PostgreSQL custom GUC values as authority. | Identity-contract tests and purpose-bound service tests are required before publishing domain mutations. |
-| Authoritative fact without provenance | `authoritative` and `observed` revisions/relations require evidence; inferred/proposed facts remain explicitly non-authoritative until governed promotion. | Migration 0008 and PostgreSQL evidence-contract acceptance. |
-| Cross-tenant evidence URI | Canonical evidence URI tenant must match the owning tenant while allowing same-tenant cross-product authorities. | Insert/update rejection cases in PostgreSQL evidence tests. |
-| Bitemporal/history tampering | Active intervals are non-overlapping where required, system/event chronology is constrained, and historical facts are append-preserving rather than hard-deleted. | Temporal exclusion and migration 0009 chronology acceptance. |
-| Outbox split-brain or fake publication | Command-side data and outbox rows must commit atomically; publication timestamps cannot precede recording; replay/idempotency remains explicit. | Transaction rollback, event-state and temporal-order tests. |
-| Projection spoofing/replay storm | Projection source/event identity and tenant are validated; consumers must bound replay and traversal work and preserve source event identity. | Projection-receipt database tests; bounded replay/traversal tests before external ingestion is released. |
-| Graph/query injection or excessive traversal | No graph/Cypher runtime is shipped in the foundation. Any future graph adapter must use typed parameters, deny raw model-authored query execution, and enforce depth/result/resource limits. | Required negative tests before a graph adapter is enabled. |
-| Connector SSRF or credential exfiltration | No unrestricted connector egress is implied by the connector catalog. Future adapters require allowlisted destinations, scheme/redirect/DNS controls, bounded I/O and secret separation. | Connector security acceptance before a network adapter is enabled. |
-| Prompt-injection policy mutation | LLM output is proposal data only and cannot directly mutate authoritative EA state or security policy. Deterministic authorization and merge/security gates remain independent of model judgment. | Command-boundary tests requiring explicit authorized promotion for proposed/inferred facts. |
-| Readiness false positive | Contract version discovery and PostgreSQL readiness probes fail closed on absent, malformed, unavailable, mismatched or exceptional dependencies. Passwords are kept out of argv and supported libpq security/session semantics are preserved or rejected. | Unit tests plus installed-wheel/real PostgreSQL runtime-readiness workflow. |
-| Secret or PII propagation | Events must exclude credentials, passwords, tokens, DSNs and unnecessary raw personal attributes. Accountability identifiers remain available only to authorized purposes rather than being blanket-masked. | Schema/event negative tests and future export/access-log acceptance. |
-| Supply-chain substitution | Release artifacts must be built from one exact protected head with required CI/security/package/SBOM/provenance/reproducibility evidence. | Release gate and artifact/source hash verification before publication. |
+| Threat | Implemented or required control | Acceptance evidence |
+|---|---|---|
+| Cross-tenant planner read | RS256 Keyverse tenant binding plus purpose-bound DB wrapper setting the verified tenant transaction-locally; forced RLS/composite keys remain defense in depth | `test_target_state_api.py`, `zzzz_verify_target_state_query_port.sql`, PostgreSQL RLS acceptance |
+| Forged/confused identity | Exact RS256, `kid`, issuer, audience, integer expiry, optional nbf, subject, tenant UUID and allow-listed role checks | `authorization.py`, `test_authorization_hardening.py`, real signed-token fixture |
+| JWKS SSRF/redirect/resource abuse | HTTPS under configured issuer origin/path, no redirects, 3 s timeout, 1 MiB bound, strict JSON, one exact `kid` | hostile JWKS configuration/network/size/JSON/key-selection tests |
+| Database authorization bypass | `ea_runtime` has no table privilege and no execute privilege on the underlying projector; only fixed-search-path `SECURITY DEFINER` read wrapper is granted | migration 0021, runtime grant bootstrap, PostgreSQL privilege acceptance |
+| Ambient libpq authority injection | Drop every inherited `PG*` environment variable before applying the allow-listed, non-duplicate DSN connection parameters; preserve only unrelated process environment and a bounded default connection timeout | `test_postgres_environment_isolation.py`, planner/readiness subprocess tests |
+| DSN/token leakage | libpq environment transport keeps credentials out of argv; API errors expose stable codes/actions only | planner reader and safe-failure tests |
+| Authoritative fact without provenance | authoritative/observed facts require evidence; inferred/proposed facts retain non-authoritative truth | migrations and PostgreSQL evidence acceptance |
+| History tampering | bitemporal exclusions, append-preserving semantics and immutable accepted receipt evidence | temporal, scenario, transformation and receipt-history acceptance |
+| Projection spoofing/replay | source/event/tenant validation and receipt-bound idempotency | projection receipt/replay/source-URI tests |
+| Connector SSRF or credential exfiltration | connector catalog grants no unrestricted egress; future network adapters require explicit allowlists and redirect/DNS controls | required before a network adapter ships |
+| Prompt-injection policy mutation | LLM output remains proposal evidence; deterministic authorization/security/merge gates do not defer to model judgment | truth-origin and command-boundary regressions |
+| Readiness false positive | contract/database probes fail closed; libpq authority comes from the validated EA DSN rather than ambient `PG*` state | unit + real PostgreSQL runtime-readiness workflow |
+| Supply-chain substitution | exact-head package/SBOM evidence and protected release provenance | supply-chain/release gates |
 
-## Abuse cases that must fail closed
+## Abuse cases that fail closed
 
-- a tenant-A actor supplies a canonical evidence URI naming tenant B;
-- an `authoritative` or `observed` fact omits required provenance;
-- an inferred or LLM-proposed relation attempts to become authoritative without an explicit authorized transition;
-- an event is published before its outbox record time or a projection claims processing before receipt;
-- a readiness probe cannot read package metadata, cannot preserve a supplied libpq connection parameter, times out, or cannot prove the expected database/runtime-role boundary;
-- a future graph request supplies raw Cypher, unbounded depth, or model-generated policy changes;
-- a future connector follows an unapproved redirect or resolves to an unauthorized destination;
-- a future token has a valid signature but the wrong issuer, audience, tenant, role, purpose or expiration state.
+- missing, malformed, unsigned, incorrectly signed, expired, wrong-issuer/audience/tenant/role bearer;
+- JWKS redirect, oversized/ambiguous document, missing or duplicate `kid`, or unsafe issuer/JWKS origin;
+- direct `ea_runtime` application-table or target-state-projector access;
+- ambient `PGSERVICE`, `PGSERVICEFILE`, `PGOPTIONS`, connection, TLS, or session settings attempting to alter the reviewed EA database authority;
+- malformed/duplicate/unknown bitemporal planner query parameters or unbounded horizon;
+- planner DB failure attempting to expose SQL, DSN or credential detail;
+- tenant-A evidence naming tenant B;
+- inferred/LLM-proposed facts attempting implicit authoritative promotion;
+- unapproved connector redirect or unbounded graph traversal.
 
-## Security invariants for future slices
+## Future slices
 
-Technology Change Impact, scenario projection and transformation execution may only be added after their command boundaries preserve tenant isolation, bitemporal history, explicit truth origin, evidence provenance and transactional event publication. Read models may cache or project authoritative facts but cannot silently become write authorities. Cross-domain data from Semantic Data Portal, pg-erd-cloud and LineageWeave enters only through versioned contracts and retains its owning authority and truth origin.
-
-## Review and change rule
-
-Any new external API, connector, graph execution path, authorization mechanism, persistent table family, event type, model-backed proposal flow or release channel must update this threat model and add executable negative acceptance at the same boundary. Security documentation is not evidence of enforcement; the associated source, migration, contract and test must remain the authority for implemented behavior.
+Mutating EA commands require separate actor/purpose/reason, idempotency, human-review where applicable, immutable audit/outbox and command-specific authorization acceptance. UI work requires accessible exact-value alternatives and export behavior. Documentation alone is never security evidence; source, migration, contract and executable tests remain authoritative.

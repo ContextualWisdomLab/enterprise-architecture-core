@@ -1,5 +1,12 @@
 BEGIN;
 
+-- PostgreSQL grants EXECUTE on newly created functions to PUBLIC by default.
+-- Revoke that default for the migration identity before this projector is
+-- created so an in-place upgrade cannot expose it between migrations 0020 and
+-- 0021 while ea_runtime already has schema USAGE from an earlier deployment.
+ALTER DEFAULT PRIVILEGES
+REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+
 CREATE FUNCTION architecture_core.project_technology_target_state_plan(
     requested_technology_version_id uuid,
     assessment_valid_at timestamptz,
@@ -229,5 +236,18 @@ COMMENT ON FUNCTION architecture_core.project_technology_target_state_plan(
     integer
 ) IS
 'Projects one tenant-scoped buyer decision surface from bitemporal technology lifecycle impact through EA-owned application/capability facts, receipt-bound foreign context evidence, governed remediation initiative, immutable target-state scenario membership, and append-only transformation state. Foreign product authority remains referenced rather than copied or promoted. The projector is read-only, preserves truth/evidence gates, and returns deterministic next actions for evidence completion, approval, execution, replanning, and target-state verification.';
+
+DO $$
+BEGIN
+  IF has_function_privilege(
+      'public',
+      'architecture_core.project_technology_target_state_plan(uuid,timestamptz,timestamptz,integer)',
+      'EXECUTE'
+  ) THEN
+    RAISE EXCEPTION
+      'target-state projector must not commit with PUBLIC execute';
+  END IF;
+END;
+$$;
 
 COMMIT;

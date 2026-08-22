@@ -1,50 +1,34 @@
 # Test Strategy
 
-## Foundation tests
+## Repository-wide gates
 
-- deterministic migration naming, composite tenant-key, and forced-RLS validation;
-- real PostgreSQL 18.4 clean installation of every ordered migration;
-- non-superuser RLS visibility and cross-tenant write denial;
-- UUIDv7, canonical URI, typed-extension identity, relation endpoint, JSON payload, and projection-event identity rejection;
-- overlapping active identity/lifecycle and current authoritative revision/relation rejection while proposed assertions remain reviewable;
-- transactional outbox rollback verification;
-- OpenAPI operation, uniqueness, and Keyverse verification-contract checks;
-- AsyncAPI channel/message/publisher checks;
-- exact repository-document/ADR completeness and public API docstrings;
-- 100% owned production statement and branch coverage where tooling exposes them.
+- deterministic migration inventory, naming, composite tenant-key, forced-RLS and checksum-ledger validation;
+- real PostgreSQL clean install, idempotent replay, previous-boundary upgrade and failed-migration rollback;
+- non-superuser RLS visibility and cross-tenant denial;
+- UUIDv7, canonical identity, temporal overlap, truth/provenance, projection receipt and outbox invariants;
+- OpenAPI/AsyncAPI executable-contract validation;
+- Python 3.11-3.14 validation, Ruff, installed wheel/package smoke and exact 100% owned production statement/branch coverage;
+- exact-head package/SBOM evidence; skipped applicable required evidence is non-passing.
 
-## Portfolio assessment acceptance
+## Technology Change Impact & Target-State Planner
 
-The portfolio-assessment milestone exercises SQL through a real PostgreSQL boundary. Acceptance proves migration 0010 clean installation and upgrade, normalized framework/scale/value/dimension/cycle/object-assessment persistence, scale/framework consistency, evidence-required authoritative/observed truth, exclusion of overlapping current authoritative scores, reviewable inferred alternatives, append-preserving assessment meaning, and forced-RLS tenant isolation.
+Real PostgreSQL acceptance proves the bitemporal path from technology lifecycle through affected applications/capabilities, receipt-bound physical-schema/Data-AI evidence, remediation initiative, immutable target scenario and append-preserving transformation state. It verifies deterministic next actions, truth-origin preservation, explicit valid/system cutoffs, bounded horizon, cross-tenant denial and the purpose-bound runtime query port.
 
-## Strategy execution acceptance
+## Authenticated planner API
 
-The strategy-execution milestone follows an observed RED-before-GREEN path on the hosted PostgreSQL job. The initial acceptance required four authoritative strategy tables before migration 0011 existed and failed at that missing-table boundary. The GREEN implementation must then prove on the exact current PR integration head:
+The planner read boundary has executable acceptance rather than a documentation-only OIDC claim:
 
-- migration 0011 clean installation and upgrade from the exact migration-0010 boundary with checksum-ledger continuity;
-- normalized `strategy_objective`, `remediation_initiative`, `initiative_objective_link`, and `initiative_milestone` persistence;
-- evidence-required `authoritative` and `observed` objective/initiative/link/milestone truth;
-- same-tenant composite foreign keys and forced-RLS denial of cross-tenant strategy writes;
-- rejection of initiative-objective link validity outside either referenced valid-time interval;
-- rejection of milestone validity or `target_at` outside the parent initiative interval;
-- positive milestone sequence numbers and rejection of invalid coded identifiers;
-- exclusion of overlapping current authoritative semantic identities while inferred/proposed alternatives remain reviewable;
-- semantic immutability after insertion, one-time supersession, and preservation of historical system-recorded meaning;
-- unchanged Python 3.11-3.14 validation, package, runtime-readiness, SBOM, and supply-chain evidence on the resulting exact head.
+- a real RS256 fixture verifies cryptographic signature, issuer, service audience, expiration, tenant UUID, role and subject binding;
+- negative JWT tests cover wrong algorithm/key/type, invalid signature, wrong issuer/audience, boolean/string expiration, future/invalid nbf, malformed tenant/subject/role and ambiguous audience shapes;
+- hostile JWKS tests cover unsafe scheme/origin/path/port/userinfo/query/fragment, redirects, network failure, timeout behavior, response-size bounds, malformed/duplicate/non-standard JSON, missing/duplicate key IDs and invalid RSA key purpose/material;
+- the HTTP surface proves 401/403/400/503 fail-closed behavior and safe buyer `next_action` copy without leaking token, SQL, DSN or credential material;
+- planner request parsing rejects unknown/duplicate parameters, missing bitemporal cutoffs, naive/malformed timestamps and horizons outside 1..3650;
+- the service-to-PostgreSQL test proves DSN/password absence from argv and execution only through `read_technology_target_state_plan(...)`;
+- real PostgreSQL acceptance proves `ea_runtime` can execute that purpose-bound wrapper but cannot execute the underlying projector or read application tables directly;
+- OpenAPI validation binds the exact implemented planner path, Keyverse security, parameter schemas and response/error shapes to executable runtime behavior.
 
-No source-text assertion substitutes for the real PostgreSQL execution boundary when PostgreSQL can enforce the behavior directly.
+## Remaining future requirements
 
-## Subsequent runtime test requirements
+Before corresponding future features merge, add executable evidence for command/outbox atomicity under concurrent application transactions, bounded graph traversal/injection handling, OpenLineage ingestion replay storms, mutating command actor/purpose/human-review/audit semantics, and accessible exact-value/export behavior for UI surfaces.
 
-Before the corresponding behaviors may merge, add executable evidence for:
-
-- command/outbox atomicity under concurrent application transactions;
-- event replay and duplicate-receipt behavior;
-- OIDC signature, issuer, audience, expiry, tenant, role, and purpose enforcement;
-- immutable-baseline plus ordered-delta scenario determinism and current-state non-mutation;
-- transformation execution that closes old intervals and appends new authoritative facts atomically;
-- depth-bounded technology-impact traversal;
-- hostile JSON, Unicode, oversized payload, replay-storm, and injection handling;
-- accessible exact-value alternatives and export behavior when decision UI is introduced.
-
-Skipped required security or integration evidence is non-passing.
+No source-text assertion substitutes for a real PostgreSQL, HTTP, cryptographic, package or integration boundary when that executable boundary exists.

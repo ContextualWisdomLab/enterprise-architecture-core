@@ -10,7 +10,7 @@ from ea_core_foundation import ContractValidationError, validate_openapi_documen
 def test_checked_in_openapi_contract_is_valid(openapi_document) -> None:
     """The checked-in OpenAPI document exposes only implemented operations."""
 
-    assert validate_openapi_document(openapi_document) == 2
+    assert validate_openapi_document(openapi_document) == 3
 
 
 def test_openapi_rejects_wrong_version(openapi_document) -> None:
@@ -136,4 +136,18 @@ def test_openapi_rejects_incomplete_keyverse_checks(openapi_document) -> None:
     changed = deepcopy(openapi_document)
     changed["x-keyverse-contract"]["requiredChecks"] = ["signature"]
     with pytest.raises(ContractValidationError, match="checks are incomplete"):
+        validate_openapi_document(changed)
+
+
+def test_openapi_rejects_incomplete_keyverse_runtime_configuration(
+    openapi_document,
+) -> None:
+    """The contract must name every fail-closed runtime authorization setting."""
+
+    changed = deepcopy(openapi_document)
+    changed["x-keyverse-contract"]["requiredConfiguration"] = [
+        "EA_OIDC_ISSUER",
+        "EA_OIDC_AUDIENCE",
+    ]
+    with pytest.raises(ContractValidationError, match="configuration is incomplete"):
         validate_openapi_document(changed)
