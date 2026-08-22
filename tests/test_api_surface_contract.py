@@ -48,6 +48,10 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         "/v1/architecture-objects/"
         "{architecture_object_id}/portfolio-assessments"
     )
+    portfolio_assessment_summary_path = (
+        "/v1/architecture-objects/"
+        "{architecture_object_id}/portfolio-assessment-summary"
+    )
     assert set(openapi_document["paths"]) == {
         "/health",
         "/ready",
@@ -62,6 +66,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         reassessment_path,
         reassessment_status_path,
         portfolio_assessment_path,
+        portfolio_assessment_summary_path,
     }
     assert set(openapi_document["paths"]["/health"]) == {"get"}
     assert set(openapi_document["paths"]["/ready"]) == {"get"}
@@ -76,6 +81,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
     assert set(openapi_document["paths"][reassessment_path]) == {"post"}
     assert set(openapi_document["paths"][reassessment_status_path]) == {"get"}
     assert set(openapi_document["paths"][portfolio_assessment_path]) == {"get"}
+    assert set(openapi_document["paths"][portfolio_assessment_summary_path]) == {"get"}
 
 
 def test_openapi_binds_governed_approval_request_receipt_and_role(
@@ -374,6 +380,52 @@ def test_openapi_binds_portfolio_assessment_read_and_role(openapi_document) -> N
         "observed",
         "inferred",
         "proposed",
+    ]
+
+
+def test_openapi_binds_portfolio_assessment_summary_and_next_actions(
+    openapi_document,
+) -> None:
+    """The buyer projection publishes its dedicated role and evidence states."""
+
+    summary_path = (
+        "/v1/architecture-objects/"
+        "{architecture_object_id}/portfolio-assessment-summary"
+    )
+    operation = openapi_document["paths"][summary_path]["get"]
+    assert operation["operationId"] == (
+        "getArchitectureObjectPortfolioAssessmentSummary"
+    )
+    assert operation["security"] == [{"keyverseBearer": []}]
+    assert set(operation["responses"]) == {"200", "400", "401", "403", "503"}
+    assert "EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES" in openapi_document[
+        "x-keyverse-contract"
+    ]["requiredConfiguration"]
+    assert {parameter["name"] for parameter in operation["parameters"]} == {
+        "architecture_object_id",
+        "valid_at",
+        "recorded_at",
+        "framework_code",
+        "cycle_code",
+    }
+    response = openapi_document["components"]["schemas"][
+        "PortfolioAssessmentSummaryResponse"
+    ]
+    assert response["additionalProperties"] is False
+    assert response["properties"]["assessment_state_code"]["enum"] == [
+        "no_assessments",
+        "evidence_gap",
+        "review_required",
+        "evidence_complete",
+    ]
+    summary = openapi_document["components"]["schemas"][
+        "PortfolioAssessmentSummary"
+    ]
+    assert summary["additionalProperties"] is False
+    assert summary["properties"]["next_action"]["enum"] == [
+        "collect_assessment_evidence",
+        "review_assessment_truth",
+        "use_assessment_evidence",
     ]
 
 
