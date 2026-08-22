@@ -8,6 +8,30 @@
 - Database probes and governed request ports use documented libpq environment variables and never place the DSN/password in argv. Production deployments provide the DSN through managed secrets and a compatible PostgreSQL client.
 - Outbox backlog, publish age, failure count, projection lag, failed governed commands, verification gaps, and stale monitoring evidence are mandatory operational signals.
 
+## Hot-write capacity snapshot
+
+Run the read-only snapshot from an approved database owner or observability
+connection, not from `ea_runtime`:
+
+```bash
+PGHOST=<host> PGPORT=<port> PGUSER=<approved_operator> PGDATABASE=<database> \
+  psql --set=tenant_id=<tenant_uuid> \
+  --file=database/reports/hot_write_capacity_snapshot.sql
+```
+
+Repeat the command for the same tenant at comparable intervals. Compare the
+tenant-scoped `row_count`, `active_work_count`, `queue_lag_seconds`, and
+`hot_partition_bucket` values separately from broader counters. Relation/index
+sizes and `pg_stat_user_tables` tuple counters describe the whole relation in
+the current database. `pg_stat_wal.wal_bytes` is a single cluster-wide
+cumulative WAL counter, not a database- or tenant-scoped measure; use its delta
+only as cluster context and never attribute it to the selected tenant. A
+negative queue lag means the source timestamp is in the future relative to the
+snapshot and must be investigated; do not clamp it. The report is measurement
+evidence, not a production capacity limit or proof that physical HASH/LIST
+partitions are deployed. Do not grant the runtime role direct table access to
+run it.
+
 ## Purpose-bound Keyverse authorization
 
 A healthy `/ready` does not manufacture Keyverse authorization state. Every `/v1/` operation additionally requires complete OIDC configuration and its own purpose-bound role allow-list. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, and `EA_ROLE_CLAIM`, plus:
