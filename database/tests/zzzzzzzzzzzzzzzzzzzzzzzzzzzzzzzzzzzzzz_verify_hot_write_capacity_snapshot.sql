@@ -48,3 +48,17 @@ END;
 $$;
 
 SELECT 'hot-write-capacity-snapshot-unset-context-ok' AS verification;
+
+-- A report included in a longer psql operator session must preserve the caller's
+-- error policy just as it preserves tenant authorization context. The report
+-- temporarily relaxes ON_ERROR_STOP so it can restore context before surfacing
+-- a report failure, but a successful include must not force the caller to `on`.
+\set ON_ERROR_STOP off
+\ir ../reports/hot_write_capacity_snapshot.sql
+\if :ON_ERROR_STOP
+\echo 'hot-write snapshot changed caller ON_ERROR_STOP policy'
+SELECT 1 / 0;
+\endif
+\set ON_ERROR_STOP on
+
+SELECT 'hot-write-capacity-snapshot-error-policy-ok' AS verification;
