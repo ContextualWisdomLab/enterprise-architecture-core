@@ -33,8 +33,8 @@ The planner endpoint is:
 
 ```text
 GET /v1/technology-target-state-plans/{technology_version_id}
-    ?valid_at=<CWL timestamp>
-    &recorded_at=<CWL timestamp>
+    ?valid_at=<CWL leap-second-free timestamp>
+    &recorded_at=<CWL leap-second-free timestamp>
     &planning_horizon_days=<1..3650>
 ```
 
@@ -46,7 +46,7 @@ Content-Type: application/json
 
 {
   "decision_request_id": "<UUIDv7>",
-  "effective_at": "<CWL timestamp>",
+  "effective_at": "<CWL leap-second-free timestamp>",
   "decision_reason_text": "<human decision reason>",
   "evidence_record_id": "<UUIDv7>"
 }
@@ -61,11 +61,13 @@ Content-Type: application/json
 {
   "decision_request_id": "<UUIDv7>",
   "initiative_milestone_id": "<UUIDv7>",
-  "effective_at": "<CWL timestamp>",
+  "effective_at": "<CWL leap-second-free timestamp>",
   "decision_reason_text": "<human scheduling reason>",
   "evidence_record_id": "<UUIDv7>"
 }
 ```
+
+Both governed POST commands reject `Transfer-Encoding`, require exactly one bounded `Content-Length`, and parse only strict UTF-8 `application/json` without duplicate member names.
 
 All three surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`; configure `EA_APPROVAL_ROLES` and `EA_SCHEDULE_ROLES` separately for their mutation boundaries. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
 
