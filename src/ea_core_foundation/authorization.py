@@ -219,7 +219,12 @@ def load_keyverse_jwks(jwks_url: str, issuer_uri: str) -> Mapping[str, Any]:
         with opener.open(request, timeout=3) as response:
             payload = response.read(_MAX_JWKS_BYTES + 1)
     except OSError as error:
-        raise AuthorizationError("Keyverse signing keys are unavailable") from error
+        raise AuthorizationError(
+            "Keyverse signing keys are unavailable",
+            error_code="planner_unavailable",
+            http_status=503,
+            next_action="Retry after the Keyverse signing keys are available.",
+        ) from error
     if len(payload) > _MAX_JWKS_BYTES:
         raise AuthorizationError("Keyverse JWKS exceeds the bounded response size")
     try:
