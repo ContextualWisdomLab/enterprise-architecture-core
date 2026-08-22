@@ -1,25 +1,43 @@
 """Repository-level validation tests."""
 
+import json
 import shutil
 from pathlib import Path
 
 import pytest
 
 from ea_core_foundation import ContractValidationError, validate_repository
+from ea_core_foundation.validation_replan import (
+    validate_repository as validate_replan_repository,
+)
 from scripts.validate_repository import main
+
+
+def _strip_data_management_event_contract(repository_root: Path) -> None:
+    """Restore the previous replanning event view for compatibility validation."""
+
+    asyncapi_path = repository_root / "contracts/asyncapi.json"
+    document = json.loads(asyncapi_path.read_text(encoding="utf-8"))
+    document["channels"].pop("dataManagementImprovementEvents")
+    document["operations"].pop("publishDataManagementImprovementInitiativeCreated")
+    document["components"]["messages"].pop("DataManagementImprovementInitiativeCreated")
+    asyncapi_path.write_text(
+        json.dumps(document, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def test_repository_report_counts_current_artifacts(repository_root: Path) -> None:
     """The complete repository validates and reports the current schema counts."""
 
     report = validate_repository(repository_root)
-    assert report.table_count == 40
-    assert report.column_count == 329
-    assert report.index_count == 15
-    assert report.constraint_count == 350
+    assert report.table_count == 45
+    assert report.column_count == 376
+    assert report.index_count == 18
+    assert report.constraint_count == 393
     assert report.openapi_operation_count == 10
-    assert report.asyncapi_operation_count == 8
-    assert report.adr_count >= 14
+    assert report.asyncapi_operation_count == 9
+    assert report.adr_count >= 19
     assert report.connector_count == 7
 
 
@@ -63,6 +81,49 @@ def test_repository_validation_requires_exact_adr_baseline(
         adr_path.unlink()
     with pytest.raises(ContractValidationError, match="at least ten ADRs"):
         validate_repository(target)
+
+
+def test_prior_replan_validator_accepts_its_generation_contract(
+    repository_root: Path, tmp_path: Path
+) -> None:
+    """The preceding validator remains executable against its event generation."""
+
+    target = tmp_path / "replan-generation"
+    shutil.copytree(repository_root, target)
+    _strip_data_management_event_contract(target)
+
+    report = validate_replan_repository(target)
+
+    assert report.asyncapi_operation_count == 8
+    assert report.connector_count == 7
+
+
+def test_prior_replan_validator_fails_closed_on_missing_contract(
+    repository_root: Path, tmp_path: Path
+) -> None:
+    """The preceding validator still rejects an incomplete repository surface."""
+
+    target = tmp_path / "replan-missing-contract"
+    shutil.copytree(repository_root, target)
+    (target / "contracts/asyncapi.json").unlink()
+
+    with pytest.raises(ContractValidationError, match="missing required file"):
+        validate_replan_repository(target)
+
+
+def test_prior_replan_validator_requires_decision_evidence(
+    repository_root: Path, tmp_path: Path
+) -> None:
+    """The preceding validator still enforces the minimum ADR evidence baseline."""
+
+    target = tmp_path / "replan-missing-adrs"
+    shutil.copytree(repository_root, target)
+    _strip_data_management_event_contract(target)
+    for adr_path in (target / "docs/adr").glob("*.md"):
+        adr_path.unlink()
+
+    with pytest.raises(ContractValidationError, match="at least ten ADRs"):
+        validate_replan_repository(target)
 
 
 def test_validation_script_prints_summary(capsys) -> None:
