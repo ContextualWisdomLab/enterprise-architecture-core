@@ -85,6 +85,36 @@ def test_generated_package_evidence_uses_the_release_admission_verifier() -> Non
     assert "package-evidence/SHA256SUMS" in upload_step
 
 
+def test_attested_package_bytes_are_in_the_reproducibility_comparison() -> None:
+    """Require uploaded package bytes to be one side of the double-build proof."""
+    workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
+    first_build = workflow_text.find("uv build --wheel --sdist --out-dir dist")
+    witness_checkout = workflow_text.find("path: reproducibility-source")
+    witness_build = workflow_text.find(
+        "uv build --wheel --sdist --out-dir ../reproducibility-build"
+    )
+    comparison = workflow_text.find(
+        "python scripts/verify_reproducible_package_builds.py "
+        "dist reproducibility-build"
+    )
+    package_upload = workflow_text.find(
+        "- name: Upload checked-out commit package evidence"
+    )
+    source_epoch = "SOURCE_DATE_EPOCH: ${{ steps.source.outputs.source_date_epoch }}"
+    positions = (
+        first_build,
+        witness_checkout,
+        witness_build,
+        comparison,
+        package_upload,
+    )
+
+    assert source_epoch in workflow_text
+    assert min(positions) >= 0
+    assert first_build < witness_checkout < witness_build < comparison < package_upload
+    assert "name: package-reproducibility-${{ github.sha }}" in workflow_text
+
+
 def test_protected_main_binds_signing_to_the_producer_bundle_snapshot() -> None:
     """Reject a coherent downloaded bundle that differs from the producing job."""
     workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
