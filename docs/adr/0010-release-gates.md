@@ -35,6 +35,14 @@ The protected-main job then verifies both SLSA provenance and SPDX 3
 attestations against the exact repository, `refs/heads/main`, source SHA,
 signer-workflow path, signer digest, GitHub OIDC issuer, hosted-runner policy,
 artifact SHA-256, and canonical SPDX meaning, and retains the machine-readable
-verification results under an exact-SHA artifact name. Attestation verification
-remains release evidence only; it does not replace independent review, package
-identity, migration/rollback acceptance, or publication authorization.
+verification results under an exact-SHA artifact name. SLSA admission also
+checks the signed DSSE provenance predicate itself rather than relying on its
+predicate type alone. The predicate must use the pinned GitHub Actions workflow
+build type and bind the exact protected ref, repository URL, workflow path,
+resolved Git commit, and builder workflow identity emitted by the pinned
+`actions/attest` implementation. Missing, drifted, or unexpected external build
+parameters fail closed before verification evidence is retained.
+
+Attestation verification remains release evidence only; it does not replace
+independent review, package identity, migration/rollback acceptance, or
+publication authorization.
