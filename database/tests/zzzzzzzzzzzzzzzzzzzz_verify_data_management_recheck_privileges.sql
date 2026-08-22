@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
 
--- Reassessment commands and immutable-history/temporal guards are
+-- Reassessment commands, reads, and immutable-history/temporal guards are
 -- security-sensitive integration boundaries. They must not expose PUBLIC
 -- EXECUTE, and every function in this boundary must pin search_path so later
 -- function-body maintenance cannot resolve attacker-controlled objects through
@@ -26,6 +26,7 @@ BEGIN
      AND procedure_record.proname IN (
        'request_data_management_assessment_recheck',
        'request_data_management_assessment_recheck_for_tenant',
+       'read_data_management_assessment_recheck_status',
        'reject_assessment_recheck_request_mutation',
        'enforce_assessment_recheck_temporal_order'
      )
@@ -51,6 +52,7 @@ BEGIN
      AND procedure_record.proname IN (
        'request_data_management_assessment_recheck',
        'request_data_management_assessment_recheck_for_tenant',
+       'read_data_management_assessment_recheck_status',
        'reject_assessment_recheck_request_mutation',
        'enforce_assessment_recheck_temporal_order'
      )
