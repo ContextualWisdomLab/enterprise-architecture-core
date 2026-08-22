@@ -91,7 +91,9 @@ def test_protected_main_binds_signing_to_the_producer_bundle_snapshot() -> None:
     generated_verify_marker = "- name: Verify generated package evidence"
     snapshot_marker = "- name: Capture producer package snapshot"
     upload_marker = "- name: Upload checked-out commit package evidence"
-    downloaded_verify_marker = "- name: Verify downloaded package evidence before attestation"
+    downloaded_verify_marker = (
+        "- name: Verify downloaded package evidence before attestation"
+    )
     compare_marker = "- name: Require exact producer package snapshot"
     attest_marker = "- name: Attest SLSA build provenance"
 
