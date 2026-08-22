@@ -1,4 +1,4 @@
-"""Regressions keeping generated planner clients aligned with runtime identity/time parsing."""
+"""Planner UUIDv7 and CWL timestamp wire-profile regressions."""
 
 from __future__ import annotations
 
