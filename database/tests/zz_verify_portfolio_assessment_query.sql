@@ -87,6 +87,8 @@ BEGIN
     RAISE EXCEPTION 'historical authoritative assessment was not projected: %', historical_count;
   END IF;
 
+  -- The preceding system-cutoff fixture adds a second inferred assessment for
+  -- another dimension. Scope this assertion to the review fact under test.
   SELECT count(*)
     INTO current_count
     FROM architecture_core.read_portfolio_assessment_for_tenant(

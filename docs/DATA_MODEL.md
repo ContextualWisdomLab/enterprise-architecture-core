@@ -163,3 +163,15 @@ Historical reads filter both projection system time and receipt process time. Be
 - `identity_link` stores Keyverse subject links, not credentials.
 
 Operational event timestamps preserve system-time causality: an outbox event cannot be marked published before `recorded_at`, and an inbound projection cannot be marked processed before `received_at`. Processed/rejected inbound receipts cannot later be rewritten or hard-deleted, while failed receipt processing remains retryable. These invariants are exercised on clean installation and migration upgrade paths. Service-to-service direct application-table SQL is not an integration contract.
+
+## Hot-write capacity
+
+Migration 0050 prepares the append-only write boundaries for a future hot
+partition cutover without rewriting current data. `evidence_record`,
+`projection_receipt`, `outbox_event`, and `transformation_history_record` use
+the immutable tenant-derived `hot_partition_bucket(uuid)` routing function,
+which returns one of 16 stable buckets. Tenant-first hot-write indexes and
+`fillfactor = 80` leave a measured path for a future HASH/LIST partition
+migration while preserving composite tenant keys, forced RLS, and outbox
+ordering. The current release is partition-ready evidence, not a claim that
+physical partitions are already deployed.

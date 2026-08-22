@@ -91,7 +91,7 @@ def _stub_closure_artifact_validators(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _stub_recheck_artifact_validators(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Isolate reassessment repository orchestration at its filesystem boundary."""
+    """Isolate the reassessment repository orchestration from artifact details."""
 
     monkeypatch.setattr(
         recheck_validation,
@@ -170,6 +170,62 @@ def test_closure_repository_orchestration_rejects_missing_contract(
         match="missing required file",
     ):
         closure_validation.validate_repository(root)
+
+
+def test_recheck_repository_orchestration_retains_all_evidence_dimensions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment layer composes the same real repository evidence dimensions."""
+
+    root = _repository_fixture(tmp_path)
+    _stub_recheck_artifact_validators(monkeypatch)
+
+    report = recheck_validation.validate_repository(root)
+
+    assert (
+        report.table_count,
+        report.column_count,
+        report.index_count,
+        report.constraint_count,
+        report.openapi_operation_count,
+        report.asyncapi_operation_count,
+        report.adr_count,
+        report.connector_count,
+    ) == (1, 2, 3, 4, 5, 6, 10, 7)
+
+
+def test_recheck_repository_orchestration_rejects_missing_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment layer rejects a missing required contract artifact."""
+
+    root = _repository_fixture(tmp_path)
+    _stub_recheck_artifact_validators(monkeypatch)
+    (root / "contracts/asyncapi.json").unlink()
+
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="missing required file",
+    ):
+        recheck_validation.validate_repository(root)
+
+
+def test_recheck_repository_orchestration_requires_decision_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reassessment layer requires the accepted ADR evidence set."""
+
+    root = _repository_fixture(tmp_path, adr_count=9)
+    _stub_recheck_artifact_validators(monkeypatch)
+
+    with pytest.raises(
+        recheck_validation.ContractValidationError,
+        match="at least ten ADRs",
+    ):
+        recheck_validation.validate_repository(root)
 
 
 def test_closure_repository_orchestration_requires_decision_evidence(
@@ -484,59 +540,3 @@ def test_recheck_runtime_requires_status_schema_when_status_route_is_published(
         match="missing OpenAPI schemas",
     ):
         recheck_validation.validate_openapi_runtime_surface(changed)
-
-
-def test_recheck_repository_orchestration_retains_all_evidence_dimensions(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The reassessment validator composes every repository evidence dimension."""
-
-    root = _repository_fixture(tmp_path)
-    _stub_recheck_artifact_validators(monkeypatch)
-
-    report = recheck_validation.validate_repository(root)
-
-    assert (
-        report.table_count,
-        report.column_count,
-        report.index_count,
-        report.constraint_count,
-        report.openapi_operation_count,
-        report.asyncapi_operation_count,
-        report.adr_count,
-        report.connector_count,
-    ) == (1, 2, 3, 4, 5, 6, 10, 7)
-
-
-def test_recheck_repository_orchestration_rejects_missing_contract(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Missing reassessment repository evidence fails before partial validation."""
-
-    root = _repository_fixture(tmp_path)
-    _stub_recheck_artifact_validators(monkeypatch)
-    (root / "contracts/asyncapi.json").unlink()
-
-    with pytest.raises(
-        recheck_validation.ContractValidationError,
-        match="missing required file",
-    ):
-        recheck_validation.validate_repository(root)
-
-
-def test_recheck_repository_orchestration_requires_decision_evidence(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The reassessment validator retains the accepted ADR evidence baseline."""
-
-    root = _repository_fixture(tmp_path, adr_count=9)
-    _stub_recheck_artifact_validators(monkeypatch)
-
-    with pytest.raises(
-        recheck_validation.ContractValidationError,
-        match="at least ten ADRs",
-    ):
-        recheck_validation.validate_repository(root)
