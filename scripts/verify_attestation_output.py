@@ -180,7 +180,7 @@ def _write_exclusive_regular_file(path: Path, data: bytes) -> None:
     nofollow = getattr(os, "O_NOFOLLOW", None)
     if nofollow is None:
         raise OSError("platform lacks O_NOFOLLOW for attestation evidence")
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | nofollow
+    flags = os.O_RDWR | os.O_CREAT | os.O_EXCL | nofollow
     descriptor = os.open(path, flags, 0o600)
     try:
         opened_stat = os.fstat(descriptor)
@@ -194,18 +194,54 @@ def _write_exclusive_regular_file(path: Path, data: bytes) -> None:
                 raise OSError("unable to make progress writing verification output")
             written += chunk_size
         os.fsync(descriptor)
-        opened_stat = os.fstat(descriptor)
+
+        written_stat = os.fstat(descriptor)
+        if not stat.S_ISREG(written_stat.st_mode):
+            raise ValueError(f"verification output stopped being regular: {path}")
+        if stat.S_IMODE(written_stat.st_mode) != 0o600:
+            message = f"verification output was not retained private: {path}"
+            raise ValueError(message)
+
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        retained = bytearray()
+        read_limit = len(data) + 1
+        while len(retained) < read_limit:
+            chunk = os.read(
+                descriptor,
+                min(64 * 1024, read_limit - len(retained)),
+            )
+            if not chunk:
+                break
+            retained.extend(chunk)
+        post_read_stat = os.fstat(descriptor)
+        content_identity = (
+            written_stat.st_size,
+            written_stat.st_mtime_ns,
+            written_stat.st_ctime_ns,
+        )
+        post_read_identity = (
+            post_read_stat.st_size,
+            post_read_stat.st_mtime_ns,
+            post_read_stat.st_ctime_ns,
+        )
+        if bytes(retained) != data or content_identity != post_read_identity:
+            raise ValueError(
+                f"verification output changed while being retained: {path}"
+            )
+
         path_stat = os.stat(path, follow_symlinks=False)
         if not stat.S_ISREG(path_stat.st_mode):
             raise ValueError(f"verification output path stopped being regular: {path}")
-        private_mode = stat.S_IMODE(opened_stat.st_mode) == 0o600
-        complete_size = opened_stat.st_size == len(data)
-        if not complete_size or not private_mode:
-            message = f"verification output was not retained completely/private: {path}"
-            raise ValueError(message)
-        if (opened_stat.st_dev, opened_stat.st_ino) != (
-            path_stat.st_dev,
-            path_stat.st_ino,
+        descriptor_identity = (post_read_stat.st_dev, post_read_stat.st_ino)
+        path_identity = (path_stat.st_dev, path_stat.st_ino)
+        path_content_identity = (
+            path_stat.st_size,
+            path_stat.st_mtime_ns,
+            path_stat.st_ctime_ns,
+        )
+        if (
+            descriptor_identity != path_identity
+            or post_read_identity != path_content_identity
         ):
             message = f"verification output path changed while being written: {path}"
             raise ValueError(message)
