@@ -15,9 +15,9 @@ _STATUS_PATH = (
 
 
 def test_status_layer_accepts_current_openapi_contract(openapi_document) -> None:
-    """The newest validator recognizes all twelve implemented API operations."""
+    """The newest validator recognizes all thirteen implemented API operations."""
 
-    assert status_validation.validate_openapi_document(openapi_document) == 12
+    assert status_validation.validate_openapi_document(openapi_document) == 13
     status_validation.validate_openapi_runtime_surface(openapi_document)
 
 

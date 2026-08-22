@@ -121,7 +121,7 @@ def _parse_response_uuid(
     response: Mapping[str, object],
     field_name: str,
 ) -> UUID:
-    """Return one UUIDv7 response field or fail the storage boundary closed."""
+    """Return one canonical UUIDv7 response field or fail closed."""
 
     value = response.get(field_name)
     if not isinstance(value, str):
