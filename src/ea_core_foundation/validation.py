@@ -25,6 +25,23 @@ _TARGET_STATE_SCHEDULE_OPERATION_NAME = "publishTransformationScheduled"
 _TARGET_STATE_SCHEDULE_EVENT_TYPE = (
     "org.contextualwisdomlab.ea.transformation.scheduled.v1"
 )
+_UUID7_WIRE_SCHEMA = {
+    "type": "string",
+    "format": "uuid",
+    "pattern": (
+        "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-"
+        "[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    ),
+}
+_CWL_TIMESTAMP_WIRE_SCHEMA = {
+    "type": "string",
+    "format": "date-time",
+    "pattern": (
+        r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]"
+        r"(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?"
+        r"(?:[Zz]|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$"
+    ),
+}
 
 
 def _without_schedule_role(document: dict[str, Any]) -> dict[str, Any]:
@@ -46,6 +63,54 @@ def validate_openapi_document(document: dict[str, Any]) -> int:
     except (KeyError, TypeError):
         return core.validate_openapi_document(document)
     return core.validate_openapi_document(changed)
+
+
+def _validate_planner_wire_profile(paths: dict[str, Any]) -> None:
+    """Require generated planner clients to match runtime UUID/time admission."""
+
+    try:
+        path_item = core._require_mapping(
+            paths.get(core._TARGET_STATE_RUNTIME_PATH),
+            f"path {core._TARGET_STATE_RUNTIME_PATH}",
+        )
+        operation = core._require_mapping(
+            path_item.get("get"),
+            f"{core._TARGET_STATE_RUNTIME_PATH} get",
+        )
+        parameters = core._parameter_index(operation)
+        core._require_parameter(
+            parameters,
+            ("technology_version_id", "path"),
+            required=True,
+            schema=_UUID7_WIRE_SCHEMA,
+        )
+        for timestamp_name in ("valid_at", "recorded_at"):
+            core._require_parameter(
+                parameters,
+                (timestamp_name, "query"),
+                required=True,
+                schema=_CWL_TIMESTAMP_WIRE_SCHEMA,
+            )
+    except ContractValidationError as error:
+        raise ContractValidationError(
+            "planner wire profile must enforce canonical UUIDv7 and CWL timestamps"
+        ) from error
+
+
+def _legacy_core_wire_view(document: dict[str, Any]) -> dict[str, Any]:
+    """Remove extension regexes only after this layer has validated them exactly."""
+
+    changed = deepcopy(document)
+    parameters = changed["paths"][core._TARGET_STATE_RUNTIME_PATH]["get"]["parameters"]
+    for parameter in parameters:
+        identity = (parameter.get("name"), parameter.get("in"))
+        if identity in {
+            ("technology_version_id", "path"),
+            ("valid_at", "query"),
+            ("recorded_at", "query"),
+        }:
+            parameter.get("schema", {}).pop("pattern", None)
+    return changed
 
 
 def _validate_target_state_schedule_operation(paths: dict[str, Any]) -> None:
@@ -110,6 +175,7 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
     """Require the planner, approval, and schedule surfaces to match runtime code."""
 
     paths = core._require_mapping(document.get("paths"), "paths")
+    _validate_planner_wire_profile(paths)
     _validate_target_state_schedule_operation(paths)
     schemas = core._require_mapping(
         core._require_mapping(document.get("components"), "components").get("schemas"),
@@ -124,7 +190,7 @@ def validate_openapi_runtime_surface(document: dict[str, Any]) -> None:
         raise ContractValidationError(
             f"missing OpenAPI schemas: {sorted(missing_schemas)!r}"
         )
-    changed = deepcopy(document)
+    changed = _legacy_core_wire_view(document)
     changed["paths"].pop(_TARGET_STATE_SCHEDULE_RUNTIME_PATH)
     changed["components"]["schemas"].pop("TargetStateScheduleRequest")
     changed["components"]["schemas"].pop("TargetStateScheduleReceipt")
