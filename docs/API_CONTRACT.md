@@ -6,13 +6,15 @@ Start the `ea-core` process, call `GET /health`, then call `GET /ready`. Use the
 
 ## Implemented decision surface
 
-`GET /v1/technology-target-state-plans/{technology_version_id}` is the buyer-facing authenticated read. Supply explicit `valid_at` and `recorded_at` RFC 3339 timestamps and, optionally, `planning_horizon_days` from 1 through 3650. The response preserves lifecycle impact, affected application/capability, receipt-backed foreign evidence, remediation initiative, target scenario, transformation state, decision readiness, and an actionable next step.
+`GET /v1/technology-target-state-plans/{technology_version_id}` is the buyer-facing authenticated read. Supply explicit `valid_at` and `recorded_at` CWL leap-second-free timestamps (RFC 3339-compatible with seconds 00 through 59) and, optionally, `planning_horizon_days` from 1 through 3650. The response preserves lifecycle impact, affected application/capability, receipt-backed foreign evidence, remediation initiative, target scenario, transformation state, decision readiness, and an actionable next step.
 
-`POST /v1/architecture-transformations/{architecture_transformation_id}/approval` is a separate human-authorized mutation boundary for planner decisions whose next action is `approve_target_state`. Its strict JSON body contains only `decision_request_id`, `effective_at`, `decision_reason_text`, and `evidence_record_id`. The transformation, decision request, and evidence identifiers are UUIDv7. The caller cannot provide an actor: EA Core derives it from the verified Keyverse issuer and subject.
+`POST /v1/architecture-transformations/{architecture_transformation_id}/approval` is a separate human-authorized mutation boundary for planner decisions whose next action is `approve_target_state`. Its strict JSON body contains only `decision_request_id`, `effective_at`, `decision_reason_text`, and `evidence_record_id`. The transformation, decision request, and evidence identifiers are UUIDv7, and `effective_at` uses the same CWL leap-second-free timestamp profile. The caller cannot provide an actor: EA Core derives it from the verified Keyverse issuer and subject.
 
 The approval command appends authoritative transformation history and the `org.contextualwisdomlab.ea.transformation.approved.v1` transactional outbox event in one PostgreSQL transaction. The decision request is the idempotency key. An exact replay returns the original immutable receipt; reuse with different command meaning fails closed. The runtime also rejects a database receipt whose returned decision request does not match the exact command key.
 
-`POST /v1/architecture-transformations/{architecture_transformation_id}/schedule` is a distinct scheduling authority boundary. Its strict JSON body contains only `decision_request_id`, `initiative_milestone_id`, `effective_at`, `decision_reason_text`, and `evidence_record_id`; all identity fields are canonical UUIDv7. It can bind only the current approved authoritative transformation to an active authoritative milestone belonging to the same remediation initiative. The milestone remains the target-date source of truth, so scheduling does not duplicate project/task execution authority.
+`POST /v1/architecture-transformations/{architecture_transformation_id}/schedule` is a distinct scheduling authority boundary. Its strict JSON body contains only `decision_request_id`, `initiative_milestone_id`, `effective_at`, `decision_reason_text`, and `evidence_record_id`; all identity fields are canonical UUIDv7 and `effective_at` uses the CWL leap-second-free timestamp profile. It can bind only the current approved authoritative transformation to an active authoritative milestone belonging to the same remediation initiative. The milestone remains the target-date source of truth, so scheduling does not duplicate project/task execution authority.
+
+Both governed POST commands use the same fail-closed HTTP message framing boundary: `application/json`, no `Transfer-Encoding`, exactly one bounded `Content-Length`, strict UTF-8/JSON, and no duplicate JSON member names.
 
 The schedule command appends an authoritative `transformation_schedule_record` and the privacy-minimized `org.contextualwisdomlab.ea.transformation.scheduled.v1` transactional outbox event atomically. Exact decision-request replay returns the original receipt; conflicting reuse fails closed. The receipt tells the caller to `start_transformation` and binds the transformation, milestone, decision request, milestone target time, recording time, and event evidence.
 
@@ -30,7 +32,7 @@ The read and command surfaces remain Enterprise Architecture authority. pg-erd-c
 
 ## Command rules
 
-- Commands use UUIDv7 decision/evidence/transformation identifiers and explicit effective time; scheduling additionally requires a UUIDv7 milestone identifier.
+- Commands use UUIDv7 decision/evidence/transformation identifiers and explicit CWL leap-second-free effective time; scheduling additionally requires a UUIDv7 milestone identifier.
 - An inferred proposal, an authoritative approval, and an authoritative schedule binding are separate operations.
 - Human actor and decision reason are retained in immutable records; outbound events omit those private fields and carry only references required by consumers.
 - Authoritative decision records and outbox evidence commit atomically. A failed command cannot leave one without the other.
