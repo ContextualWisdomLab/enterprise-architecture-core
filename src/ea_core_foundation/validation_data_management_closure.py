@@ -33,6 +33,13 @@ _DATA_MANAGEMENT_CLOSURE_EVENTS = (
         "org.contextualwisdomlab.ea.data_management.milestone_completed.v1",
         "data-management milestone completion",
     ),
+    (
+        "dataManagementAssessmentRecheckEvents",
+        "publishDataManagementAssessmentRecheckRequested",
+        "DataManagementAssessmentRecheckRequested",
+        "org.contextualwisdomlab.ea.data_management.assessment_recheck_requested.v1",
+        "data-management assessment recheck request",
+    ),
 )
 _CANONICAL_ASSET_SCHEMA_REF = {
     "$ref": (
@@ -43,6 +50,7 @@ _CANONICAL_ASSET_SCHEMA_REF = {
 _CANONICAL_ASSET_EVENT_FIELDS: dict[str, frozenset[str]] = {
     "DataManagementImprovementInitiativeCreated": frozenset({"assessment_result_uri"}),
     "DataManagementEvidenceAccepted": frozenset({"evidence_uri"}),
+    "DataManagementAssessmentRecheckRequested": frozenset({"assessment_result_uri"}),
 }
 _EVENT_DATA_FIELDS: dict[str, frozenset[str]] = {
     "ArchitectureObjectChanged": frozenset(
@@ -161,6 +169,15 @@ _EVENT_DATA_FIELDS: dict[str, frozenset[str]] = {
             "assessment_evidence_acceptance_id",
             "causation_event_id",
             "completed_at",
+            "next_action",
+        }
+    ),
+    "DataManagementAssessmentRecheckRequested": frozenset(
+        {
+            "assessment_recheck_request_id",
+            "data_management_assessment_projection_id",
+            "trigger_evidence_acceptance_id",
+            "assessment_result_uri",
             "next_action",
         }
     ),

@@ -23,10 +23,10 @@ def test_real_migration_satisfies_foundation_contract(repository_root: Path) -> 
         for migration_path in migration_paths
     )
     counts = validate_migration_sql(migration_text)
-    assert counts[0] == 47
-    assert counts[1] == 392
+    assert counts[0] == 48
+    assert counts[1] == 399
     assert counts[2] == 18
-    assert counts[3] == 409
+    assert counts[3] == 416
 
 
 def test_migration_constraint_count_tracks_replacements_not_ddl_mentions(
@@ -37,8 +37,7 @@ def test_migration_constraint_count_tracks_replacements_not_ddl_mentions(
     migration_text = "\n".join(
         migration_path.read_text(encoding="utf-8")
         for migration_path in sorted(
-            (repository_root / "database/migrations").glob("*.sql")
-        )
+            (repository_root / "database/migrations").glob("*.sql"))
     )
     baseline_count = validate_migration_sql(migration_text)[3]
     replacement_sql = """
@@ -61,8 +60,7 @@ def test_migration_column_count_ignores_function_signatures(
     migration_text = "\n".join(
         migration_path.read_text(encoding="utf-8")
         for migration_path in sorted(
-            (repository_root / "database/migrations").glob("*.sql")
-        )
+            (repository_root / "database/migrations").glob("*.sql"))
     )
     baseline_counts = validate_migration_sql(migration_text)
     function_sql = """
@@ -185,8 +183,7 @@ def test_migration_requires_tenant_bound_composite_keys(
     migration_text = "\n".join(
         migration_path.read_text(encoding="utf-8")
         for migration_path in sorted(
-            (repository_root / "database/migrations").glob("*.sql")
-        )
+            (repository_root / "database/migrations").glob("*.sql"))
     )
     weakened = migration_text.replace(
         "FOREIGN KEY (tenant_record_id, source_object_id)",
@@ -204,8 +201,7 @@ def test_migration_requires_rls_policy_for_every_tenant_table(
     migration_text = "\n".join(
         migration_path.read_text(encoding="utf-8")
         for migration_path in sorted(
-            (repository_root / "database/migrations").glob("*.sql")
-        )
+            (repository_root / "database/migrations").glob("*.sql"))
     )
     weakened = migration_text.replace(
         "CREATE POLICY tenant_isolation_policy",
@@ -222,8 +218,7 @@ def test_migration_requires_checksum_ledger(repository_root: Path) -> None:
     migration_text = "\n".join(
         migration_path.read_text(encoding="utf-8")
         for migration_path in sorted(
-            (repository_root / "database/migrations").glob("*.sql")
-        )
+            (repository_root / "database/migrations").glob("*.sql"))
     )
     weakened = migration_text.replace("schema_migration_record", "removed_ledger", 1)
     with pytest.raises(ContractValidationError, match="checksum ledger"):
@@ -238,8 +233,7 @@ def test_migration_requires_global_vocabulary_tables(
     migration_text = "\n".join(
         migration_path.read_text(encoding="utf-8")
         for migration_path in sorted(
-            (repository_root / "database/migrations").glob("*.sql")
-        )
+            (repository_root / "database/migrations").glob("*.sql"))
     )
     weakened = migration_text.replace(
         "CREATE TABLE architecture_core.object_type",
