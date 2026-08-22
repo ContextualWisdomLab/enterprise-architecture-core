@@ -4,6 +4,7 @@
 
 ### Added
 
+- Exact-head release-package reproducibility acceptance that builds wheel and source distribution from two independent clean checkouts with a shared commit-derived `SOURCE_DATE_EPOCH`, rejects artifact-name or byte drift and symlink/path substitution, and retains SHA-256 evidence under the exact workflow commit identity.
 - Bitemporal Technology Change Impact & Target-State Planner projection through `project_technology_change_impact(uuid,timestamptz,timestamptz,integer)`, traversing EA-owned technology-version -> component -> application -> capability facts while preserving relation truth origin/provenance and deriving lifecycle risk only from valid/system-time lifecycle evidence.
 - Deterministic buyer next-action states for recorded lifecycle risk, incomplete evidence, and non-authoritative dependency paths (`monitor`, `plan_target_state`, `start_remediation`, `complete_capability_mapping`, `complete_lifecycle_evidence`, `review_truth_origin`), with bounded planning horizons; the projector exposes the next risk-bearing lifecycle transition and its evidence, ignores mutable non-temporal support metadata for historical classification, and never turns inferred/proposed relations into actionable authority.
 - Relation-aware target-state scenarios through normalized `scenario_relation_delta` and deterministic `project_scenario_relations(uuid)`, preserving typed endpoint semantics, truth/evidence, immutable append history, and explicit endpoint-integrity state without mutating authoritative relations.
@@ -20,12 +21,12 @@
 - Installable `enterprise-architecture-core` process with process-only `GET /health` and fail-closed dependency-aware `GET /ready` on `0.0.0.0:$PORT`.
 - Exact installed Context Graph contract-version readiness and PostgreSQL runtime-role readiness probes; database readiness keeps inline credentials out of argv, preserves supported libpq TLS/channel-binding/host-selection/password-file/passwordless/default-socket/session-target semantics, and rejects unknown or ambiguous query parameters.
 - Committed `uv.lock` and CI lock-check so reviewed dependencies cannot drift.
-- Exact-head SPDX 3.0.1 SBOM and SHA-256 wheel/sdist evidence on pull requests and protected-main builds, plus protected-main SLSA build-provenance and SBOM attestations using immutably pinned actions.
+- Exact-head SPDX 3.0.1 SBOM and SHA-256 wheel/sdist evidence on pull requests and protected-main builds, plus protected-main SLSA build-provenance and canonical SPDX 3 SBOM attestations using immutably pinned actions; the same strict bundle verifier exercises generated evidence before upload and re-admits the downloaded wheel/sdist/SPDX/checksum bundle before any protected-main signing, while post-signing verification binds both attestation classes to the exact repository, stable ref, source SHA, signer workflow/digest, GitHub OIDC issuer, hosted-runner policy, artifact bytes, and canonical SPDX meaning.
 - Ecosystem connector catalog for Keyverse, context-graph-contracts, Semantic Data Portal, pg-erd-cloud, LineageWeave, naruon, and organization `.github`.
 - Enterprise Architecture Decision Plane product and responsibility baseline.
 - PostgreSQL 3NF schema for capabilities, applications, technologies, interfaces, temporal relations, lifecycle, evidence, OIDC identity links, and transactional outbox events.
 - Composite tenant foreign keys and forced PostgreSQL row-level-security policies across tenant-owned tables.
-- Database-enforced UUIDv7 identity, canonical asset URI consistency, typed relation endpoints, provenance integrity, system-time event chronology, and non-overlapping active authoritative intervals.
+- Database-enforced UUIDv7 identity, canonical asset URI consistency, typed relation endpoints, provenance integrity, system-time event chronology, payload shape, and non-overlapping active authoritative intervals.
 - Real PostgreSQL acceptance for RLS, tenant isolation, temporal exclusion, typed relations, evidence tenant integrity, event chronology, payload shape, projection identity, and outbox rollback.
 - Clean-install, idempotent replay, checksum-drift, failed-migration atomicity, and previous-boundary upgrade rehearsal.
 - OpenAPI and AsyncAPI contract baselines, Keyverse OIDC boundary requirements, accepted ADRs, doctoring references, standard-to-test traceability, and threat-model distinctions between enforced and planned surfaces.

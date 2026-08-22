@@ -1,0 +1,85 @@
+name: reproducibility
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-package-reproducibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate into first clean tree
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          path: source-a
+          persist-credentials: false
+      - name: Checkout exact candidate into second clean tree
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          path: source-b
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.32"
+          enable-cache: false
+      - name: Bind both clean trees to the exact checkout commit
+        id: source
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          first_sha="$(git -C source-a rev-parse HEAD)"
+          second_sha="$(git -C source-b rev-parse HEAD)"
+          if [[ "$first_sha" != "$EXPECTED_SHA" || "$second_sha" != "$EXPECTED_SHA" ]]; then
+            echo "clean build trees do not match the workflow checkout SHA" >&2
+            exit 1
+          fi
+          source_date_epoch="$(git -C source-a show -s --format=%ct HEAD)"
+          if [[ ! "$source_date_epoch" =~ ^[0-9]+$ ]]; then
+            echo "source commit timestamp is not an integer epoch" >&2
+            exit 1
+          fi
+          echo "source_date_epoch=$source_date_epoch" >> "$GITHUB_OUTPUT"
+      - name: Verify both dependency locks
+        run: |
+          (cd source-a && uv lock --check)
+          (cd source-b && uv lock --check)
+      - name: Build release packages from first clean tree
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.source.outputs.source_date_epoch }}
+        run: |
+          (cd source-a && uv build --wheel --sdist --out-dir ../build-a)
+      - name: Build release packages from second clean tree
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.source.outputs.source_date_epoch }}
+        run: |
+          (cd source-b && uv build --wheel --sdist --out-dir ../build-b)
+      - name: Verify byte-reproducible release packages
+        run: |
+          mkdir reproducibility-evidence
+          python source-a/scripts/verify_reproducible_package_builds.py \
+            build-a build-b \
+            | tee reproducibility-evidence/verification.txt
+          (
+            cd build-a
+            sha256sum *.whl *.tar.gz
+          ) > reproducibility-evidence/SHA256SUMS
+      - name: Retain exact-candidate reproducibility evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reproducibility-${{ github.sha }}
+          path: reproducibility-evidence
+          if-no-files-found: error
+          retention-days: 7
