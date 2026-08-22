@@ -1,4 +1,4 @@
-"""HTTP framing regressions for governed target-state approval commands."""
+"""HTTP framing regressions for governed target-state write commands."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ import pytest
 from ea_core_foundation.service import FoundationServiceHandler, PlannerRequestError
 
 
-def _approval_handler(
+def _command_handler(
     body: bytes,
     *,
     transfer_encoding: str | None = None,
     duplicate_content_length: bool = False,
 ) -> FoundationServiceHandler:
-    """Build only the request-body state used by the approval JSON reader."""
+    """Build only the request-body state shared by approval and scheduling."""
 
     handler = FoundationServiceHandler.__new__(FoundationServiceHandler)
     headers = Message()
@@ -31,19 +31,19 @@ def _approval_handler(
     return handler
 
 
-def test_approval_rejects_transfer_encoding_before_reading_json() -> None:
-    """A command cannot mix unsupported transfer framing with Content-Length."""
+def test_commands_reject_transfer_encoding_before_reading_json() -> None:
+    """A write command cannot mix unsupported transfer framing with length framing."""
 
-    handler = _approval_handler(b"{}", transfer_encoding="chunked")
+    handler = _command_handler(b"{}", transfer_encoding="chunked")
 
     with pytest.raises(PlannerRequestError, match="Transfer-Encoding"):
         handler._read_approval_json()
 
 
-def test_approval_rejects_duplicate_content_length_before_reading_json() -> None:
+def test_commands_reject_duplicate_content_length_before_reading_json() -> None:
     """Multiple Content-Length fields are ambiguous even when values are identical."""
 
-    handler = _approval_handler(b"{}", duplicate_content_length=True)
+    handler = _command_handler(b"{}", duplicate_content_length=True)
 
     with pytest.raises(PlannerRequestError, match="Content-Length"):
         handler._read_approval_json()
