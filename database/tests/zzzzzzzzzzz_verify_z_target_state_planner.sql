@@ -205,7 +205,7 @@ $$;
 
 -- A historical planner read must still use a scenario that was active at the
 -- requested recording cutoff after that scenario was superseded later.
-BEGIN;
+SAVEPOINT historical_scenario_read;
 UPDATE architecture_core.architecture_scenario
    SET superseded_at = '2027-08-01T00:00:00Z'
  WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
@@ -234,7 +234,8 @@ BEGIN
 END;
 $$;
 
-ROLLBACK;
+ROLLBACK TO SAVEPOINT historical_scenario_read;
+RELEASE SAVEPOINT historical_scenario_read;
 
 -- The historical-read cleanup must not escape the outer planner fixture
 -- transaction; otherwise the following tenant-isolation assertion becomes a
