@@ -1026,7 +1026,12 @@ class FoundationServiceHandler(BaseHTTPRequestHandler):
         )
         if media_type != "application/json":
             raise PlannerRequestError("approval requires application/json")
-        raw_length = self.headers.get("Content-Length")
+        if self.headers.get_all("Transfer-Encoding"):
+            raise PlannerRequestError("approval Transfer-Encoding is unsupported")
+        content_length_values = self.headers.get_all("Content-Length", [])
+        if len(content_length_values) != 1:
+            raise PlannerRequestError("approval Content-Length is invalid")
+        raw_length = content_length_values[0]
         try:
             content_length = int(raw_length or "")
         except ValueError as error:
