@@ -15,6 +15,9 @@ from strict_json_identity import MAX_JSON_BYTES, load_strict_json, semantic_json
 
 _IN_TOTO_PAYLOAD_TYPE = "application/vnd.in-toto+json"
 _IN_TOTO_STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
+_SLSA_PROVENANCE_PREDICATE_TYPE = "https://slsa.dev/provenance/v1"
+_GITHUB_ACTIONS_BUILD_TYPE = "https://actions.github.io/buildtypes/workflow/v1"
+_GITHUB_SERVER_URL = "https://github.com"
 
 
 def _read_bounded_stdin() -> bytes:
@@ -107,6 +110,54 @@ def _matching_artifact_statements(
         message = "signed attestation predicate type does not match expected policy"
         raise ValueError(message)
     raise ValueError("signed attestation subject does not match release artifact")
+
+
+def _require_matching_provenance_predicate(
+    statements: list[dict[str, Any]],
+) -> None:
+    """Require signed provenance to bind the exact release source and workflow."""
+    repository = os.environ["REPOSITORY"]
+    source_ref = os.environ["EXPECTED_SOURCE_REF"]
+    source_sha = os.environ["SOURCE_SHA"]
+    signer_workflow = os.environ["SIGNER_WORKFLOW"]
+    workflow_path = signer_workflow.removeprefix(f"{repository}/")
+    expected = {
+        "buildType": _GITHUB_ACTIONS_BUILD_TYPE,
+        "externalParameters": {
+            "workflow": {
+                "ref": source_ref,
+                "repository": f"{_GITHUB_SERVER_URL}/{repository}",
+                "path": workflow_path,
+            }
+        },
+        "resolvedDependencies": [
+            {
+                "uri": f"git+{_GITHUB_SERVER_URL}/{repository}@{source_ref}",
+                "digest": {"gitCommit": source_sha},
+            }
+        ],
+        "builder": {
+            "id": f"{_GITHUB_SERVER_URL}/{signer_workflow}@{source_ref}"
+        },
+    }
+    for statement in statements:
+        try:
+            predicate = statement["predicate"]
+            build_definition = predicate["buildDefinition"]
+            run_details = predicate["runDetails"]
+            actual = {
+                "buildType": build_definition["buildType"],
+                "externalParameters": build_definition["externalParameters"],
+                "resolvedDependencies": build_definition["resolvedDependencies"],
+                "builder": run_details["builder"],
+            }
+        except (KeyError, TypeError):
+            continue
+        if actual == expected:
+            return
+    raise ValueError(
+        "provenance predicate does not match expected GitHub Actions build"
+    )
 
 
 def _require_matching_spdx_predicate(
@@ -208,10 +259,12 @@ def main(argv: list[str]) -> int:
             expected_artifact_digest,
             expected_predicate_type,
         )
+        if expected_predicate_type == _SLSA_PROVENANCE_PREDICATE_TYPE:
+            _require_matching_provenance_predicate(statements)
         if expected_sbom_digest is not None:
             _require_matching_spdx_predicate(statements, expected_sbom_digest)
         _write_exclusive_regular_file(output_path, data)
-    except (OSError, UnicodeError, ValueError) as exc:
+    except (KeyError, OSError, UnicodeError, ValueError) as exc:
         print(
             f"unable to capture or verify attestation evidence strictly: {exc}",
             file=sys.stderr,
