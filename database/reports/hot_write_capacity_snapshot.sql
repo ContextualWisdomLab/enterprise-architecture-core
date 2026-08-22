@@ -1,3 +1,8 @@
+\if :ON_ERROR_STOP
+\set cwl_capacity_previous_on_error_stop on
+\else
+\set cwl_capacity_previous_on_error_stop off
+\endif
 \set ON_ERROR_STOP on
 
 \if :{?tenant_id}
@@ -142,14 +147,23 @@ RESET app.tenant_record_id;
 \set cwl_capacity_report_failed true
 \endif
 
+-- A report failure must still abort after tenant context has been restored.
 \set ON_ERROR_STOP on
 \if :cwl_capacity_report_failed
 \echo 'hot-write capacity snapshot failed after restoring caller tenant context'
--- Force psql to return a failure after the caller context has been restored.
 SELECT 1 / 0;
+\endif
+
+-- Successful inclusion is side-effect-free with respect to the caller's psql
+-- error policy, including sessions that intentionally keep ON_ERROR_STOP off.
+\if :cwl_capacity_previous_on_error_stop
+\set ON_ERROR_STOP on
+\else
+\set ON_ERROR_STOP off
 \endif
 
 \unset cwl_capacity_previous_tenant_record_id
 \unset cwl_capacity_installed_tenant_record_id
 \unset cwl_capacity_restored_tenant_record_id
 \unset cwl_capacity_report_failed
+\unset cwl_capacity_previous_on_error_stop
