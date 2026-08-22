@@ -85,6 +85,44 @@ def test_generated_package_evidence_uses_the_release_admission_verifier() -> Non
     assert "package-evidence/SHA256SUMS" in upload_step
 
 
+def test_protected_main_binds_signing_to_the_producer_bundle_snapshot() -> None:
+    """Reject a coherent downloaded bundle that differs from the producing job."""
+    workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
+    generated_verify_marker = "- name: Verify generated package evidence"
+    snapshot_marker = "- name: Capture producer package snapshot"
+    upload_marker = "- name: Upload checked-out commit package evidence"
+    downloaded_verify_marker = "- name: Verify downloaded package evidence before attestation"
+    compare_marker = "- name: Require exact producer package snapshot"
+    attest_marker = "- name: Attest SLSA build provenance"
+
+    generated_verify_index = workflow_text.index(generated_verify_marker)
+    snapshot_index = workflow_text.index(snapshot_marker)
+    upload_index = workflow_text.index(upload_marker)
+    downloaded_verify_index = workflow_text.index(downloaded_verify_marker)
+    compare_index = workflow_text.index(compare_marker)
+    attest_index = workflow_text.index(attest_marker)
+
+    assert generated_verify_index < snapshot_index < upload_index
+    assert downloaded_verify_index < compare_index < attest_index
+    assert "bundle_snapshot: ${{ steps.package-snapshot.outputs.bundle_snapshot }}" in (
+        workflow_text
+    )
+    snapshot_step = workflow_text[snapshot_index:upload_index]
+    assert "id: package-snapshot" in snapshot_step
+    assert "sha256sum package-evidence/SHA256SUMS" in snapshot_step
+    assert '>> "$GITHUB_OUTPUT"' in snapshot_step
+
+    compare_step = workflow_text[compare_index:attest_index]
+    assert (
+        "EXPECTED_PACKAGE_SNAPSHOT: "
+        "${{ needs.package-evidence.outputs.bundle_snapshot }}"
+    ) in compare_step
+    assert "sha256sum evidence/SHA256SUMS" in compare_step
+    assert 'test "$observed_package_snapshot" = "$EXPECTED_PACKAGE_SNAPSHOT"' in (
+        compare_step
+    )
+
+
 def test_protected_main_revalidates_downloaded_evidence_before_attesting() -> None:
     """Never sign downloaded package bytes before their bundle is re-admitted."""
     workflow_text = _SUPPLY_CHAIN_PATH.read_text(encoding="utf-8")
