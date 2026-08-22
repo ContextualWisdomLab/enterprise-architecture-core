@@ -322,8 +322,13 @@ def verify_rs256_signature(
                 timeout=3,
                 check=False,
             )
-    except (OSError, subprocess.TimeoutExpired):
-        return False
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise AuthorizationError(
+            "JWT verification infrastructure is unavailable",
+            error_code="planner_unavailable",
+            http_status=503,
+            next_action="Retry after the Keyverse signature verifier is available.",
+        ) from error
     return result.returncode == 0
 
 
