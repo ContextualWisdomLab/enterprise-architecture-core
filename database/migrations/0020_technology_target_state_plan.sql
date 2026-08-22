@@ -230,4 +230,17 @@ COMMENT ON FUNCTION architecture_core.project_technology_target_state_plan(
 ) IS
 'Projects one tenant-scoped buyer decision surface from bitemporal technology lifecycle impact through EA-owned application/capability facts, receipt-bound foreign context evidence, governed remediation initiative, immutable target-state scenario membership, and append-only transformation state. Foreign product authority remains referenced rather than copied or promoted. The projector is read-only, preserves truth/evidence gates, and returns deterministic next actions for evidence completion, approval, execution, replanning, and target-state verification.';
 
+DO $$
+BEGIN
+  IF has_function_privilege(
+      'public',
+      'architecture_core.project_technology_target_state_plan(uuid,timestamptz,timestamptz,integer)',
+      'EXECUTE'
+  ) THEN
+    RAISE EXCEPTION
+      'target-state projector must not commit with PUBLIC execute';
+  END IF;
+END;
+$$;
+
 COMMIT;
