@@ -6,6 +6,8 @@
 -- default PUBLIC EXECUTE on a newly created projector.
 
 DO $$
+DECLARE
+  query_owner text;
 BEGIN
   IF to_regprocedure(
       'architecture_core.read_technology_target_state_plan(uuid,uuid,timestamptz,timestamptz,integer)'
@@ -19,6 +21,29 @@ BEGIN
       'EXECUTE'
   ) THEN
     RAISE EXCEPTION 'target-state projector retains PUBLIC execute after migration';
+  END IF;
+
+  SELECT pg_catalog.pg_get_userbyid(pg_proc.proowner)
+    INTO query_owner
+    FROM pg_catalog.pg_proc
+   WHERE pg_proc.oid = pg_catalog.to_regprocedure(
+       'architecture_core.read_technology_target_state_plan(uuid,uuid,timestamptz,timestamptz,integer)'
+   );
+
+  IF query_owner <> 'ea_function_owner' THEN
+    RAISE EXCEPTION
+      'target-state query port owner must be ea_function_owner, found %',
+      query_owner;
+  END IF;
+
+  IF EXISTS (
+      SELECT 1
+        FROM pg_catalog.pg_roles
+       WHERE rolname = 'ea_function_owner'
+         AND (rolsuper OR rolbypassrls OR rolcanlogin)
+  ) THEN
+    RAISE EXCEPTION
+      'ea_function_owner must be NOLOGIN NOSUPERUSER NOBYPASSRLS';
   END IF;
 END;
 $$;
@@ -79,6 +104,19 @@ BEGIN
 
   IF NOT coalesce(runtime_plan_visible, false) THEN
     RAISE EXCEPTION 'purpose-bound runtime query did not return buyer decision evidence';
+  END IF;
+
+  IF EXISTS (
+      SELECT 1
+        FROM architecture_core.read_technology_target_state_plan(
+            '0195d145-0000-7000-8000-000000000000',
+            '0196f100-1111-7111-8111-111111111111',
+            '2027-02-01T00:00:00Z',
+            '2027-02-01T00:00:00Z',
+            180
+        )
+  ) THEN
+    RAISE EXCEPTION 'target-state query port leaked rows across tenants';
   END IF;
 END;
 $$;
