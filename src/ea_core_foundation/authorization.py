@@ -159,13 +159,17 @@ def _decode_base64url(value: str, field_name: str) -> bytes:
         raise AuthorizationError(f"{field_name} is not canonical base64url")
     padding = "=" * ((4 - len(value) % 4) % 4)
     try:
-        return base64.b64decode(
+        decoded = base64.b64decode(
             f"{value}{padding}",
             altchars=b"-_",
             validate=True,
         )
     except (binascii.Error, ValueError) as error:
         raise AuthorizationError(f"{field_name} is not valid base64url") from error
+    canonical = base64.urlsafe_b64encode(decoded).rstrip(b"=").decode("ascii")
+    if canonical != value:
+        raise AuthorizationError(f"{field_name} is not canonical base64url")
+    return decoded
 
 
 def _decode_json_object(segment: str, field_name: str) -> Mapping[str, Any]:
