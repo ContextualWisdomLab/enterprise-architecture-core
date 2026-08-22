@@ -4,6 +4,7 @@
 
 ### Added
 
+- Exact-head release-package reproducibility acceptance that builds wheel and source distribution from two independent clean checkouts with a shared commit-derived `SOURCE_DATE_EPOCH`, rejects artifact-name or byte drift and symlink/path substitution, and retains SHA-256 evidence under the exact workflow commit identity.
 - Bitemporal Technology Change Impact & Target-State Planner projection through `project_technology_change_impact(uuid,timestamptz,timestamptz,integer)`, traversing EA-owned technology-version -> component -> application -> capability facts while preserving relation truth origin/provenance and deriving lifecycle risk only from valid/system-time lifecycle evidence.
 - Deterministic buyer next-action states for recorded lifecycle risk, incomplete evidence, and non-authoritative dependency paths (`monitor`, `plan_target_state`, `start_remediation`, `complete_capability_mapping`, `complete_lifecycle_evidence`, `review_truth_origin`), with bounded planning horizons; the projector exposes the next risk-bearing lifecycle transition and its evidence, ignores mutable non-temporal support metadata for historical classification, and never turns inferred/proposed relations into actionable authority.
 - Relation-aware target-state scenarios through normalized `scenario_relation_delta` and deterministic `project_scenario_relations(uuid)`, preserving typed endpoint semantics, truth/evidence, immutable append history, and explicit endpoint-integrity state without mutating authoritative relations.
