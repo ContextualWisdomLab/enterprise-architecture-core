@@ -1,5 +1,43 @@
 BEGIN;
 
+-- The purpose-bound SECURITY DEFINER port must never inherit superuser or
+-- BYPASSRLS authority from whichever deployment identity applies migrations.
+-- Keep its owner non-login and non-inheriting so only the wrapper can exercise
+-- the explicitly granted read surface below.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+      SELECT 1
+        FROM pg_catalog.pg_roles
+       WHERE rolname = 'ea_function_owner'
+  ) THEN
+    CREATE ROLE ea_function_owner
+      NOLOGIN
+      NOINHERIT
+      NOSUPERUSER
+      NOCREATEDB
+      NOCREATEROLE
+      NOREPLICATION
+      NOBYPASSRLS;
+  END IF;
+END;
+$$;
+
+ALTER ROLE ea_function_owner
+  NOLOGIN
+  NOINHERIT
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS;
+
+-- PostgreSQL grants EXECUTE on newly created functions to PUBLIC by default.
+-- Change the default for the actual migration identity, regardless of whether
+-- the deployment calls it ea_owner, ea_app, or another dedicated owner role.
+ALTER DEFAULT PRIVILEGES
+REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+
 CREATE FUNCTION architecture_core.read_technology_target_state_plan(
   requested_tenant_record_id uuid,
   requested_technology_version_id uuid,
@@ -57,6 +95,15 @@ BEGIN
 END;
 $$;
 
+ALTER FUNCTION architecture_core.read_technology_target_state_plan(
+    uuid,
+    uuid,
+    timestamptz,
+    timestamptz,
+    integer
+)
+OWNER TO ea_function_owner;
+
 REVOKE ALL
 ON FUNCTION architecture_core.read_technology_target_state_plan(
     uuid,
@@ -66,6 +113,62 @@ ON FUNCTION architecture_core.read_technology_target_state_plan(
     integer
 )
 FROM PUBLIC;
+
+-- The non-login definer can read only the tables reached by the target-state
+-- projection chain. FORCE ROW LEVEL SECURITY on tenant-owned tables remains in
+-- effect because this role owns no application tables and has NOBYPASSRLS.
+GRANT USAGE ON SCHEMA architecture_core TO ea_function_owner;
+GRANT SELECT ON TABLE
+    architecture_core.technology_version,
+    architecture_core.architecture_relation,
+    architecture_core.relation_type,
+    architecture_core.technology_component,
+    architecture_core.application_record,
+    architecture_core.business_capability,
+    architecture_core.lifecycle_interval,
+    architecture_core.lifecycle_phase,
+    architecture_core.architecture_transformation,
+    architecture_core.remediation_initiative,
+    architecture_core.architecture_scenario,
+    architecture_core.application_context_projection,
+    architecture_core.external_context_reference,
+    architecture_core.projection_receipt,
+    architecture_core.architecture_object,
+    architecture_core.object_type,
+    architecture_core.scenario_baseline,
+    architecture_core.object_revision,
+    architecture_core.scenario_object_delta,
+    architecture_core.transformation_history_record
+TO ea_function_owner;
+
+GRANT EXECUTE ON FUNCTION
+    architecture_core.current_tenant_id()
+TO ea_function_owner;
+GRANT EXECUTE ON FUNCTION
+    architecture_core.project_technology_target_state_plan(
+        uuid,
+        timestamptz,
+        timestamptz,
+        integer
+    ),
+    architecture_core.project_technology_change_impact(
+        uuid,
+        timestamptz,
+        timestamptz,
+        integer
+    ),
+    architecture_core.project_application_context_impact(
+        uuid,
+        timestamptz,
+        timestamptz
+    ),
+    architecture_core.project_scenario_objects_at(uuid, timestamptz),
+    architecture_core.project_transformation_state(
+        uuid,
+        timestamptz,
+        timestamptz
+    )
+TO ea_function_owner;
 
 -- Migration 0020 creates this projector after deployment bootstrap may already
 -- have revoked PUBLIC execution on the existing schema functions. PostgreSQL
@@ -107,6 +210,6 @@ COMMENT ON FUNCTION architecture_core.read_technology_target_state_plan(
     timestamptz,
     integer
 ) IS
-'Purpose-bound SECURITY DEFINER read port for the authenticated EA service. The service verifies Keyverse signature, issuer, audience, expiration, tenant, and role before passing the verified tenant UUID. The runtime role receives EXECUTE only on this wrapper and retains no direct table or projector authority.';
+'Purpose-bound SECURITY DEFINER read port owned by the non-login, NOBYPASSRLS ea_function_owner role. The service verifies Keyverse signature, issuer, audience, expiration, tenant, and role before passing the verified tenant UUID. The runtime role receives EXECUTE only on this wrapper and retains no direct table or projector authority.';
 
 COMMIT;
