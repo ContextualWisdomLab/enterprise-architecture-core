@@ -34,6 +34,10 @@ The strategy-execution milestone follows an observed RED-before-GREEN path on th
 
 No source-text assertion substitutes for the real PostgreSQL execution boundary when PostgreSQL can enforce the behavior directly.
 
+## Release-package reproducibility
+
+Release evidence includes a dedicated executable reproducibility boundary. On every pull request and `develop`/`main` integration push, the `reproducibility` workflow checks out the exact workflow commit into two independent clean trees, verifies both dependency locks, derives `SOURCE_DATE_EPOCH` from that exact commit, builds wheel and source distribution independently, and fails closed unless both build directories expose the same artifact filenames and byte-identical SHA-256 identities. Symlinked or path-replaced artifacts are rejected through stable regular-file reads. A single successful build or matching package metadata is not reproducibility evidence.
+
 ## Subsequent runtime test requirements
 
 Before the corresponding behaviors may merge, add executable evidence for:
