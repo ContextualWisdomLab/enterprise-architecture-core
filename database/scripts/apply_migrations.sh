@@ -67,6 +67,40 @@ SQL
     printf 'BEGIN;\n'
     sed '1d;$d' "$migration_path"
     cat <<'SQL'
+DO $security_invariant$
+DECLARE
+  violating_function_names text;
+BEGIN
+  SELECT string_agg(
+           namespace_record.nspname || '.' || procedure_record.proname ||
+           '(' || pg_get_function_identity_arguments(procedure_record.oid) || ')',
+           ', ' ORDER BY namespace_record.nspname, procedure_record.proname,
+           pg_get_function_identity_arguments(procedure_record.oid)
+         )
+    INTO violating_function_names
+    FROM pg_proc AS procedure_record
+    JOIN pg_namespace AS namespace_record
+      ON namespace_record.oid = procedure_record.pronamespace
+    CROSS JOIN LATERAL aclexplode(
+      COALESCE(
+        procedure_record.proacl,
+        acldefault('f', procedure_record.proowner)
+      )
+    ) AS privilege_record
+   WHERE namespace_record.nspname = 'architecture_core'
+     AND procedure_record.prosecdef
+     AND privilege_record.grantee = 0
+     AND privilege_record.privilege_type = 'EXECUTE';
+
+  IF violating_function_names IS NOT NULL THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '42501',
+      MESSAGE = 'SECURITY DEFINER functions must revoke PUBLIC EXECUTE in their creating migration: ' ||
+                violating_function_names;
+  END IF;
+END;
+$security_invariant$;
+
 INSERT INTO architecture_core.schema_migration_record (
     migration_name,
     migration_sha256
