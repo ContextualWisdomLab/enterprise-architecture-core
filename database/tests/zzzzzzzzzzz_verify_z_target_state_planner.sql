@@ -236,6 +236,22 @@ $$;
 
 ROLLBACK;
 
+-- The historical-read cleanup must not escape the outer planner fixture
+-- transaction; otherwise the following tenant-isolation assertion becomes a
+-- vacuous unknown-object failure instead of exercising a real cross-tenant row.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+      SELECT 1
+        FROM architecture_core.scenario_object_delta
+       WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+         AND scenario_object_delta_id = '0196f300-1000-7100-8100-000000000001'
+  ) THEN
+    RAISE EXCEPTION 'historical-read cleanup escaped the planner fixture transaction';
+  END IF;
+END;
+$$;
+
 SELECT set_config(
     'app.tenant_record_id',
     '0195d145-64e8-7f4f-8a23-a0cc784cb712',
