@@ -94,8 +94,13 @@ def semantic_json_sha256(value: Any) -> str:
     return hashlib.sha256(canonical_json_value_bytes(value)).hexdigest()
 
 
+def _content_identity(file_stat: os.stat_result) -> tuple[int, int, int]:
+    """Return metadata that changes when an opened regular file is rewritten."""
+    return (file_stat.st_size, file_stat.st_mtime_ns, file_stat.st_ctime_ns)
+
+
 def read_stable_regular_file(path: Path, *, label: str) -> bytes:
-    """Read one bounded regular file without following a replacement symlink."""
+    """Read one bounded regular file without following or accepting path mutation."""
     nofollow = getattr(os, "O_NOFOLLOW", None)
     if nofollow is None:
         raise OSError(f"platform lacks O_NOFOLLOW for {label}")
@@ -116,14 +121,20 @@ def read_stable_regular_file(path: Path, *, label: str) -> bytes:
         if len(data) > MAX_JSON_BYTES:
             raise ValueError(f"JSON evidence exceeds 16 MiB: {path}")
 
+        final_opened_stat = os.fstat(descriptor)
         path_stat = os.stat(path, follow_symlinks=False)
         if not stat.S_ISREG(path_stat.st_mode):
             raise ValueError(f"{label} path stopped being a regular file: {path}")
         if (opened_stat.st_dev, opened_stat.st_ino) != (
+            final_opened_stat.st_dev,
+            final_opened_stat.st_ino,
+        ) or (opened_stat.st_dev, opened_stat.st_ino) != (
             path_stat.st_dev,
             path_stat.st_ino,
         ):
             raise ValueError(f"{label} path changed while being read: {path}")
+        if _content_identity(final_opened_stat) != _content_identity(opened_stat):
+            raise ValueError(f"{label} changed while being read: {path}")
         return data
     finally:
         os.close(descriptor)
