@@ -20,8 +20,13 @@ _CHECKSUM_PATTERN = re.compile(r"^([0-9a-f]{64})  ([^\s]+)$")
 _PROJECT_FILE = Path(__file__).resolve().parent.parent / "pyproject.toml"
 
 
+def _content_identity(file_stat: os.stat_result) -> tuple[int, int, int]:
+    """Return metadata that changes when an opened package file is rewritten."""
+    return (file_stat.st_size, file_stat.st_mtime_ns, file_stat.st_ctime_ns)
+
+
 def _stable_sha256(path: Path, *, label: str) -> str:
-    """Hash one stable regular file without following a replacement symlink."""
+    """Hash one stable regular file without following or accepting mutation."""
     nofollow = getattr(os, "O_NOFOLLOW", None)
     if nofollow is None:
         raise OSError(f"platform lacks O_NOFOLLOW for {label}")
@@ -33,14 +38,20 @@ def _stable_sha256(path: Path, *, label: str) -> str:
         digest = hashlib.sha256()
         while chunk := os.read(descriptor, 1024 * 1024):
             digest.update(chunk)
+        final_opened_stat = os.fstat(descriptor)
         path_stat = os.stat(path, follow_symlinks=False)
         if not stat.S_ISREG(path_stat.st_mode):
             raise ValueError(f"{label} path stopped being regular: {path}")
         if (opened_stat.st_dev, opened_stat.st_ino) != (
+            final_opened_stat.st_dev,
+            final_opened_stat.st_ino,
+        ) or (opened_stat.st_dev, opened_stat.st_ino) != (
             path_stat.st_dev,
             path_stat.st_ino,
         ):
             raise ValueError(f"{label} path changed while being read: {path}")
+        if _content_identity(final_opened_stat) != _content_identity(opened_stat):
+            raise ValueError(f"{label} changed while being read: {path}")
         return digest.hexdigest()
     finally:
         os.close(descriptor)
