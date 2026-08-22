@@ -6,6 +6,7 @@ import base64
 import json
 import subprocess
 import threading
+import time
 from http.client import HTTPConnection
 from typing import Any
 from uuid import UUID
@@ -57,7 +58,7 @@ def _token() -> str:
     claims = {
         "iss": "https://id.example/realms/cwl",
         "aud": "enterprise-architecture-core",
-        "exp": 2_000_000_000,
+        "exp": int(time.time()) + 3600,
         "sub": "reader-1",
         "tenant": str(_TENANT),
         "role": "ea_reader",
