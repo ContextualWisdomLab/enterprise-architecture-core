@@ -1,5 +1,12 @@
 BEGIN;
 
+-- PostgreSQL grants EXECUTE on newly created functions to PUBLIC by default.
+-- Revoke that default for the migration identity before this projector is
+-- created so an in-place upgrade cannot expose it between migrations 0020 and
+-- 0021 while ea_runtime already has schema USAGE from an earlier deployment.
+ALTER DEFAULT PRIVILEGES
+REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+
 CREATE FUNCTION architecture_core.project_technology_target_state_plan(
     requested_technology_version_id uuid,
     assessment_valid_at timestamptz,
