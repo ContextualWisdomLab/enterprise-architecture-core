@@ -105,18 +105,37 @@ BEGIN
   IF NOT coalesce(runtime_plan_visible, false) THEN
     RAISE EXCEPTION 'purpose-bound runtime query did not return buyer decision evidence';
   END IF;
+END;
+$$;
 
-  IF EXISTS (
-      SELECT 1
-        FROM architecture_core.read_technology_target_state_plan(
-            '0195d145-0000-7000-8000-000000000000',
-            '0196f100-1111-7111-8111-111111111111',
-            '2027-02-01T00:00:00Z',
-            '2027-02-01T00:00:00Z',
-            180
-        )
-  ) THEN
-    RAISE EXCEPTION 'target-state query port leaked rows across tenants';
+-- A verified tenant that does not own the requested technology must be denied
+-- by the underlying tenant-scoped projector. Pin the fail-closed contract
+-- explicitly: returning rows would be a leak, while a different exception
+-- would indicate that the denial boundary itself drifted.
+DO $$
+DECLARE
+  cross_tenant_denied boolean := false;
+BEGIN
+  BEGIN
+    PERFORM 1
+      FROM architecture_core.read_technology_target_state_plan(
+          '0195d145-0000-7000-8000-000000000000',
+          '0196f100-1111-7111-8111-111111111111',
+          '2027-02-01T00:00:00Z',
+          '2027-02-01T00:00:00Z',
+          180
+      );
+  EXCEPTION
+    WHEN raise_exception THEN
+      IF SQLERRM <> 'technology version is unavailable for the active tenant' THEN
+        RAISE;
+      END IF;
+      cross_tenant_denied := true;
+  END;
+
+  IF NOT cross_tenant_denied THEN
+    RAISE EXCEPTION
+      'target-state query port did not deny a cross-tenant technology read';
   END IF;
 END;
 $$;
