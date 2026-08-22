@@ -51,7 +51,8 @@ $$;
 -- Earlier foundation acceptance deliberately grants direct table/function
 -- authority to ea_runtime as an RLS probe. Reapply the production deployment
 -- boundary before asserting application-runtime privileges; this must strip
--- those fixture-only grants and restore only the purpose-bound query port.
+-- those fixture-only grants and restore only purpose-bound ports available on
+-- the current stack head.
 \ir ../init/003_grant_runtime_access.sql
 
 DO $$

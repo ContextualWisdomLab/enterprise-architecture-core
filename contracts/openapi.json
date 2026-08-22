@@ -3,7 +3,7 @@
   "info": {
     "title": "Enterprise Architecture Core API",
     "version": "0.1.0",
-    "description": "Implemented process and read-only decision surface. Call GET /health, then GET /ready. Authenticated architecture readers can query the bitemporal Technology Change Impact & Target-State Planner without direct table or foreign-product SQL access."
+    "description": "Implemented process and governed Enterprise Architecture decision surface. Call GET /health, then GET /ready. Authenticated architecture readers can query the bitemporal Technology Change Impact & Target-State Planner, and separately authorized human approvers can commit a proposed target state through the purpose-bound approval command without direct table or foreign-product SQL access."
   },
   "servers": [{"url": "https://ea-core.example.invalid"}],
   "security": [{"keyverseBearer": []}],
@@ -144,6 +144,80 @@
           }
         }
       }
+    },
+    "/v1/architecture-transformations/{architecture_transformation_id}/approval": {
+      "post": {
+        "operationId": "approveTechnologyTargetState",
+        "summary": "Approve one proposed target-state transformation",
+        "description": "Commits a human-authorized target-state approval through the EA Core purpose-bound command port. The verified Keyverse identity supplies tenant and actor authority; callers cannot spoof the decision actor. The command appends authoritative transformation history and its transactional outbox event atomically. Reusing the same decision_request_id with identical meaning returns the original receipt; conflicting meaning fails closed.",
+        "security": [{"keyverseBearer": []}],
+        "parameters": [
+          {
+            "name": "architecture_transformation_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "format": "uuid"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/TargetStateApprovalRequest"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The exact decision request was already committed and the immutable receipt is replayed. Next action: schedule the approved transformation.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/TargetStateApprovalReceipt"}
+              }
+            }
+          },
+          "201": {
+            "description": "The target state was approved and authoritative history plus outbox evidence were committed atomically. Next action: schedule the transformation.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/TargetStateApprovalReceipt"}
+              }
+            }
+          },
+          "400": {
+            "description": "The strict JSON command, UUIDv7 identifiers, effective time, or bounded reason is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorStatus"}
+              }
+            }
+          },
+          "401": {
+            "description": "A current cryptographically valid Keyverse bearer is required.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorStatus"}
+              }
+            }
+          },
+          "403": {
+            "description": "The verified identity lacks an approved EA target-state approval role.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorStatus"}
+              }
+            }
+          },
+          "503": {
+            "description": "Approval authorization configuration or the purpose-bound EA command port is unavailable, or the command cannot be safely committed. Keep the decision pending and refresh the target-state plan before retrying with the same decision_request_id.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorStatus"}
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -257,6 +331,48 @@
           "recommended_action_code": {"type": "string"}
         }
       },
+      "TargetStateApprovalRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "decision_request_id",
+          "effective_at",
+          "decision_reason_text",
+          "evidence_record_id"
+        ],
+        "properties": {
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "effective_at": {"type": "string", "format": "date-time"},
+          "decision_reason_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "evidence_record_id": {"type": "string", "format": "uuid"}
+        }
+      },
+      "TargetStateApprovalReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "transformation_history_record_id",
+          "transformation_state_code",
+          "outbox_event_id",
+          "decision_request_id",
+          "approval_recorded_at",
+          "replayed",
+          "next_action"
+        ],
+        "properties": {
+          "transformation_history_record_id": {"type": "string", "format": "uuid"},
+          "transformation_state_code": {"type": "string", "const": "approved"},
+          "outbox_event_id": {"type": "string", "format": "uuid"},
+          "decision_request_id": {"type": "string", "format": "uuid"},
+          "approval_recorded_at": {"type": "string", "format": "date-time"},
+          "replayed": {"type": "boolean"},
+          "next_action": {"type": "string", "const": "schedule_transformation"}
+        }
+      },
       "ErrorStatus": {
         "type": "object",
         "additionalProperties": false,
@@ -275,7 +391,8 @@
       "EA_OIDC_JWKS_URL",
       "EA_TENANT_CLAIM",
       "EA_ROLE_CLAIM",
-      "EA_READ_ROLES"
+      "EA_READ_ROLES",
+      "EA_APPROVAL_ROLES"
     ],
     "requiredChecks": [
       "signature",

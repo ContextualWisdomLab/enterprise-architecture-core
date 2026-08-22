@@ -60,6 +60,10 @@ _CWL_TIMESTAMP_SCHEMA = {
         r"(?:[Zz]|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$"
     ),
 }
+_TARGET_STATE_APPROVAL_RUNTIME_PATH = (
+    "/v1/architecture-transformations/{architecture_transformation_id}/approval"
+)
+_TARGET_STATE_APPROVAL_OPERATION_ID = "approveTechnologyTargetState"
 _REQUIRED_CONNECTOR_NAMES = {
     "keyverse_oidc",
     "context_graph_contracts",
@@ -277,6 +281,7 @@ def validate_openapi_document(document: Mapping[str, Any]) -> int:
         "EA_TENANT_CLAIM",
         "EA_ROLE_CLAIM",
         "EA_READ_ROLES",
+        "EA_APPROVAL_ROLES",
     ]:
         raise ContractValidationError("Keyverse runtime configuration is incomplete")
     return len(operation_ids)
@@ -452,17 +457,81 @@ def _validate_target_state_operation(paths: Mapping[str, Any]) -> None:
         )
 
 
+def _validate_target_state_approval_operation(paths: Mapping[str, Any]) -> None:
+    """Bind the governed approval OpenAPI operation to executable behavior."""
+
+    path_item = _require_mapping(
+        paths.get(_TARGET_STATE_APPROVAL_RUNTIME_PATH),
+        f"path {_TARGET_STATE_APPROVAL_RUNTIME_PATH}",
+    )
+    operation = _require_mapping(
+        path_item.get("post"),
+        f"{_TARGET_STATE_APPROVAL_RUNTIME_PATH} post",
+    )
+    if operation.get("operationId") != _TARGET_STATE_APPROVAL_OPERATION_ID:
+        raise ContractValidationError(
+            "target-state approval operationId must be approveTechnologyTargetState"
+        )
+    if operation.get("security") != [{"keyverseBearer": []}]:
+        raise ContractValidationError(
+            "target-state approval must require Keyverse bearer authorization"
+        )
+    parameters = _parameter_index(operation)
+    if set(parameters) != {("architecture_transformation_id", "path")}:
+        raise ContractValidationError(
+            "target-state approval parameters must match executable request parsing"
+        )
+    _require_parameter(
+        parameters,
+        ("architecture_transformation_id", "path"),
+        required=True,
+        schema={"type": "string", "format": "uuid"},
+    )
+    expected_request_body = {
+        "required": True,
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/TargetStateApprovalRequest"}
+            }
+        },
+    }
+    if operation.get("requestBody") != expected_request_body:
+        raise ContractValidationError(
+            "target-state approval request body must match executable JSON parsing"
+        )
+    for status_code in ("200", "201"):
+        _require_json_schema_ref(
+            operation,
+            _TARGET_STATE_APPROVAL_RUNTIME_PATH,
+            status_code,
+            "TargetStateApprovalReceipt",
+        )
+    for status_code in ("400", "401", "403", "503"):
+        _require_json_schema_ref(
+            operation,
+            _TARGET_STATE_APPROVAL_RUNTIME_PATH,
+            status_code,
+            "ErrorStatus",
+        )
+
+
 def validate_openapi_runtime_surface(document: Mapping[str, Any]) -> None:
     """Require every advertised runtime operation to be executable and exact."""
 
     paths = _require_mapping(document.get("paths"), "paths")
-    expected_paths = {*_IMPLEMENTED_RUNTIME_PATHS, _TARGET_STATE_RUNTIME_PATH}
+    expected_paths = {
+        *_IMPLEMENTED_RUNTIME_PATHS,
+        _TARGET_STATE_RUNTIME_PATH,
+        _TARGET_STATE_APPROVAL_RUNTIME_PATH,
+    }
     if set(paths) != expected_paths:
         raise ContractValidationError(
-            "OpenAPI must advertise only implemented health, ready, and planner paths"
+            "OpenAPI must advertise only implemented health, ready, planner, "
+            "and approval paths"
         )
     _validate_probe_operations(paths)
     _validate_target_state_operation(paths)
+    _validate_target_state_approval_operation(paths)
     schemas = _require_mapping(
         _require_mapping(document.get("components"), "components").get("schemas"),
         "schemas",
@@ -472,6 +541,8 @@ def validate_openapi_runtime_surface(document: Mapping[str, Any]) -> None:
         "ReadyStatus",
         "TargetStatePlanResponse",
         "TargetStateDecision",
+        "TargetStateApprovalRequest",
+        "TargetStateApprovalReceipt",
         "ErrorStatus",
     }
     missing_schemas = required_schemas.difference(schemas)
@@ -584,6 +655,27 @@ def validate_asyncapi_document(document: Mapping[str, Any]) -> int:
                                 "type": {
                                     "const": (
                                         "org.contextualwisdomlab.ea.lifecycle.changed.v1"
+                                    )
+                                }
+                            },
+                        },
+                    ]
+                },
+            },
+        },
+        "TransformationApproved": {
+            "contentType": "application/cloudevents+json",
+            "payload": {
+                "schemaFormat": _SHARED_CONTEXT_SCHEMA_FORMAT,
+                "schema": {
+                    "allOf": [
+                        {"$ref": _SHARED_CONTEXT_ENVELOPE_SCHEMA},
+                        {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "const": (
+                                        "org.contextualwisdomlab.ea.transformation.approved.v1"
                                     )
                                 }
                             },
