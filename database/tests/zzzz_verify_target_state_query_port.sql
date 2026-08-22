@@ -109,9 +109,9 @@ END;
 $$;
 
 -- A verified tenant that does not own the requested technology must be denied
--- by the underlying tenant-scoped projector. Pin the fail-closed contract
--- explicitly: returning rows would be a leak, while a different exception
--- would indicate that the denial boundary itself drifted.
+-- by the underlying tenant-scoped projector. Pin both the CHECK_VIOLATION
+-- SQLSTATE and the exact denial message: returning rows would be a leak, while
+-- any other exception indicates that the intended authorization boundary drifted.
 DO $$
 DECLARE
   cross_tenant_denied boolean := false;
@@ -126,7 +126,7 @@ BEGIN
           180
       );
   EXCEPTION
-    WHEN raise_exception THEN
+    WHEN SQLSTATE '23514' THEN
       IF SQLERRM <> 'technology version is unavailable for the active tenant' THEN
         RAISE;
       END IF;
