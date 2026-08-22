@@ -32,6 +32,48 @@ _EXPECTED_SBOM: dict[str, Any] = {
 }
 
 
+def _provenance_predicate() -> dict[str, Any]:
+    """Return the policy-relevant SLSA predicate emitted by pinned actions/attest."""
+    source_ref = "refs/heads/main"
+    workflow_path = ".github/workflows/supply-chain.yml"
+    return {
+        "buildDefinition": {
+            "buildType": "https://actions.github.io/buildtypes/workflow/v1",
+            "externalParameters": {
+                "workflow": {
+                    "ref": source_ref,
+                    "repository": f"https://github.com/{_REPOSITORY}",
+                    "path": workflow_path,
+                }
+            },
+            "internalParameters": {
+                "github": {
+                    "event_name": "push",
+                    "repository_id": "123",
+                    "repository_owner_id": "456",
+                    "runner_environment": "github-hosted",
+                }
+            },
+            "resolvedDependencies": [
+                {
+                    "uri": f"git+https://github.com/{_REPOSITORY}@{source_ref}",
+                    "digest": {"gitCommit": _SOURCE_SHA},
+                }
+            ],
+        },
+        "runDetails": {
+            "builder": {
+                "id": f"https://github.com/{_SIGNER_WORKFLOW}@{source_ref}"
+            },
+            "metadata": {
+                "invocationId": (
+                    f"https://github.com/{_REPOSITORY}/actions/runs/123/attempts/1"
+                )
+            },
+        },
+    }
+
+
 def _signed_result(predicate_type: str, predicate: dict[str, Any]) -> str:
     """Build realistic paired parsed/DSSE evidence emitted by GitHub CLI."""
     statement = {
@@ -138,7 +180,7 @@ def _run_verifier(
             "GH_FAKE_LOG": str(log_path),
             "GH_FAKE_PROVENANCE_RESULT": _signed_result(
                 _PROVENANCE_PREDICATE,
-                {},
+                _provenance_predicate(),
             ),
             "GH_FAKE_SBOM_RESULT": _signed_result(_SPDX_PREDICATE, signed_sbom),
             "GH_FAKE_SBOM_PATH": str(sbom_path),
