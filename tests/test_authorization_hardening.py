@@ -261,7 +261,7 @@ def test_der_and_rsa_key_builders_fail_closed_on_invalid_keys() -> None:
 
 
 def test_signature_runner_failures_are_non_passing() -> None:
-    """Unavailable, timed-out, or negative OpenSSL verification never authorizes."""
+    """Verifier outages are 503 while negative signatures remain unauthorized."""
 
     jwk = _jwks_loader(_JWKS_URL, _ISSUER)["keys"][0]
 
@@ -281,12 +281,14 @@ def test_signature_runner_failures_are_non_passing() -> None:
     ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(command, 0, "Verified OK", "")
 
-    assert not authorization.verify_rs256_signature(
-        b"a.b", b"sig", jwk, runner=os_failure
-    )
-    assert not authorization.verify_rs256_signature(
-        b"a.b", b"sig", jwk, runner=timeout_failure
-    )
+    for failing_runner in (os_failure, timeout_failure):
+        with pytest.raises(authorization.AuthorizationError) as captured:
+            authorization.verify_rs256_signature(
+                b"a.b", b"sig", jwk, runner=failing_runner
+            )
+        assert captured.value.error_code == "planner_unavailable"
+        assert captured.value.http_status == 503
+
     assert not authorization.verify_rs256_signature(
         b"a.b", b"sig", jwk, runner=rejected
     )
