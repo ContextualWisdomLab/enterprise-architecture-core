@@ -68,33 +68,50 @@ def validate_openapi_document(document: dict[str, Any]) -> int:
 def _validate_planner_wire_profile(paths: dict[str, Any]) -> None:
     """Require generated planner clients to match runtime UUID/time admission."""
 
-    try:
-        path_item = core._require_mapping(
-            paths.get(core._TARGET_STATE_RUNTIME_PATH),
-            f"path {core._TARGET_STATE_RUNTIME_PATH}",
-        )
-        operation = core._require_mapping(
-            path_item.get("get"),
-            f"{core._TARGET_STATE_RUNTIME_PATH} get",
-        )
-        parameters = core._parameter_index(operation)
-        core._require_parameter(
-            parameters,
+    path_item = core._require_mapping(
+        paths.get(core._TARGET_STATE_RUNTIME_PATH),
+        f"path {core._TARGET_STATE_RUNTIME_PATH}",
+    )
+    operation = core._require_mapping(
+        path_item.get("get"),
+        f"{core._TARGET_STATE_RUNTIME_PATH} get",
+    )
+    parameters = core._parameter_index(operation)
+    wire_requirements = (
+        (
             ("technology_version_id", "path"),
-            required=True,
-            schema=_UUID7_WIRE_SCHEMA,
+            {"type": "string", "format": "uuid"},
+            _UUID7_WIRE_SCHEMA["pattern"],
+        ),
+        (
+            ("valid_at", "query"),
+            {"type": "string", "format": "date-time"},
+            _CWL_TIMESTAMP_WIRE_SCHEMA["pattern"],
+        ),
+        (
+            ("recorded_at", "query"),
+            {"type": "string", "format": "date-time"},
+            _CWL_TIMESTAMP_WIRE_SCHEMA["pattern"],
+        ),
+    )
+    for identity, base_schema, expected_pattern in wire_requirements:
+        parameter = core._require_mapping(parameters.get(identity), "planner parameter")
+        normalized_parameter = deepcopy(parameter)
+        schema = core._require_mapping(
+            normalized_parameter.get("schema"),
+            "planner parameter schema",
         )
-        for timestamp_name in ("valid_at", "recorded_at"):
-            core._require_parameter(
-                parameters,
-                (timestamp_name, "query"),
-                required=True,
-                schema=_CWL_TIMESTAMP_WIRE_SCHEMA,
+        observed_pattern = schema.pop("pattern", None)
+        core._require_parameter(
+            {identity: normalized_parameter},
+            identity,
+            required=True,
+            schema=base_schema,
+        )
+        if observed_pattern != expected_pattern:
+            raise ContractValidationError(
+                "planner wire profile must enforce canonical UUIDv7 and CWL timestamps"
             )
-    except ContractValidationError as error:
-        raise ContractValidationError(
-            "planner wire profile must enforce canonical UUIDv7 and CWL timestamps"
-        ) from error
 
 
 def _legacy_core_wire_view(document: dict[str, Any]) -> dict[str, Any]:
