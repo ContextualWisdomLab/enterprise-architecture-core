@@ -51,6 +51,15 @@ _TARGET_STATE_RUNTIME_PATH = (
     "/v1/technology-target-state-plans/{technology_version_id}"
 )
 _TARGET_STATE_OPERATION_ID = "getTechnologyTargetStatePlan"
+_CWL_TIMESTAMP_SCHEMA = {
+    "type": "string",
+    "format": "date-time",
+    "pattern": (
+        r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]"
+        r"(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?"
+        r"(?:[Zz]|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$"
+    ),
+}
 _TARGET_STATE_APPROVAL_RUNTIME_PATH = (
     "/v1/architecture-transformations/{architecture_transformation_id}/approval"
 )
@@ -406,14 +415,21 @@ def _validate_target_state_operation(paths: Mapping[str, Any]) -> None:
         parameters,
         ("technology_version_id", "path"),
         required=True,
-        schema={"type": "string", "format": "uuid"},
+        schema={
+            "type": "string",
+            "format": "uuid",
+            "pattern": (
+                "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-"
+                "[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            ),
+        },
     )
     for timestamp_name in ("valid_at", "recorded_at"):
         _require_parameter(
             parameters,
             (timestamp_name, "query"),
             required=True,
-            schema={"type": "string", "format": "date-time"},
+            schema=_CWL_TIMESTAMP_SCHEMA,
         )
     _require_parameter(
         parameters,
