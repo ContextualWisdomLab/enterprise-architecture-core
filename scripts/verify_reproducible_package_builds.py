@@ -77,7 +77,11 @@ def _stable_sha256(path: Path) -> str:
             after_path.st_mtime_ns,
             after_path.st_ctime_ns,
         )
-        if not stat.S_ISREG(after_path.st_mode) or not stable_identity or not stable_metadata:
+        if (
+            not stat.S_ISREG(after_path.st_mode)
+            or not stable_identity
+            or not stable_metadata
+        ):
             raise ValueError(f"release artifact changed while hashing: {path}")
         return digest.hexdigest()
     finally:
@@ -95,7 +99,8 @@ def verify_reproducible_builds(first: Path, second: Path) -> None:
         first_digest = _stable_sha256(first_artifacts[name])
         second_digest = _stable_sha256(second_artifacts[name])
         if first_digest != second_digest:
-            raise ValueError(f"release artifact bytes differ between clean builds: {name}")
+            message = f"release artifact bytes differ between clean builds: {name}"
+            raise ValueError(message)
 
 
 def main(argv: list[str]) -> int:
@@ -109,7 +114,8 @@ def main(argv: list[str]) -> int:
     try:
         verify_reproducible_builds(Path(argv[1]), Path(argv[2]))
     except (OSError, ValueError) as exc:
-        print(f"release package reproducibility verification failed: {exc}", file=sys.stderr)
+        message = f"release package reproducibility verification failed: {exc}"
+        print(message, file=sys.stderr)
         return 1
     print("release package builds are byte-reproducible")
     return 0
