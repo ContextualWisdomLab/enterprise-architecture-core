@@ -8,7 +8,9 @@ AsyncAPI Initiative. (2026, January 31). *AsyncAPI specification* (Version 3.1.0
 
 Cloud Native Computing Foundation. (2022). *CloudEvents specification* (Version 1.0.2). https://github.com/cloudevents/spec/tree/v1.0.2
 
-GitHub. (2026). *actions/attest* (Version 4.2.2) [Computer software]. GitHub. https://github.com/actions/attest/tree/1e69f48acb82d1966a394da916b4c1698aa569d6
+GitHub. (2026a). *actions/attest* (Version 4.2.2) [Computer software]. GitHub. https://github.com/actions/attest/tree/1e69f48acb82d1966a394da916b4c1698aa569d6
+
+GitHub. (2026b). *@actions/attest GitHub Actions provenance predicate implementation* (Commit 193fa46c20fde8b0ed54194bc08b841c78c0776d) [Source code]. GitHub. https://github.com/actions/toolkit/blob/193fa46c20fde8b0ed54194bc08b841c78c0776d/packages/attest/src/provenance.ts
 
 GitHub. (n.d.-a). *gh attestation verify*. GitHub CLI manual. Retrieved August 21, 2026, from https://cli.github.com/manual/gh_attestation_verify
 
