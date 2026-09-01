@@ -22,6 +22,7 @@ _REQUIRED_CONTEXT_FABRIC_CONNECTORS = {
     "orgmetra_organization_context",
     "tepp_learning_context",
     "contextual_orchestrator_proposal",
+    "quarantine_sandbox_runtime",
     "wardnet_security_evidence",
     "appguardrail_security_evidence",
     "governance_risk_control_evidence",
@@ -40,6 +41,9 @@ _EXPECTED_OWNER_REPOSITORIES = {
     "tepp_learning_context": "ContextualWisdomLab/TEPP",
     "contextual_orchestrator_proposal": (
         "ContextualWisdomLab/contextual-orchestrator"
+    ),
+    "quarantine_sandbox_runtime": (
+        "ContextualWisdomLab/quarantine-sandbox-runtime"
     ),
     "wardnet_security_evidence": "ContextualWisdomLab/wardnet",
     "appguardrail_security_evidence": "ContextualWisdomLab/appguardrail",
@@ -104,6 +108,10 @@ def test_projection_directions_preserve_foreign_product_authority(
     }
     assert by_name["semantic_data_portal"]["direction_code"] == "inbound_projection"
     assert by_name["naruon_product_context"]["direction_code"] == "inbound_projection"
+    assert (
+        by_name["quarantine_sandbox_runtime"]["direction_code"]
+        == "inbound_projection"
+    )
     assert (
         by_name["contextual_orchestrator_proposal"]["direction_code"]
         == "inbound_proposal"
