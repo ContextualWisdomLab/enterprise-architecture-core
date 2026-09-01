@@ -17,7 +17,7 @@ from .service import (
 from .service import (
     main as serve_foundation,
 )
-from .validation_data_management_recheck_status import (
+from .validation_connector_catalog import (
     ContractValidationError,
     RepositoryReport,
     validate_asyncapi_document,
