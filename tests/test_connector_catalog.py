@@ -9,21 +9,37 @@ import pytest
 from ea_core_foundation import ContractValidationError, validate_connector_catalog
 
 
-def test_checked_in_connector_catalog_covers_owned_neighbors(
+_REQUIRED_CONTEXT_FABRIC_CONNECTORS = {
+    "keyverse_oidc",
+    "context_graph_contracts",
+    "semantic_data_portal",
+    "pg_erd_cloud",
+    "lineage_weave",
+    "naruon_workspace",
+    "github_governance",
+    "bandscope_product_context",
+    "orgmetra_organization_context",
+    "tepp_learning_context",
+    "contextual_orchestrator_proposal",
+    "wardnet_security_evidence",
+    "appguardrail_security_evidence",
+    "governance_risk_control_evidence",
+}
+
+
+def test_checked_in_connector_catalog_covers_context_fabric_projection_neighbors(
     repository_root,
 ) -> None:
-    """The catalog names the highest-leverage owned neighbors a buyer will connect."""
+    """The catalog names every accepted Context Fabric projection owner explicitly."""
 
     document = json.loads(
         (repository_root / "contracts/connectors/ecosystem.json").read_text(
             encoding="utf-8"
         )
     )
-    assert validate_connector_catalog(document) == 7
+    assert validate_connector_catalog(document) == len(_REQUIRED_CONTEXT_FABRIC_CONNECTORS)
     names = {connector["connector_name"] for connector in document["connectors"]}
-    assert "keyverse_oidc" in names
-    assert "context_graph_contracts" in names
-    assert "semantic_data_portal" in names
+    assert names == _REQUIRED_CONTEXT_FABRIC_CONNECTORS
 
 
 def test_connector_catalog_rejects_wrong_version() -> None:
