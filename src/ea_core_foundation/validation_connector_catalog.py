@@ -27,6 +27,7 @@ _CONTEXT_CONTRACT_BOUND_DIRECTIONS = frozenset(
     }
 )
 _CONTEXT_CONTRACT_DEPENDENCY = "contracts/context-graph-dependency.json"
+_OWNER_REPOSITORY_PREFIX = "ContextualWisdomLab/"
 _PRESERVED_CONTEXT_SEMANTICS = (
     "canonical_reference",
     "source_reference",
@@ -38,8 +39,14 @@ _PRESERVED_CONTEXT_SEMANTICS = (
 
 
 def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
-    """Require architecture projections to bind the one shared release manifest."""
+    """Require architecture projections to bind one canonical owner and release."""
 
+    owner_repository = connector.get("owner_repository")
+    if not str(owner_repository).startswith(_OWNER_REPOSITORY_PREFIX):
+        raise ContractValidationError(
+            "connector owner_repository must name a canonical "
+            "ContextualWisdomLab repository"
+        )
     if connector.get("direction_code") not in _CONTEXT_CONTRACT_BOUND_DIRECTIONS:
         return
     if connector.get("context_contract_dependency") != _CONTEXT_CONTRACT_DEPENDENCY:
