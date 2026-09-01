@@ -65,7 +65,9 @@ def _quarantine_connector(document: dict) -> dict:
     )
 
 
-def test_checked_in_catalog_declares_quarantine_runtime_boundary(repository_root) -> None:
+def test_checked_in_catalog_declares_quarantine_runtime_boundary(
+    repository_root,
+) -> None:
     """EA names the reusable runtime without absorbing verdict or policy authority."""
 
     document = _catalog(repository_root)
@@ -151,7 +153,9 @@ def test_quarantine_boundary_fields_fail_closed(
         validate_connector_catalog(document)
 
 
-def test_quarantine_interactions_are_directional_and_caller_owned(repository_root) -> None:
+def test_quarantine_interactions_are_directional_and_caller_owned(
+    repository_root,
+) -> None:
     """Orchestrator and Wardnet call distinct runtime capabilities without ownership drift."""
 
     document = _catalog(repository_root)
