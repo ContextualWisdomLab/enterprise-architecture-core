@@ -40,6 +40,7 @@ _EXPECTED_SCHEMA_IDS = (
 _EXPECTED_PROFILE_IDS = (
     "urn:cwl:conformance:cloudevent-semantics:v1",
     "urn:cwl:context-contracts:context-assertion-semantics:v1",
+    "urn:cwl:context-contracts:context-assertion-event-semantics:v1",
     "urn:cwl:context-contracts:cwl-json-interoperability:v1",
     "urn:cwl:context-contracts:cwl-timestamp-profile:v1",
     "urn:cwl:context-contracts:data-management-assessment-semantics:v1",
@@ -55,6 +56,7 @@ _EXPECTED_RESOURCES = (
     "cwl_context_contracts.schemas:provenance-reference.schema.json",
     "cwl_context_contracts.conformance:cloudevent-semantics.v1.json",
     "cwl_context_contracts.conformance:context-assertion-semantics.v1.json",
+    "cwl_context_contracts.conformance:context-assertion-event-semantics.v1.json",
     "cwl_context_contracts.conformance:cwl-json-interoperability.v1.json",
     "cwl_context_contracts.conformance:cwl-timestamp-profile.v1.json",
     "cwl_context_contracts.contracts:context-fabric.asyncapi.json",
