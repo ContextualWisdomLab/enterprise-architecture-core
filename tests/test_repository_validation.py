@@ -73,6 +73,7 @@ _PORTFOLIO_ASSESSMENT_SUMMARY_SCHEMAS = (
     "PortfolioAssessmentSummaryResponse",
     "PortfolioAssessmentSummary",
 )
+_EXPECTED_CONNECTOR_COUNT = 16
 
 
 def _strip_event_contract_members(
@@ -173,7 +174,7 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     assert report.openapi_operation_count == 14
     assert report.asyncapi_operation_count == 12
     assert report.adr_count >= 19
-    assert report.connector_count == 7
+    assert report.connector_count == _EXPECTED_CONNECTOR_COUNT
 
 
 def test_repository_validation_reports_missing_required_file(
@@ -230,7 +231,7 @@ def test_prior_data_management_validator_accepts_its_generation_contract(
     report = validate_data_management_repository(target)
 
     assert report.asyncapi_operation_count == 9
-    assert report.connector_count == 7
+    assert report.connector_count == _EXPECTED_CONNECTOR_COUNT
 
 
 def test_prior_data_management_validator_fails_closed_on_missing_contract(
@@ -273,7 +274,7 @@ def test_prior_replan_validator_accepts_its_generation_contract(
     report = validate_replan_repository(target)
 
     assert report.asyncapi_operation_count == 8
-    assert report.connector_count == 7
+    assert report.connector_count == _EXPECTED_CONNECTOR_COUNT
 
 
 def test_prior_replan_validator_fails_closed_on_missing_contract(
