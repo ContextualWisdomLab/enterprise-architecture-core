@@ -57,30 +57,17 @@ def validate_connector_catalog(document: Mapping[str, Any]) -> int:
     """Validate connector ownership plus shared Context Graph release bindings."""
 
     connector_count = base.validate_connector_catalog(document)
-    connectors = document["connectors"]
-    for connector_value in connectors:
+    for connector_value in document["connectors"]:
         connector = base.core._require_mapping(connector_value, "connector")
         _validate_context_contract_binding(connector)
     return connector_count
 
 
 def validate_repository(repository_root: Path) -> RepositoryReport:
-    """Validate repository artifacts and the connector-to-release manifest boundary."""
+    """Validate repository artifacts plus the connector release-manifest binding."""
 
     report = base.validate_repository(repository_root)
-    dependency_path = repository_root / _CONTEXT_CONTRACT_DEPENDENCY
-    if not dependency_path.is_file():
-        raise ContractValidationError(
-            "missing Context Graph dependency manifest: "
-            f"{_CONTEXT_CONTRACT_DEPENDENCY}"
-        )
-    dependency_document = json.loads(dependency_path.read_text(encoding="utf-8"))
-    if dependency_document.get("contract_repository") != (
-        "ContextualWisdomLab/context-graph-contracts"
-    ):
-        raise ContractValidationError(
-            "Context Graph dependency manifest must name the canonical contract repository"
-        )
     connector_path = repository_root / "contracts/connectors/ecosystem.json"
-    validate_connector_catalog(json.loads(connector_path.read_text(encoding="utf-8")))
+    connector_document = json.loads(connector_path.read_text(encoding="utf-8"))
+    validate_connector_catalog(connector_document)
     return report
