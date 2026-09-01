@@ -132,7 +132,7 @@ def test_quarantine_connector_is_required_exactly_once(repository_root) -> None:
         ("owner_repository", "ContextualWisdomLab/wardnet", "owner_repository"),
         ("direction_code", "inbound_identity", "direction_code"),
         ("exchange_kind", "openid_connect", "exchange_kind"),
-        ("ea_core_owns", True, "ea_core_owns"),
+        ("ea_core_owns", True, "outside EA Core ownership"),
         ("authority_scope", ["maliciousness_verdict"], "authority_scope"),
         ("deployment_boundary", "embedded_library", "independently deployable"),
         ("capabilities", ["artifact_analysis_evidence"], "capabilities"),
