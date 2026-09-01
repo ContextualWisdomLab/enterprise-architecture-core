@@ -150,8 +150,7 @@ def _require_quarantine_runtime_boundary(document: Mapping[str, Any]) -> None:
     quarantine_connectors = [
         connector
         for connector in document["connectors"]
-        if isinstance(connector, Mapping)
-        and connector.get("connector_name") == _QUARANTINE_CONNECTOR_NAME
+        if connector.get("connector_name") == _QUARANTINE_CONNECTOR_NAME
     ]
     if len(quarantine_connectors) != 1:
         raise ContractValidationError(
