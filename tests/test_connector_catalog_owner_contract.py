@@ -7,7 +7,9 @@ import pytest
 from ea_core_foundation import ContractValidationError, validate_connector_catalog
 
 
-def test_connector_catalog_rejects_unqualified_repository_owner(repository_root) -> None:
+def test_connector_catalog_rejects_unqualified_repository_owner(
+    repository_root,
+) -> None:
     """Repository drill-down identities must include the owning CWL organization."""
 
     document = json.loads(
