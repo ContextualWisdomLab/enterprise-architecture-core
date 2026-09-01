@@ -57,6 +57,62 @@
       "exchange_kind": "repository_governance",
       "ea_core_owns": false,
       "next_action": "Keep CI, review, and release policy aligned with the organization .github repository rather than inventing a local governance fork."
+    },
+    {
+      "connector_name": "bandscope_product_context",
+      "owner_repository": "bandscope",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "next_action": "Project BandScope deployable, API, provider, version, lifecycle, and risk changes by canonical reference with source provenance; keep BandScope runtime facts authoritative in bandscope."
+    },
+    {
+      "connector_name": "orgmetra_organization_context",
+      "owner_repository": "Orgmetra",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "next_action": "Project only organization and deployable references needed for architecture decisions with exact truth and provenance; do not copy employee or HR records from Orgmetra."
+    },
+    {
+      "connector_name": "tepp_learning_context",
+      "owner_repository": "TEPP",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "next_action": "Project TEPP service, package, API, database, provider, version, lifecycle, and risk changes as architecture context while keeping learning and research facts authoritative in TEPP."
+    },
+    {
+      "connector_name": "contextual_orchestrator_proposal",
+      "owner_repository": "contextual-orchestrator",
+      "direction_code": "inbound_proposal",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "next_action": "Accept orchestration-generated architecture suggestions only as proposed or inferred context with provenance; require an authorized EA command before authoritative promotion."
+    },
+    {
+      "connector_name": "wardnet_security_evidence",
+      "owner_repository": "wardnet",
+      "direction_code": "inbound_evidence",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "next_action": "Project Wardnet security-control and exposure evidence with its observed truth status, effective time, source reference, and provenance; keep detection authority in wardnet."
+    },
+    {
+      "connector_name": "appguardrail_security_evidence",
+      "owner_repository": "appguardrail",
+      "direction_code": "inbound_evidence",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "next_action": "Project AppGuardrail application-security findings as evidence for affected architecture objects without promoting scanner output to authoritative architecture truth."
+    },
+    {
+      "connector_name": "governance_risk_control_evidence",
+      "owner_repository": "governance-risk-compliance",
+      "direction_code": "inbound_evidence",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "next_action": "Project control, risk, and evidence references needed for architecture decisions while keeping compliance records and attestations authoritative in governance-risk-compliance."
     }
   ]
 }
