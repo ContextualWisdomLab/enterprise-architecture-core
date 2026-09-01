@@ -13,6 +13,17 @@ SELECT set_config(
     false
 );
 
+-- This suite intentionally keeps an older transformation for the same scenario
+-- and remediation initiative so historical planner acceptance can exercise the
+-- started/completed lifecycle. Isolate this terminal-state fixture by
+-- superseding that competing transformation only inside this transaction; the
+-- final ROLLBACK restores it for the later historical planner test.
+UPDATE architecture_core.architecture_transformation
+   SET superseded_at = clock_timestamp()
+ WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+   AND architecture_transformation_id = '0196e010-1111-7111-8111-111111111111'
+   AND superseded_at IS NULL;
+
 -- Keep this acceptance file self-contained. The neighboring planner fixture is
 -- intentionally rolled back, so relying on its rows would make NULL planner
 -- results pass the comparisons below without exercising terminal routing.
