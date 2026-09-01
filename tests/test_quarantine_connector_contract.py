@@ -87,13 +87,46 @@ def test_checked_in_catalog_declares_quarantine_runtime_boundary(repository_root
     assert validate_connector_catalog(document) == len(document["connectors"])
 
 
+def test_quarantine_connector_is_required_exactly_once(repository_root) -> None:
+    """The Context Map cannot omit or duplicate its reusable isolation boundary."""
+
+    document = _catalog(repository_root)
+    connector = deepcopy(_quarantine_connector(document))
+    document["connectors"] = [
+        item
+        for item in document["connectors"]
+        if item["connector_name"] != _CONNECTOR_NAME
+    ]
+    with pytest.raises(
+        ContractValidationError,
+        match="exactly one quarantine_sandbox_runtime",
+    ):
+        validate_connector_catalog(document)
+
+    document = _catalog(repository_root)
+    duplicate = deepcopy(connector)
+    duplicate["connector_name"] = "quarantine_sandbox_runtime_copy"
+    document["connectors"].append(duplicate)
+    validate_connector_catalog(document)
+
+    duplicate["connector_name"] = _CONNECTOR_NAME
+    with pytest.raises(ContractValidationError, match="duplicate connector_name"):
+        validate_connector_catalog(document)
+
+
 @pytest.mark.parametrize(
     ("field", "replacement", "message"),
     [
+        ("owner_repository", "ContextualWisdomLab/wardnet", "owner_repository"),
         ("authority_scope", ["maliciousness_verdict"], "authority_scope"),
         ("deployment_boundary", "embedded_library", "independently deployable"),
         ("capabilities", ["artifact_analysis_evidence"], "capabilities"),
         ("required_interactions", [], "required directional interactions"),
+        (
+            "architecture_projection_scope",
+            ["malware_verdict"],
+            "architecture projection scope",
+        ),
         (
             "forbidden_authoritative_facts",
             ["malware_verdict"],
