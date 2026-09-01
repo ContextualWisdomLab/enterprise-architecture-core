@@ -50,7 +50,7 @@ def test_canonical_ddd_documents_exist() -> None:
 
 
 def test_production_package_does_not_grow_generic_buckets() -> None:
-    """Block new catch-all directories and modules from accumulating domain behavior."""
+    """Block new catch-all directories and modules from accumulating behavior."""
 
     package_root = Path("src/ea_core_foundation")
     directory_offenders = sorted(
@@ -68,16 +68,21 @@ def test_production_package_does_not_grow_generic_buckets() -> None:
 
 
 def test_domain_code_does_not_import_foreign_product_implementations() -> None:
-    """Require external product integration through contracts and ACLs, not implementations."""
+    """Require foreign integration through contracts and ACLs, not implementations."""
 
     offenders: list[str] = []
     package_root = Path("src/ea_core_foundation")
     for source_path in sorted(package_root.rglob("*.py")):
-        tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
+        tree = ast.parse(
+            source_path.read_text(encoding="utf-8"),
+            filename=str(source_path),
+        )
         for node in ast.walk(tree):
             imported_roots: list[str] = []
             if isinstance(node, ast.Import):
-                imported_roots.extend(alias.name.split(".", 1)[0] for alias in node.names)
+                imported_roots.extend(
+                    alias.name.split(".", 1)[0] for alias in node.names
+                )
             elif isinstance(node, ast.ImportFrom) and node.module:
                 imported_roots.append(node.module.split(".", 1)[0])
             for imported_root in imported_roots:
@@ -87,9 +92,11 @@ def test_domain_code_does_not_import_foreign_product_implementations() -> None:
 
 
 def test_baseline_keeps_historical_package_debt_visible() -> None:
-    """Do not let the foundation-era package and broad service module become invisible debt."""
+    """Keep the foundation-era package and broad service module visible as debt."""
 
-    baseline = Path("docs/product-technical-gap-baseline.md").read_text(encoding="utf-8")
+    baseline = Path("docs/product-technical-gap-baseline.md").read_text(
+        encoding="utf-8"
+    )
     assert "src/ea_core_foundation" in baseline
     assert "src/ea_core_foundation/service.py" in baseline
     assert "Open DDD debt" in baseline
