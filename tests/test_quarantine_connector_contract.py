@@ -95,7 +95,7 @@ def test_checked_in_catalog_declares_quarantine_runtime_boundary(
 
 
 def test_quarantine_connector_is_required_exactly_once(repository_root) -> None:
-    """The Context Map cannot omit or duplicate its reusable isolation boundary."""
+    """Reject omitted, renamed, or duplicated quarantine authority boundaries."""
 
     document = _catalog(repository_root)
     connector = deepcopy(_quarantine_connector(document))
@@ -114,9 +114,15 @@ def test_quarantine_connector_is_required_exactly_once(repository_root) -> None:
     duplicate = deepcopy(connector)
     duplicate["connector_name"] = "quarantine_sandbox_runtime_copy"
     document["connectors"].append(duplicate)
-    validate_connector_catalog(document)
+    with pytest.raises(
+        ContractValidationError,
+        match="exactly one quarantine runtime owner boundary",
+    ):
+        validate_connector_catalog(document)
 
-    duplicate["connector_name"] = _CONNECTOR_NAME
+    document = _catalog(repository_root)
+    duplicate = deepcopy(connector)
+    document["connectors"].append(duplicate)
     with pytest.raises(ContractValidationError, match="duplicate connector_name"):
         validate_connector_catalog(document)
 
