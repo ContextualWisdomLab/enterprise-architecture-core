@@ -103,6 +103,23 @@ GET /v1/technology-target-state-plans/{technology_version_id}
     &planning_horizon_days=<1..3650>
 ```
 
+The complete buyer-facing v1 route inventory is kept visible here so operators can discover the implemented decision surface without reading source code:
+
+| Route | Responsibility |
+| --- | --- |
+| `/v1/technology-target-state-plans/{technology_version_id}` | Read the next governed target-state action from bitemporal evidence. |
+| `/v1/architecture-transformations/{architecture_transformation_id}/approval` | Record human-authorized approval of a proposed transformation. |
+| `/v1/architecture-transformations/{architecture_transformation_id}/schedule` | Bind an approved transformation to a remediation milestone. |
+| `/v1/architecture-transformations/{architecture_transformation_id}/start` | Record the start of a scheduled transformation. |
+| `/v1/architecture-transformations/{architecture_transformation_id}/complete` | Record completion evidence without skipping verification. |
+| `/v1/architecture-transformations/{architecture_transformation_id}/verification` | Record the human-authorized achieved-target-state decision. |
+| `/v1/architecture-transformations/{architecture_transformation_id}/monitoring` | Read freshness of verified target-state evidence. |
+| `/v1/architecture-transformations/{architecture_transformation_id}/replan` | Create a governed replacement after a detected target-state gap. |
+| `/v1/data-management-assessments/{data_management_assessment_projection_id}/recheck` | Request source-owned reassessment after evidence gaps are closed. |
+| `/v1/data-management-assessment-rechecks/{assessment_recheck_request_id}` | Read the status and truth origin of a reassessment request. |
+| `/v1/architecture-objects/{architecture_object_id}/portfolio-assessments` | Read versioned portfolio assessment facts at explicit time cutoffs. |
+| `/v1/architecture-objects/{architecture_object_id}/portfolio-assessment-summary` | Read deterministic same-framework, same-scale assessment summaries. |
+
 Mutating workflows require purpose-specific authorization and evidence. Callers do not get database-table authority, cannot supply a trusted decision actor in place of verified identity, and cannot promote inferred or foreign evidence into authoritative architecture truth by assertion.
 
 ## Architecture principles
