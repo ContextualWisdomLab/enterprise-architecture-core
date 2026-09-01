@@ -11,6 +11,8 @@ from ea_core_foundation import ContractValidationError, validate_connector_catal
 
 _CONNECTOR_NAME = "quarantine_sandbox_runtime"
 _EXPECTED_OWNER = "ContextualWisdomLab/quarantine-sandbox-runtime"
+_EXPECTED_DIRECTION_CODE = "inbound_projection"
+_EXPECTED_EXCHANGE_KIND = "context_assertion_cloudevent"
 _EXPECTED_AUTHORITY_SCOPE = ["isolation_runtime", "artifact_analysis_evidence"]
 _EXPECTED_CAPABILITIES = ["application_service_lease", "artifact_analysis_evidence"]
 _EXPECTED_INTERACTIONS = [
@@ -76,6 +78,9 @@ def test_checked_in_catalog_declares_quarantine_runtime_boundary(
 
     connector = _quarantine_connector(document)
     assert connector["owner_repository"] == _EXPECTED_OWNER
+    assert connector["direction_code"] == _EXPECTED_DIRECTION_CODE
+    assert connector["exchange_kind"] == _EXPECTED_EXCHANGE_KIND
+    assert connector["ea_core_owns"] is False
     assert connector["authority_scope"] == _EXPECTED_AUTHORITY_SCOPE
     assert connector["deployment_boundary"] == "independent_reusable_service"
     assert connector["capabilities"] == _EXPECTED_CAPABILITIES
@@ -120,6 +125,9 @@ def test_quarantine_connector_is_required_exactly_once(repository_root) -> None:
     ("field", "replacement", "message"),
     [
         ("owner_repository", "ContextualWisdomLab/wardnet", "owner_repository"),
+        ("direction_code", "inbound_identity", "direction_code"),
+        ("exchange_kind", "openid_connect", "exchange_kind"),
+        ("ea_core_owns", True, "ea_core_owns"),
         ("authority_scope", ["maliciousness_verdict"], "authority_scope"),
         ("deployment_boundary", "embedded_library", "independently deployable"),
         ("capabilities", ["artifact_analysis_evidence"], "capabilities"),
