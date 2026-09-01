@@ -139,6 +139,9 @@ BEGIN
 END;
 $$;
 
+-- Exercise the original transformation's started state before the independent
+-- concurrent-approval acceptance fixture becomes valid on 2027-01-15. This
+-- keeps the assertion about planner routing rather than fixture insertion order.
 DO $$
 DECLARE
   planned_row record;
@@ -147,8 +150,8 @@ BEGIN
     INTO planned_row
     FROM architecture_core.project_technology_target_state_plan(
         '0196f100-1111-7111-8111-111111111111',
-        '2027-02-01T00:00:00Z',
-        '2027-02-01T00:00:00Z',
+        '2027-01-10T00:00:00Z',
+        '2027-01-10T00:00:00Z',
         180
     )
    WHERE application_object_id = '0196f130-3333-7333-8333-333333333333'
