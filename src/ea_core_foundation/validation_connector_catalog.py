@@ -159,7 +159,7 @@ def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
 
 
 def _require_quarantine_runtime_boundary(document: Mapping[str, Any]) -> None:
-    """Require exactly one explicit quarantine runtime boundary in the connector map."""
+    """Require one canonical name and one canonical owner for quarantine runtime."""
 
     quarantine_connectors = [
         connector
@@ -170,7 +170,18 @@ def _require_quarantine_runtime_boundary(document: Mapping[str, Any]) -> None:
         raise ContractValidationError(
             "connector catalog must declare exactly one quarantine_sandbox_runtime"
         )
-    _validate_quarantine_runtime_boundary(quarantine_connectors[0])
+    quarantine_connector = quarantine_connectors[0]
+    _validate_quarantine_runtime_boundary(quarantine_connector)
+
+    owner_boundaries = [
+        connector
+        for connector in document["connectors"]
+        if connector.get("owner_repository") == _QUARANTINE_OWNER_REPOSITORY
+    ]
+    if owner_boundaries != [quarantine_connector]:
+        raise ContractValidationError(
+            "connector catalog must declare exactly one quarantine runtime owner boundary"
+        )
 
 
 def validate_connector_catalog(document: Mapping[str, Any]) -> int:
