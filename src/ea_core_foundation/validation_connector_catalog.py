@@ -119,10 +119,6 @@ def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
         raise ContractValidationError(
             "quarantine runtime exchange_kind must remain context_assertion_cloudevent"
         )
-    if connector.get("ea_core_owns") is not False:
-        raise ContractValidationError(
-            "quarantine runtime ea_core_owns must remain false"
-        )
     if connector.get("authority_scope") != list(_QUARANTINE_AUTHORITY_SCOPE):
         raise ContractValidationError(
             "quarantine runtime authority_scope must remain isolation runtime and "
