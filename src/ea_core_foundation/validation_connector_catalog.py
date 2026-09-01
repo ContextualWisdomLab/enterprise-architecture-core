@@ -104,7 +104,7 @@ def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
 
 
 def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
-    """Keep quarantine isolation/evidence reusable without importing verdict authority."""
+    """Keep reusable quarantine evidence separate from verdict authority."""
 
     if connector.get("owner_repository") != _QUARANTINE_OWNER_REPOSITORY:
         raise ContractValidationError(
@@ -186,7 +186,8 @@ def _require_quarantine_runtime_boundary(document: Mapping[str, Any]) -> None:
     ]
     if owner_boundaries != [quarantine_connector]:
         raise ContractValidationError(
-            "connector catalog must declare exactly one quarantine runtime owner boundary"
+            "connector catalog must declare exactly one quarantine runtime "
+            "owner boundary"
         )
 
 
