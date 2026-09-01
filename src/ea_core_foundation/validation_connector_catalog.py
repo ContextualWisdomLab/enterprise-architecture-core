@@ -33,6 +33,8 @@ _PRESERVED_CONTEXT_SEMANTICS = (
 )
 _QUARANTINE_CONNECTOR_NAME = "quarantine_sandbox_runtime"
 _QUARANTINE_OWNER_REPOSITORY = "ContextualWisdomLab/quarantine-sandbox-runtime"
+_QUARANTINE_DIRECTION_CODE = "inbound_projection"
+_QUARANTINE_EXCHANGE_KIND = "context_assertion_cloudevent"
 _QUARANTINE_AUTHORITY_SCOPE = (
     "isolation_runtime",
     "artifact_analysis_evidence",
@@ -102,6 +104,18 @@ def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
         raise ContractValidationError(
             "quarantine runtime owner_repository must be "
             "ContextualWisdomLab/quarantine-sandbox-runtime"
+        )
+    if connector.get("direction_code") != _QUARANTINE_DIRECTION_CODE:
+        raise ContractValidationError(
+            "quarantine runtime direction_code must remain inbound_projection"
+        )
+    if connector.get("exchange_kind") != _QUARANTINE_EXCHANGE_KIND:
+        raise ContractValidationError(
+            "quarantine runtime exchange_kind must remain context_assertion_cloudevent"
+        )
+    if connector.get("ea_core_owns") is not False:
+        raise ContractValidationError(
+            "quarantine runtime ea_core_owns must remain false"
         )
     if connector.get("authority_scope") != list(_QUARANTINE_AUTHORITY_SCOPE):
         raise ContractValidationError(
