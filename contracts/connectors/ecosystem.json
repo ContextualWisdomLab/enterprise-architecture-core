@@ -4,7 +4,7 @@
   "connectors": [
     {
       "connector_name": "keyverse_oidc",
-      "owner_repository": "keyverse",
+      "owner_repository": "ContextualWisdomLab/keyverse",
       "direction_code": "inbound_identity",
       "exchange_kind": "openid_connect",
       "ea_core_owns": false,
@@ -12,7 +12,7 @@
     },
     {
       "connector_name": "context_graph_contracts",
-      "owner_repository": "context-graph-contracts",
+      "owner_repository": "ContextualWisdomLab/context-graph-contracts",
       "direction_code": "shared_envelope",
       "exchange_kind": "cloudevents_json",
       "ea_core_owns": false,
@@ -29,7 +29,7 @@
     },
     {
       "connector_name": "semantic_data_portal",
-      "owner_repository": "semantic-data-portal",
+      "owner_repository": "ContextualWisdomLab/semantic-data-portal",
       "direction_code": "inbound_projection",
       "exchange_kind": "canonical_asset_uri",
       "ea_core_owns": false,
@@ -46,7 +46,7 @@
     },
     {
       "connector_name": "pg_erd_cloud",
-      "owner_repository": "pg-erd-cloud",
+      "owner_repository": "ContextualWisdomLab/pg-erd-cloud",
       "direction_code": "inbound_evidence",
       "exchange_kind": "observed_schema_reference",
       "ea_core_owns": false,
@@ -63,7 +63,7 @@
     },
     {
       "connector_name": "lineage_weave",
-      "owner_repository": "LineageWeave",
+      "owner_repository": "ContextualWisdomLab/LineageWeave",
       "direction_code": "inbound_proposal",
       "exchange_kind": "inferred_relation_proposal",
       "ea_core_owns": false,
@@ -80,7 +80,7 @@
     },
     {
       "connector_name": "naruon_product_context",
-      "owner_repository": "naruon",
+      "owner_repository": "ContextualWisdomLab/naruon",
       "direction_code": "inbound_projection",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
@@ -97,7 +97,7 @@
     },
     {
       "connector_name": "naruon_workspace",
-      "owner_repository": "naruon",
+      "owner_repository": "ContextualWisdomLab/naruon",
       "direction_code": "outbound_event",
       "exchange_kind": "cloudevents_json",
       "ea_core_owns": false,
@@ -114,7 +114,7 @@
     },
     {
       "connector_name": "github_governance",
-      "owner_repository": ".github",
+      "owner_repository": "ContextualWisdomLab/.github",
       "direction_code": "inbound_policy",
       "exchange_kind": "repository_governance",
       "ea_core_owns": false,
@@ -122,7 +122,7 @@
     },
     {
       "connector_name": "bandscope_product_context",
-      "owner_repository": "bandscope",
+      "owner_repository": "ContextualWisdomLab/bandscope",
       "direction_code": "inbound_projection",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
@@ -139,7 +139,7 @@
     },
     {
       "connector_name": "orgmetra_organization_context",
-      "owner_repository": "Orgmetra",
+      "owner_repository": "ContextualWisdomLab/Orgmetra",
       "direction_code": "inbound_projection",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
@@ -156,7 +156,7 @@
     },
     {
       "connector_name": "tepp_learning_context",
-      "owner_repository": "TEPP",
+      "owner_repository": "ContextualWisdomLab/TEPP",
       "direction_code": "inbound_projection",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
@@ -173,7 +173,7 @@
     },
     {
       "connector_name": "contextual_orchestrator_proposal",
-      "owner_repository": "contextual-orchestrator",
+      "owner_repository": "ContextualWisdomLab/contextual-orchestrator",
       "direction_code": "inbound_proposal",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
@@ -190,7 +190,7 @@
     },
     {
       "connector_name": "wardnet_security_evidence",
-      "owner_repository": "wardnet",
+      "owner_repository": "ContextualWisdomLab/wardnet",
       "direction_code": "inbound_evidence",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
@@ -207,7 +207,7 @@
     },
     {
       "connector_name": "appguardrail_security_evidence",
-      "owner_repository": "appguardrail",
+      "owner_repository": "ContextualWisdomLab/appguardrail",
       "direction_code": "inbound_evidence",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
@@ -224,7 +224,7 @@
     },
     {
       "connector_name": "governance_risk_control_evidence",
-      "owner_repository": "governance-risk-compliance",
+      "owner_repository": "ContextualWisdomLab/governance-risk-compliance",
       "direction_code": "inbound_evidence",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
