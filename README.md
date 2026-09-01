@@ -6,7 +6,7 @@ It records business capabilities, applications, interfaces, technology component
 
 ## What a buyer can decide
 
-The current development stack includes a **Technology Change Impact & Target-State Planner** plus separately authorized approval, scheduling, start, completion, target-state verification, and post-verification monitoring surfaces. Given a technology version plus explicit real-world and system-recording cutoffs, the planner joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
+The current development stack includes a **Technology Change Impact & Target-State Planner** plus separately authorized approval, scheduling, start, completion, target-state verification, post-verification monitoring, and target-state replanning surfaces. Given a technology version plus explicit real-world and system-recording cutoffs, the planner joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
 
 When the planner returns `approve_target_state`, an authorized human can submit the exact proposed transformation, UUIDv7 decision request, effective time, reason, and evidence reference. EA Core derives the actor from the verified Keyverse identity, appends authoritative transformation history, and emits the privacy-minimized transformation approval outbox event atomically. Exact retries are idempotent; conflicting reuse of a decision request fails closed.
 
@@ -15,6 +15,8 @@ After approval, a separately authorized scheduler can bind that transformation t
 A separately authorized operator can then start the scheduled transformation and later record completion. Completion is deliberately non-final: an authorized verifier must record whether the approved target state was actually achieved. A `verified` outcome advances the buyer to `monitor_target_state`; a `gap_detected` outcome advances to `replan_target_state`. Each mutation derives the actor from Keyverse, requires explicit evidence and reason, appends immutable authoritative history, and emits its transactional outbox event atomically. The event payloads do not export the decision actor or reason.
 
 After a verified outcome, a separately authorized monitoring read evaluates the exact bitemporal verification evidence against a bounded freshness policy. `current` directs the buyer to `continue_monitoring`, `stale` to `collect_new_target_state_evidence`, and `gap_detected` to `replan_target_state`. Monitoring itself is read-only. When evidence is stale, the buyer collects newer evidence and submits another human-authorized verification decision; EA Core appends a later `verified` or `gap_detected` observation without reopening execution or rewriting prior history. A detected gap remains terminal for that transformation and requires replanning. Inferred, proposed, stale, or foreign evidence never becomes authoritative success merely by being observed.
+
+When a terminal transformation has `gap_detected`, a separately authorized replanner can create one new governed replacement transformation. The predecessor is not reopened or rewritten: EA Core links the replacement to the terminal predecessor, supersedes the predecessor, creates the replacement in `proposed`, records immutable replan evidence, and emits `org.contextualwisdomlab.ea.transformation.replanned.v1` in the same transaction. Exact retries return the same receipt; conflicting reuse, cross-tenant references, a non-gap predecessor, an already-superseded predecessor, or reuse of a replacement identifier fails closed. The buyer's next action is `approve_target_state`, so the replacement re-enters the same human-governed lifecycle rather than becoming a parallel workflow engine.
 
 `semantic-data-portal` remains the Data/AI Context system of record; `pg-erd-cloud` remains physical schema/design evidence; LineageWeave evidence remains inferred/proposed unless governed elsewhere. EA Core stores canonical references and receipt evidence rather than copying those products or querying their application tables.
 
@@ -127,9 +129,31 @@ GET /v1/architecture-transformations/{architecture_transformation_id}/monitoring
 
 The default evidence-age policy is 90 days when `max_evidence_age_days` is omitted. The response binds the returned evidence UUID, verification valid/system times, evidence age, monitoring state, and next action to the requested transformation.
 
-All governed surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`. Configure `EA_APPROVAL_ROLES`, `EA_SCHEDULE_ROLES`, `EA_START_ROLES`, `EA_COMPLETE_ROLES`, `EA_VERIFY_ROLES`, and `EA_MONITOR_ROLES` separately for their purpose-bound mutation or monitoring boundaries. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
+The governed target-state replanning endpoint is:
 
-The `ea_runtime` login has no direct application-table authority. It receives only purpose-bound PostgreSQL functions after service-side verification, including `read_technology_target_state_plan(...)`, `approve_target_state(...)`, `schedule_transformation(...)`, `start_scheduled_transformation(...)`, `complete_started_transformation(...)`, `record_target_state_verification(...)`, and `read_target_state_monitoring_status(...)`. Callers cannot supply a decision actor, and no surface grants direct access to foreign product stores.
+```text
+POST /v1/architecture-transformations/{architecture_transformation_id}/replan
+Content-Type: application/json
+
+{
+  "decision_request_id": "<UUIDv7>",
+  "replacement_architecture_transformation_id": "<UUIDv7>",
+  "architecture_scenario_id": "<UUIDv7>",
+  "remediation_initiative_id": "<UUIDv7>",
+  "transformation_code": "database_target_state_v2",
+  "transformation_title": "Replace the gap-detected target state",
+  "transformation_description": "Describe the bounded replacement target state.",
+  "effective_at": "<CWL timestamp>",
+  "decision_reason_text": "<human replanning reason>",
+  "evidence_record_id": "<UUIDv7>"
+}
+```
+
+The path UUID identifies the terminal predecessor; the body must identify a distinct replacement. A fresh receipt returns `next_action: "approve_target_state"`; an exact idempotent replay returns the same immutable replan evidence with `replayed: true`.
+
+All governed surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`. Configure `EA_APPROVAL_ROLES`, `EA_SCHEDULE_ROLES`, `EA_START_ROLES`, `EA_COMPLETE_ROLES`, `EA_VERIFY_ROLES`, `EA_MONITOR_ROLES`, and `EA_REPLAN_ROLES` separately for their purpose-bound mutation or monitoring boundaries. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
+
+The `ea_runtime` login has no direct application-table authority. It receives only purpose-bound PostgreSQL functions after service-side verification, including `read_technology_target_state_plan(...)`, `approve_target_state(...)`, `schedule_transformation(...)`, `start_scheduled_transformation(...)`, `complete_started_transformation(...)`, `record_target_state_verification(...)`, `read_target_state_monitoring_status(...)`, and `record_target_state_replan(...)`. Callers cannot supply a decision actor, and no surface grants direct access to foreign product stores.
 
 ## Validation
 
@@ -140,4 +164,4 @@ uv run --extra dev python -m coverage report
 uv run --extra dev python scripts/validate_repository.py
 ```
 
-CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, the planner and full governed transformation lifecycle, post-verification monitoring, OpenAPI/AsyncAPI contracts, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.
+CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, the planner and full governed transformation lifecycle, post-verification monitoring and replanning, OpenAPI/AsyncAPI contracts, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.

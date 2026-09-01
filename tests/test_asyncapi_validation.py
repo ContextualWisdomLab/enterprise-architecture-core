@@ -14,7 +14,7 @@ _SHARED_SCHEMA_FORMAT = "application/schema+json;version=draft-2020-12"
 def test_checked_in_asyncapi_contract_is_valid(asyncapi_document) -> None:
     """The checked-in contract defines every implemented publisher operation."""
 
-    assert validate_asyncapi_document(asyncapi_document) == 7
+    assert validate_asyncapi_document(asyncapi_document) == 8
 
 
 def test_asyncapi_rejects_wrong_version(asyncapi_document) -> None:
@@ -90,7 +90,7 @@ def test_asyncapi_requires_components_object(asyncapi_document) -> None:
 
 
 def test_asyncapi_requires_messages_object(asyncapi_document) -> None:
-    """Messages must be represented as a JSON object."""
+    """Messages must be represented as a JSON object before inspection."""
 
     asyncapi_document["components"] = {"messages": []}
     with pytest.raises(ContractValidationError, match="messages must be an object"):
@@ -132,6 +132,9 @@ def test_asyncapi_messages_reuse_shared_context_graph_envelope(
         ),
         "TransformationVerificationRecorded": (
             "org.contextualwisdomlab.ea.transformation.verification_recorded.v1"
+        ),
+        "TransformationReplanned": (
+            "org.contextualwisdomlab.ea.transformation.replanned.v1"
         ),
     }
     for message_name, event_type in event_types.items():

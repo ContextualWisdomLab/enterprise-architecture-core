@@ -32,6 +32,10 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         "/v1/architecture-transformations/"
         "{architecture_transformation_id}/monitoring"
     )
+    replan_path = (
+        "/v1/architecture-transformations/"
+        "{architecture_transformation_id}/replan"
+    )
     assert set(openapi_document["paths"]) == {
         "/health",
         "/ready",
@@ -42,6 +46,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         complete_path,
         verification_path,
         monitoring_path,
+        replan_path,
     }
     assert set(openapi_document["paths"]["/health"]) == {"get"}
     assert set(openapi_document["paths"]["/ready"]) == {"get"}
@@ -52,6 +57,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
     assert set(openapi_document["paths"][complete_path]) == {"post"}
     assert set(openapi_document["paths"][verification_path]) == {"post"}
     assert set(openapi_document["paths"][monitoring_path]) == {"get"}
+    assert set(openapi_document["paths"][replan_path]) == {"post"}
 
 
 def test_openapi_binds_governed_approval_request_receipt_and_role(
@@ -118,13 +124,13 @@ def test_openapi_binds_governed_schedule_request_receipt_and_role(
 
     request = openapi_document["components"]["schemas"]["TargetStateScheduleRequest"]
     assert request["additionalProperties"] is False
-    assert request["required"] == [
+    assert set(request["required"]) == {
         "decision_request_id",
         "initiative_milestone_id",
         "effective_at",
         "decision_reason_text",
         "evidence_record_id",
-    ]
+    }
     assert request["properties"]["decision_reason_text"]["maxLength"] == 4096
 
     receipt = openapi_document["components"]["schemas"]["TargetStateScheduleReceipt"]
@@ -215,6 +221,49 @@ def test_openapi_binds_governed_completion_request_receipt_and_role(
     }
 
 
+def test_openapi_binds_governed_replan_request_receipt_and_role(
+    openapi_document,
+) -> None:
+    """The published contract closes the gap-detected target-state decision loop."""
+
+    replan_path = (
+        "/v1/architecture-transformations/"
+        "{architecture_transformation_id}/replan"
+    )
+    operation = openapi_document["paths"][replan_path]["post"]
+    assert operation["operationId"] == "replanTechnologyTargetState"
+    assert operation["security"] == [{"keyverseBearer": []}]
+    assert operation["requestBody"]["required"] is True
+    assert operation["requestBody"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/TargetStateReplanRequest"
+    }
+    assert set(operation["responses"]) == {"200", "201", "400", "401", "403", "503"}
+    assert "EA_REPLAN_ROLES" in openapi_document["x-keyverse-contract"][
+        "requiredConfiguration"
+    ]
+
+    request = openapi_document["components"]["schemas"]["TargetStateReplanRequest"]
+    assert request["additionalProperties"] is False
+    assert set(request["required"]) == {
+        "decision_request_id",
+        "replacement_architecture_transformation_id",
+        "architecture_scenario_id",
+        "remediation_initiative_id",
+        "transformation_code",
+        "transformation_title",
+        "transformation_description",
+        "effective_at",
+        "decision_reason_text",
+        "evidence_record_id",
+    }
+    receipt = openapi_document["components"]["schemas"]["TargetStateReplanReceipt"]
+    assert receipt["additionalProperties"] is False
+    assert receipt["properties"]["next_action"] == {
+        "type": "string",
+        "const": "approve_target_state",
+    }
+
+
 def test_asyncapi_publishes_transformation_schedule_event(asyncapi_document) -> None:
     """Scheduling's transactional outbox event must be in the event contract."""
 
@@ -256,6 +305,22 @@ def test_asyncapi_publishes_transformation_completed_event(asyncapi_document) ->
     event_type = message["payload"]["schema"]["allOf"][1]["properties"]["type"]
     assert event_type["const"] == (
         "org.contextualwisdomlab.ea.transformation.completed.v1"
+    )
+
+
+def test_asyncapi_publishes_transformation_replanned_event(asyncapi_document) -> None:
+    """Replanning's transactional outbox event must be discoverable by consumers."""
+
+    channel = asyncapi_document["channels"]["transformationReplanEvents"]
+    assert channel["address"] == (
+        "org.contextualwisdomlab.ea.transformation.replanned.v1"
+    )
+    operation = asyncapi_document["operations"]["publishTransformationReplanned"]
+    assert operation["action"] == "send"
+    message = asyncapi_document["components"]["messages"]["TransformationReplanned"]
+    event_type = message["payload"]["schema"]["allOf"][1]["properties"]["type"]
+    assert event_type["const"] == (
+        "org.contextualwisdomlab.ea.transformation.replanned.v1"
     )
 
 

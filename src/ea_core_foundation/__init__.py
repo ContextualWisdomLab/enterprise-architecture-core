@@ -17,7 +17,7 @@ from .service import (
 from .service import (
     main as serve_foundation,
 )
-from .validation import (
+from .validation_replan import (
     ContractValidationError,
     RepositoryReport,
     validate_asyncapi_document,
