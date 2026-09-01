@@ -20,7 +20,10 @@ purpose-bound function boundary.
 - Graph projections are disposable and rebuildable from authoritative events.
 - Append-only evidence, receipt, outbox, and transformation-history boundaries
   expose a deterministic tenant-derived hot-write routing contract; physical
-  HASH/LIST partitioning requires a separately measured migration.
+  HASH/LIST partitioning requires a separately measured migration. The
+  read-only `database/reports/hot_write_capacity_snapshot.sql` query reports
+  tenant-scoped row volume, queue lag, bucket, relation/index sizes, and
+  cumulative tuple/WAL counters for repeatable snapshot comparison.
 
 ## Identity and authorization
 
