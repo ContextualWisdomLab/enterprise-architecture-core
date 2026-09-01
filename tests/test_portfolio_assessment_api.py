@@ -14,7 +14,11 @@ from ea_core_foundation.portfolio import (
     PortfolioAssessmentRequest,
     build_portfolio_assessment_authorization_config,
     build_portfolio_assessment_reader,
+    build_portfolio_assessment_summary_authorization_config,
+    build_portfolio_assessment_summary_reader,
     parse_portfolio_assessment_request,
+    parse_portfolio_assessment_summary_request,
+    summarize_portfolio_assessments,
 )
 from ea_core_foundation.service import PlannerExecutionError, PlannerRequestError
 
@@ -31,6 +35,12 @@ _MINIMAL_PATH = (
     f"/v1/architecture-objects/{_OBJECT_ID}/portfolio-assessments"
     "?valid_at=2026-08-20T00%3A00%3A00Z"
     "&recorded_at=2026-08-20T01%3A00%3A00Z"
+)
+_SUMMARY_PATH = _PATH.replace(
+    "/portfolio-assessments?", "/portfolio-assessment-summary?"
+)
+_SUMMARY_MINIMAL_PATH = _MINIMAL_PATH.replace(
+    "/portfolio-assessments?", "/portfolio-assessment-summary?"
 )
 
 
@@ -80,6 +90,18 @@ def _runner_with_stdout(stdout: str):
     return runner
 
 
+def _summary_response(assessments: object) -> dict[str, object]:
+    """Return one reader-shaped response for summary contract tests."""
+
+    return {
+        "architecture_object_id": _OBJECT_ID,
+        "valid_at": "2026-08-20T00:00:00Z",
+        "recorded_at": "2026-08-20T01:00:00Z",
+        "assessment_count": len(assessments) if isinstance(assessments, list) else 0,
+        "assessments": assessments,
+    }
+
+
 def test_parse_portfolio_assessment_binds_cutoffs_and_selectors() -> None:
     """The read route accepts only canonical identity, cutoff, and bounded selectors."""
 
@@ -109,6 +131,17 @@ def test_parse_portfolio_assessment_binds_cutoffs_and_selectors() -> None:
             parse_portfolio_assessment_request(invalid_path)
 
 
+def test_parse_portfolio_assessment_summary_reuses_the_strict_read_contract() -> None:
+    """The summary route accepts exactly the selectors of the raw assessment route."""
+
+    request = parse_portfolio_assessment_summary_request(_SUMMARY_PATH)
+    assert request.framework_code == "application_fitness"
+    assert request.cycle_code == "annual_review"
+    for invalid_path in (_PATH, _SUMMARY_MINIMAL_PATH + "&unknown=value"):
+        with pytest.raises(PlannerRequestError):
+            parse_portfolio_assessment_summary_request(invalid_path)
+
+
 def test_portfolio_assessment_authority_is_dedicated_and_fail_closed() -> None:
     """The portfolio read role is not inherited from mutation or generic reads."""
 
@@ -129,6 +162,22 @@ def test_portfolio_assessment_authority_is_dedicated_and_fail_closed() -> None:
 
     environment.pop("EA_PORTFOLIO_ASSESSMENT_READ_ROLES")
     assert build_portfolio_assessment_authorization_config(environment) is None
+
+    summary_environment = dict(environment)
+    summary_environment["EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES"] = (
+        "ea_portfolio_assessment_summary_reader"
+    )
+    summary_config = build_portfolio_assessment_summary_authorization_config(
+        summary_environment
+    )
+    assert summary_config is not None
+    assert summary_config.allowed_roles == frozenset(
+        {"ea_portfolio_assessment_summary_reader"}
+    )
+    summary_environment.pop("EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES")
+    assert build_portfolio_assessment_summary_authorization_config(
+        summary_environment
+    ) is None
 
 
 def test_portfolio_assessment_reader_uses_only_the_purpose_bound_sql_port() -> None:
@@ -158,6 +207,7 @@ def test_portfolio_assessment_reader_uses_only_the_purpose_bound_sql_port() -> N
     assert "object_assessment " not in command_text
     assert "portfolio-reviewer-123" not in command_text
     assert "secret" not in command_text
+    assert ":'tenant_record_id'" not in command_text
     assert captured["timeout"] == 10
     assert result["assessment_count"] == 1
     assert result["assessments"][0]["truth_status_code"] == "observed"
@@ -187,6 +237,103 @@ def test_portfolio_assessment_reader_accepts_review_evidence_without_evidence_id
     )
     result = reader(_context(), parse_portfolio_assessment_request(_PATH))
     assert result["assessments"][0]["evidence_record_id"] is None
+
+
+def test_portfolio_assessment_summary_groups_same_scale_facts_and_prioritizes_gaps(
+) -> None:
+    """The buyer projection preserves scale boundaries and evidence next actions."""
+
+    assessments = [
+        _row(score_value=5.0, score_label="Ready", truth_status_code="proposed"),
+        _row(score_value=3.0, score_label="Watch"),
+        _row(
+            assessment_dimension_code="technology_risk",
+            assessment_dimension_title="Technology Risk",
+            score_value=2.0,
+            score_label="High",
+            truth_status_code="inferred",
+            evidence_record_id=None,
+        ),
+    ]
+    summary = summarize_portfolio_assessments(_summary_response(assessments))
+
+    assert summary["assessment_count"] == 3
+    assert summary["group_count"] == 2
+    assert summary["assessment_state_code"] == "evidence_gap"
+    assert summary["next_action"] == "collect_assessment_evidence"
+    groups = summary["groups"]
+    assert isinstance(groups, list)
+    assert groups[0]["assessment_count"] == 2
+    assert groups[0]["truth_status_codes"] == ["observed", "proposed"]
+    assert groups[0]["evidence_record_count"] == 2
+    assert groups[0]["score_value_min"] == 3.0
+    assert groups[0]["score_value_max"] == 5.0
+    assert groups[0]["score_labels"] == ["Ready", "Watch"]
+    assert groups[0]["assessment_state_code"] == "review_required"
+    assert groups[0]["next_action"] == "review_assessment_truth"
+    assert groups[1]["assessment_state_code"] == "evidence_gap"
+
+
+def test_portfolio_assessment_summary_handles_empty_and_complete_evidence() -> None:
+    """Empty portfolios and fully evidenced observed facts remain actionable states."""
+
+    empty = summarize_portfolio_assessments(_summary_response([]))
+    assert empty["assessment_state_code"] == "no_assessments"
+    assert empty["next_action"] == "collect_portfolio_assessments"
+
+    complete = summarize_portfolio_assessments(_summary_response([_row()]))
+    assert complete["assessment_state_code"] == "evidence_complete"
+    assert complete["next_action"] == "use_assessment_evidence"
+
+    review = summarize_portfolio_assessments(
+        _summary_response([_row(truth_status_code="proposed")])
+    )
+    assert review["assessment_state_code"] == "review_required"
+    assert review["next_action"] == "review_assessment_truth"
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        {},
+        _summary_response("not-a-list"),
+        _summary_response([object()]),
+        _summary_response([_row(assessment_cycle_title=None)]),
+        _summary_response([_row(score_value="3")]),
+        _summary_response([_row(truth_status_code="rejected")]),
+        _summary_response([_row(score_label=None)]),
+    ],
+)
+def test_portfolio_assessment_summary_rejects_invalid_reader_data(
+    response: dict[str, object],
+) -> None:
+    """Summary projections never turn malformed read-port data into buyer facts."""
+
+    with pytest.raises(PlannerExecutionError):
+        summarize_portfolio_assessments(response)
+
+
+def test_portfolio_assessment_summary_reader_reuses_validated_sql_port() -> None:
+    """The summary adapter composes the existing tenant and bitemporal SQL reader."""
+
+    reader = build_portfolio_assessment_summary_reader(
+        "postgresql://ea_runtime@db.example/ea_core",
+        runner=_runner_with_stdout(json.dumps([_row()])),
+    )
+    summary = reader(
+        _context(), parse_portfolio_assessment_summary_request(_SUMMARY_PATH)
+    )
+    assert summary["group_count"] == 1
+    assert summary["assessment_state_code"] == "evidence_complete"
+
+
+def test_portfolio_assessment_summary_reader_fails_closed_without_storage() -> None:
+    """A summary cannot exist when its underlying purpose-bound read port is absent."""
+
+    with pytest.raises(PlannerExecutionError, match="unavailable"):
+        build_portfolio_assessment_summary_reader(None)(
+            _context(), parse_portfolio_assessment_summary_request(_SUMMARY_PATH)
+        )
 
 
 def test_portfolio_assessment_reader_fails_closed_without_storage() -> None:

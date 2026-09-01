@@ -307,6 +307,28 @@
           "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
         }
       }
+    },
+    "/v1/architecture-objects/{architecture_object_id}/portfolio-assessment-summary": {
+      "get": {
+        "operationId": "getArchitectureObjectPortfolioAssessmentSummary",
+        "summary": "Summarize one architecture object's portfolio assessment evidence",
+        "description": "Return deterministic same-framework and same-scale assessment groups with truth, evidence, and next-action state. Scores are never averaged across different scales.",
+        "security": [{"keyverseBearer": []}],
+        "parameters": [
+          {"name": "architecture_object_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}},
+          {"name": "valid_at", "in": "query", "required": true, "schema": {"type": "string", "format": "date-time"}},
+          {"name": "recorded_at", "in": "query", "required": true, "schema": {"type": "string", "format": "date-time"}},
+          {"name": "framework_code", "in": "query", "required": false, "schema": {"type": "string", "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$", "minLength": 2, "maxLength": 63}},
+          {"name": "cycle_code", "in": "query", "required": false, "schema": {"type": "string", "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$", "minLength": 2, "maxLength": 63}}
+        ],
+        "responses": {
+          "200": {"description": "The deterministic assessment evidence summary visible to the verified tenant.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PortfolioAssessmentSummaryResponse"}}}},
+          "400": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "401": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "403": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}},
+          "503": {"description": "See response schema.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorStatus"}}}}
+        }
+      }
     }
   },
   "components": {
@@ -492,6 +514,44 @@
           "recorded_at": {"type": "string", "format": "date-time"}
         }
       },
+      "PortfolioAssessmentSummaryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["architecture_object_id", "valid_at", "recorded_at", "assessment_count", "group_count", "assessment_state_code", "next_action", "groups"],
+        "properties": {
+          "architecture_object_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+          "valid_at": {"type": "string", "format": "date-time"},
+          "recorded_at": {"type": "string", "format": "date-time"},
+          "assessment_count": {"type": "integer", "minimum": 0},
+          "group_count": {"type": "integer", "minimum": 0},
+          "assessment_state_code": {"type": "string", "enum": ["no_assessments", "evidence_gap", "review_required", "evidence_complete"]},
+          "next_action": {"type": "string", "enum": ["collect_portfolio_assessments", "collect_assessment_evidence", "review_assessment_truth", "use_assessment_evidence"]},
+          "groups": {"type": "array", "items": {"$ref": "#/components/schemas/PortfolioAssessmentSummary"}}
+        }
+      },
+      "PortfolioAssessmentSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["assessment_framework_code", "assessment_framework_title", "assessment_framework_version_label", "assessment_scale_code", "assessment_dimension_code", "assessment_dimension_title", "assessment_cycle_code", "assessment_cycle_title", "assessment_count", "truth_status_codes", "evidence_record_count", "score_value_min", "score_value_max", "score_labels", "assessment_state_code", "next_action"],
+        "properties": {
+          "assessment_framework_code": {"type": "string", "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$"},
+          "assessment_framework_title": {"type": "string", "minLength": 1},
+          "assessment_framework_version_label": {"type": "string", "minLength": 1},
+          "assessment_scale_code": {"type": "string", "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$"},
+          "assessment_dimension_code": {"type": "string", "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$"},
+          "assessment_dimension_title": {"type": "string", "minLength": 1},
+          "assessment_cycle_code": {"type": "string", "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$"},
+          "assessment_cycle_title": {"type": "string", "minLength": 1},
+          "assessment_count": {"type": "integer", "minimum": 1},
+          "truth_status_codes": {"type": "array", "items": {"type": "string", "enum": ["authoritative", "observed", "inferred", "proposed"]}, "minItems": 1},
+          "evidence_record_count": {"type": "integer", "minimum": 0},
+          "score_value_min": {"type": "number"},
+          "score_value_max": {"type": "number"},
+          "score_labels": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+          "assessment_state_code": {"type": "string", "enum": ["evidence_gap", "review_required", "evidence_complete"]},
+          "next_action": {"type": "string", "enum": ["collect_assessment_evidence", "review_assessment_truth", "use_assessment_evidence"]}
+        }
+      },
       "ErrorStatus": {
         "type": "object", "additionalProperties": false,
         "required": ["error_code", "next_action"],
@@ -500,7 +560,7 @@
     }
   },
   "x-keyverse-contract": {
-    "requiredConfiguration": ["EA_OIDC_ISSUER", "EA_OIDC_AUDIENCE", "EA_OIDC_JWKS_URL", "EA_TENANT_CLAIM", "EA_ROLE_CLAIM", "EA_READ_ROLES", "EA_APPROVAL_ROLES", "EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES", "EA_VERIFY_ROLES", "EA_MONITOR_ROLES", "EA_REPLAN_ROLES", "EA_DATA_MANAGEMENT_RECHECK_ROLES", "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES", "EA_PORTFOLIO_ASSESSMENT_READ_ROLES"],
+    "requiredConfiguration": ["EA_OIDC_ISSUER", "EA_OIDC_AUDIENCE", "EA_OIDC_JWKS_URL", "EA_TENANT_CLAIM", "EA_ROLE_CLAIM", "EA_READ_ROLES", "EA_APPROVAL_ROLES", "EA_SCHEDULE_ROLES", "EA_START_ROLES", "EA_COMPLETE_ROLES", "EA_VERIFY_ROLES", "EA_MONITOR_ROLES", "EA_REPLAN_ROLES", "EA_DATA_MANAGEMENT_RECHECK_ROLES", "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES", "EA_PORTFOLIO_ASSESSMENT_READ_ROLES", "EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES"],
     "requiredChecks": ["signature", "issuer", "audience", "expiration", "tenant", "role"]
   }
 }

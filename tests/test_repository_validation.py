@@ -62,6 +62,17 @@ _PORTFOLIO_ASSESSMENT_SCHEMAS = (
     "PortfolioAssessmentResponse",
     "PortfolioAssessment",
 )
+_PORTFOLIO_ASSESSMENT_SUMMARY_PATH = (
+    "/v1/architecture-objects/"
+    "{architecture_object_id}/portfolio-assessment-summary"
+)
+_PORTFOLIO_ASSESSMENT_SUMMARY_ROLE = (
+    "EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES"
+)
+_PORTFOLIO_ASSESSMENT_SUMMARY_SCHEMAS = (
+    "PortfolioAssessmentSummaryResponse",
+    "PortfolioAssessmentSummary",
+)
 
 
 def _strip_event_contract_members(
@@ -105,11 +116,13 @@ def _strip_data_management_recheck_openapi_contract(repository_root: Path) -> No
     document["paths"].pop(_DATA_MANAGEMENT_RECHECK_PATH, None)
     document["paths"].pop(_DATA_MANAGEMENT_RECHECK_STATUS_PATH, None)
     document["paths"].pop(_PORTFOLIO_ASSESSMENT_PATH, None)
+    document["paths"].pop(_PORTFOLIO_ASSESSMENT_SUMMARY_PATH, None)
     schemas = document["components"]["schemas"]
     for schema_name in (
         *_DATA_MANAGEMENT_RECHECK_SCHEMAS,
         _DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA,
         *_PORTFOLIO_ASSESSMENT_SCHEMAS,
+        *_PORTFOLIO_ASSESSMENT_SUMMARY_SCHEMAS,
     ):
         schemas.pop(schema_name, None)
     configuration = document["x-keyverse-contract"]["requiredConfiguration"]
@@ -121,6 +134,7 @@ def _strip_data_management_recheck_openapi_contract(repository_root: Path) -> No
             _DATA_MANAGEMENT_RECHECK_ROLE,
             _DATA_MANAGEMENT_RECHECK_STATUS_ROLE,
             _PORTFOLIO_ASSESSMENT_ROLE,
+            _PORTFOLIO_ASSESSMENT_SUMMARY_ROLE,
         }
     ]
     openapi_path.write_text(
@@ -156,7 +170,7 @@ def test_repository_report_counts_current_artifacts(repository_root: Path) -> No
     assert report.column_count == 399
     assert report.index_count == 18
     assert report.constraint_count == 416
-    assert report.openapi_operation_count == 13
+    assert report.openapi_operation_count == 14
     assert report.asyncapi_operation_count == 12
     assert report.adr_count >= 19
     assert report.connector_count == 7

@@ -25,6 +25,7 @@ from .service import (
 
 _PORTFOLIO_ASSESSMENT_PATH_PREFIX = "/v1/architecture-objects/"
 _PORTFOLIO_ASSESSMENT_PATH_SUFFIX = "/portfolio-assessments"
+_PORTFOLIO_ASSESSMENT_SUMMARY_PATH_SUFFIX = "/portfolio-assessment-summary"
 _PORTFOLIO_ASSESSMENT_SQL = """
 SELECT COALESCE(
     json_agg(to_jsonb(assessment_result) ORDER BY
@@ -138,6 +139,23 @@ def parse_portfolio_assessment_request(path: str) -> PortfolioAssessmentRequest:
     )
 
 
+def parse_portfolio_assessment_summary_request(
+    path: str,
+) -> PortfolioAssessmentRequest:
+    """Bind the summary route to the same strict assessment query contract."""
+
+    parsed = urlparse(path)
+    if not parsed.path.endswith(_PORTFOLIO_ASSESSMENT_SUMMARY_PATH_SUFFIX):
+        raise PlannerRequestError("portfolio assessment summary path is invalid")
+    assessment_path = parsed._replace(
+        path=(
+            parsed.path[: -len(_PORTFOLIO_ASSESSMENT_SUMMARY_PATH_SUFFIX)]
+            + _PORTFOLIO_ASSESSMENT_PATH_SUFFIX
+        )
+    ).geturl()
+    return parse_portfolio_assessment_request(assessment_path)
+
+
 def build_portfolio_assessment_authorization_config(
     environ: Mapping[str, str],
 ) -> KeyverseAuthorizationConfig | None:
@@ -146,6 +164,19 @@ def build_portfolio_assessment_authorization_config(
     read_environment = dict(environ)
     read_environment["EA_READ_ROLES"] = environ.get(
         "EA_PORTFOLIO_ASSESSMENT_READ_ROLES",
+        "",
+    )
+    return build_keyverse_authorization_config(read_environment)
+
+
+def build_portfolio_assessment_summary_authorization_config(
+    environ: Mapping[str, str],
+) -> KeyverseAuthorizationConfig | None:
+    """Build a separate Keyverse profile for portfolio summary reads."""
+
+    read_environment = dict(environ)
+    read_environment["EA_READ_ROLES"] = environ.get(
+        "EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES",
         "",
     )
     return build_keyverse_authorization_config(read_environment)
@@ -256,6 +287,168 @@ def _validate_portfolio_assessment_response(
     }
 
 
+def summarize_portfolio_assessments(
+    response: Mapping[str, object],
+) -> Mapping[str, object]:
+    """Summarize same-scale assessment facts without inventing cross-scale scores."""
+
+    expected_response_fields = {
+        "architecture_object_id",
+        "valid_at",
+        "recorded_at",
+        "assessment_count",
+        "assessments",
+    }
+    if set(response) != expected_response_fields:
+        raise PlannerExecutionError(
+            "portfolio assessment summary received invalid data"
+        )
+    assessments = response.get("assessments")
+    if not isinstance(assessments, list):
+        raise PlannerExecutionError(
+            "portfolio assessment summary received invalid data"
+        )
+
+    group_fields = (
+        "assessment_framework_code",
+        "assessment_framework_title",
+        "assessment_framework_version_label",
+        "assessment_scale_code",
+        "assessment_dimension_code",
+        "assessment_dimension_title",
+        "assessment_cycle_code",
+        "assessment_cycle_title",
+    )
+    groups: dict[tuple[str, ...], dict[str, object]] = {}
+    for row in assessments:
+        if not isinstance(row, Mapping):
+            raise PlannerExecutionError(
+                "portfolio assessment summary received invalid data"
+            )
+        metadata = tuple(row.get(field) for field in group_fields)
+        if not all(isinstance(value, str) and value for value in metadata):
+            raise PlannerExecutionError(
+                "portfolio assessment summary received invalid data"
+            )
+        score = row.get("score_value")
+        if isinstance(score, bool) or not isinstance(score, (int, float)):
+            raise PlannerExecutionError(
+                "portfolio assessment summary received invalid data"
+            )
+        truth_status = row.get("truth_status_code")
+        if truth_status not in _TRUTH_STATUS_CODES:
+            raise PlannerExecutionError(
+                "portfolio assessment summary received invalid data"
+            )
+        key = tuple(metadata)
+        group = groups.setdefault(
+            key,
+            {
+                **dict(zip(group_fields, key, strict=True)),
+                "assessment_count": 0,
+                "truth_status_codes": set(),
+                "evidence_record_count": 0,
+                "score_values": [],
+                "score_labels": set(),
+            },
+        )
+        group["assessment_count"] = int(group["assessment_count"]) + 1
+        group["truth_status_codes"].add(truth_status)
+        group["score_values"].append(score)
+        score_label = row.get("score_label")
+        if not isinstance(score_label, str) or not score_label:
+            raise PlannerExecutionError(
+                "portfolio assessment summary received invalid data"
+            )
+        group["score_labels"].add(score_label)
+        if row.get("evidence_record_id") is not None:
+            group["evidence_record_count"] = (
+                int(group["evidence_record_count"]) + 1
+            )
+
+    summarized_groups: list[dict[str, object]] = []
+    for key in sorted(groups):
+        group = groups[key]
+        statuses = group["truth_status_codes"]
+        scores = group["score_values"]
+        labels = group["score_labels"]
+        if group["evidence_record_count"] < group["assessment_count"]:
+            state = "evidence_gap"
+            action = "collect_assessment_evidence"
+        elif statuses & {"inferred", "proposed"}:
+            state = "review_required"
+            action = "review_assessment_truth"
+        else:
+            state = "evidence_complete"
+            action = "use_assessment_evidence"
+        summarized_groups.append(
+            {
+                **{
+                    field: group[field]
+                    for field in group_fields
+                },
+                "assessment_count": group["assessment_count"],
+                "truth_status_codes": sorted(statuses),
+                "evidence_record_count": group["evidence_record_count"],
+                "score_value_min": min(scores),
+                "score_value_max": max(scores),
+                "score_labels": sorted(labels),
+                "assessment_state_code": state,
+                "next_action": action,
+            }
+        )
+
+    if not summarized_groups:
+        overall_state = "no_assessments"
+        overall_action = "collect_portfolio_assessments"
+    elif any(
+        group["assessment_state_code"] == "evidence_gap"
+        for group in summarized_groups
+    ):
+        overall_state = "evidence_gap"
+        overall_action = "collect_assessment_evidence"
+    elif any(
+        group["assessment_state_code"] == "review_required"
+        for group in summarized_groups
+    ):
+        overall_state = "review_required"
+        overall_action = "review_assessment_truth"
+    else:
+        overall_state = "evidence_complete"
+        overall_action = "use_assessment_evidence"
+    return {
+        "architecture_object_id": response["architecture_object_id"],
+        "valid_at": response["valid_at"],
+        "recorded_at": response["recorded_at"],
+        "assessment_count": len(assessments),
+        "group_count": len(summarized_groups),
+        "assessment_state_code": overall_state,
+        "next_action": overall_action,
+        "groups": summarized_groups,
+    }
+
+
+def _render_portfolio_assessment_sql(
+    context: AuthorizationContext,
+    request: PortfolioAssessmentRequest,
+) -> str:
+    """Render validated query values for psql's non-interactive command mode."""
+
+    query = _PORTFOLIO_ASSESSMENT_SQL
+    values = (
+        ("tenant_record_id", context.tenant_record_id),
+        ("architecture_object_id", request.architecture_object_id),
+        ("valid_at", request.valid_at.isoformat()),
+        ("recorded_at", request.recorded_at.isoformat()),
+        ("framework_code", request.framework_code or ""),
+        ("cycle_code", request.cycle_code or ""),
+    )
+    for name, value in values:
+        literal = "'" + str(value).replace("'", "''") + "'"
+        query = query.replace(f":'{name}'", literal)
+    return query
+
+
 def build_portfolio_assessment_reader(
     dsn: str | None,
     *,
@@ -281,22 +474,9 @@ def build_portfolio_assessment_reader(
             "--no-psqlrc",
             "--tuples-only",
             "--no-align",
-            "--set",
-            "ON_ERROR_STOP=1",
-            "--set",
-            f"tenant_record_id={context.tenant_record_id}",
-            "--set",
-            f"architecture_object_id={request.architecture_object_id}",
-            "--set",
-            f"valid_at={request.valid_at.isoformat()}",
-            "--set",
-            f"recorded_at={request.recorded_at.isoformat()}",
-            "--set",
-            f"framework_code={request.framework_code or ''}",
-            "--set",
-            f"cycle_code={request.cycle_code or ''}",
+            "--set=ON_ERROR_STOP=1",
             "--command",
-            _PORTFOLIO_ASSESSMENT_SQL,
+            _render_portfolio_assessment_sql(context, request),
         ]
         try:
             result = runner(
@@ -320,5 +500,30 @@ def build_portfolio_assessment_reader(
                 "portfolio assessment returned invalid JSON"
             ) from error
         return _validate_portfolio_assessment_response(response, request)
+
+    return reader
+
+
+def build_portfolio_assessment_summary_reader(
+    dsn: str | None,
+    *,
+    runner: CommandRunner = subprocess.run,
+    base_environment: Mapping[str, str] | None = None,
+):
+    """Build a summary reader that reuses the validated assessment read port."""
+
+    assessment_reader = build_portfolio_assessment_reader(
+        dsn,
+        runner=runner,
+        base_environment=base_environment,
+    )
+
+    def reader(
+        context: AuthorizationContext,
+        request: PortfolioAssessmentRequest,
+    ) -> Mapping[str, object]:
+        """Summarize one validated assessment collection for a buyer."""
+
+        return summarize_portfolio_assessments(assessment_reader(context, request))
 
     return reader

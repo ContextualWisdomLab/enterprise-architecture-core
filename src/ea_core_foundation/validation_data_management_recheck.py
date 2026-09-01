@@ -43,6 +43,19 @@ _PORTFOLIO_ASSESSMENT_RUNTIME_PATH = (
 _PORTFOLIO_ASSESSMENT_OPERATION_ID = "getArchitectureObjectPortfolioAssessments"
 _PORTFOLIO_ASSESSMENT_ROLE_CONFIGURATION = "EA_PORTFOLIO_ASSESSMENT_READ_ROLES"
 _PORTFOLIO_ASSESSMENT_RESPONSE_SCHEMA = "PortfolioAssessmentResponse"
+_PORTFOLIO_ASSESSMENT_SUMMARY_RUNTIME_PATH = (
+    "/v1/architecture-objects/"
+    "{architecture_object_id}/portfolio-assessment-summary"
+)
+_PORTFOLIO_ASSESSMENT_SUMMARY_OPERATION_ID = (
+    "getArchitectureObjectPortfolioAssessmentSummary"
+)
+_PORTFOLIO_ASSESSMENT_SUMMARY_ROLE_CONFIGURATION = (
+    "EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES"
+)
+_PORTFOLIO_ASSESSMENT_SUMMARY_RESPONSE_SCHEMA = (
+    "PortfolioAssessmentSummaryResponse"
+)
 _PORTFOLIO_ASSESSMENT_PARAMETER_SCHEMA = {
     "type": "string",
     "pattern": "^[a-z][a-z0-9]+(?:_[a-z0-9]+)*$",
@@ -67,6 +80,7 @@ def _without_recheck_role(document: dict[str, Any]) -> dict[str, Any]:
     required_roles = {
         _DATA_MANAGEMENT_RECHECK_ROLE_CONFIGURATION,
         _PORTFOLIO_ASSESSMENT_ROLE_CONFIGURATION,
+        _PORTFOLIO_ASSESSMENT_SUMMARY_ROLE_CONFIGURATION,
     }
     missing_roles = required_roles.difference(configuration)
     if missing_roles:
@@ -100,6 +114,7 @@ def _without_recheck_openapi(document: dict[str, Any]) -> dict[str, Any]:
         _DATA_MANAGEMENT_RECHECK_RUNTIME_PATH,
         _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH,
         _PORTFOLIO_ASSESSMENT_RUNTIME_PATH,
+        _PORTFOLIO_ASSESSMENT_SUMMARY_RUNTIME_PATH,
     ):
         changed["paths"].pop(path_name, None)
     schemas = changed["components"]["schemas"]
@@ -108,7 +123,9 @@ def _without_recheck_openapi(document: dict[str, Any]) -> dict[str, Any]:
         _DATA_MANAGEMENT_RECHECK_RECEIPT_SCHEMA,
         _DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA,
         _PORTFOLIO_ASSESSMENT_RESPONSE_SCHEMA,
+        _PORTFOLIO_ASSESSMENT_SUMMARY_RESPONSE_SCHEMA,
         "PortfolioAssessment",
+        "PortfolioAssessmentSummary",
     ):
         schemas.pop(schema_name, None)
     return changed
@@ -229,7 +246,9 @@ def _validate_read_schemas(document: dict[str, Any]) -> None:
     )
     required_schemas = {
         _PORTFOLIO_ASSESSMENT_RESPONSE_SCHEMA,
+        _PORTFOLIO_ASSESSMENT_SUMMARY_RESPONSE_SCHEMA,
         "PortfolioAssessment",
+        "PortfolioAssessmentSummary",
     }
     if _DATA_MANAGEMENT_RECHECK_STATUS_RUNTIME_PATH in document.get("paths", {}):
         required_schemas.add(_DATA_MANAGEMENT_RECHECK_STATUS_SCHEMA)
@@ -280,6 +299,31 @@ def _validate_read_operations(paths: dict[str, Any]) -> None:
             ),
         },
         response_schema=_PORTFOLIO_ASSESSMENT_RESPONSE_SCHEMA,
+    )
+    _validate_read_operation(
+        paths,
+        runtime_path=_PORTFOLIO_ASSESSMENT_SUMMARY_RUNTIME_PATH,
+        operation_id=_PORTFOLIO_ASSESSMENT_SUMMARY_OPERATION_ID,
+        expected_parameters={
+            ("architecture_object_id", "path"): (True, _CANONICAL_UUID7_SCHEMA),
+            ("valid_at", "query"): (
+                True,
+                {"type": "string", "format": "date-time"},
+            ),
+            ("recorded_at", "query"): (
+                True,
+                {"type": "string", "format": "date-time"},
+            ),
+            ("framework_code", "query"): (
+                False,
+                _PORTFOLIO_ASSESSMENT_PARAMETER_SCHEMA,
+            ),
+            ("cycle_code", "query"): (
+                False,
+                _PORTFOLIO_ASSESSMENT_PARAMETER_SCHEMA,
+            ),
+        },
+        response_schema=_PORTFOLIO_ASSESSMENT_SUMMARY_RESPONSE_SCHEMA,
     )
 
 
