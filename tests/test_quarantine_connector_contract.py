@@ -68,7 +68,7 @@ def _quarantine_connector(document: dict) -> dict:
 def test_checked_in_catalog_declares_quarantine_runtime_boundary(
     repository_root,
 ) -> None:
-    """EA names the reusable runtime without absorbing verdict or policy authority."""
+    """Require the runtime boundary without absorbing policy authority."""
 
     document = _catalog(repository_root)
     names = {connector["connector_name"] for connector in document["connectors"]}
@@ -143,7 +143,7 @@ def test_quarantine_boundary_fields_fail_closed(
     replacement,
     message,
 ) -> None:
-    """Missing runtime ownership and ACL facts cannot silently pass catalog admission."""
+    """Reject incomplete runtime ownership and ACL facts."""
 
     document = _catalog(repository_root)
     connector = _quarantine_connector(document)
@@ -156,7 +156,7 @@ def test_quarantine_boundary_fields_fail_closed(
 def test_quarantine_interactions_are_directional_and_caller_owned(
     repository_root,
 ) -> None:
-    """Orchestrator and Wardnet call distinct runtime capabilities without ownership drift."""
+    """Keep callers bound to their distinct runtime capabilities."""
 
     document = _catalog(repository_root)
     connector = _quarantine_connector(document)
