@@ -203,8 +203,9 @@ BEGIN
         active_transformation.scenario_code,
         transformation_state.transformation_state_code
         FROM active_transformation
-        JOIN LATERAL architecture_core.project_scenario_objects(
-            active_transformation.architecture_scenario_id
+        JOIN LATERAL architecture_core.project_scenario_objects_at(
+            active_transformation.architecture_scenario_id,
+            assessment_recorded_at
         ) AS scenario_object
           ON scenario_object.architecture_object_id =
              technology_impact.application_object_id
