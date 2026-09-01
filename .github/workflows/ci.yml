@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -50,7 +50,7 @@ jobs:
           python scripts/validate_repository.py
 
   postgres-migration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     services:
       postgres:
@@ -245,7 +245,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core' AND table_type = 'BASE TABLE';"
           )"
-          test "$table_count" -eq 40
+          test "$table_count" -eq 48
           reference_view_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
               --tuples-only --no-align \
@@ -271,7 +271,7 @@ jobs:
           done
 
   compose-runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -314,7 +314,7 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
   package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
