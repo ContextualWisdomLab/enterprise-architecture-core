@@ -16,6 +16,15 @@
       "direction_code": "shared_envelope",
       "exchange_kind": "cloudevents_json",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Consume the pinned CloudEvent envelope, canonical asset URI, and provenance schemas instead of publishing a local envelope copy."
     },
     {
@@ -24,6 +33,15 @@
       "direction_code": "inbound_projection",
       "exchange_kind": "canonical_asset_uri",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project Data/AI context references into EA by canonical URI with source truth and provenance only; do not copy glossary, lineage, certification, or catalog authority into this store."
     },
     {
@@ -32,6 +50,15 @@
       "direction_code": "inbound_evidence",
       "exchange_kind": "observed_schema_reference",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Accept observed physical-schema evidence as reviewable provenance references. Keep snapshots in pg-erd-cloud."
     },
     {
@@ -40,6 +67,15 @@
       "direction_code": "inbound_proposal",
       "exchange_kind": "inferred_relation_proposal",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Store inferred relations as proposed or inferred truth only. Require an explicit reviewed command before they become authoritative."
     },
     {
@@ -48,6 +84,15 @@
       "direction_code": "inbound_projection",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project naruon deployable, API, provider, version, lifecycle, ownership, and risk changes by canonical reference while keeping workspace and product runtime facts authoritative in naruon."
     },
     {
@@ -56,6 +101,15 @@
       "direction_code": "outbound_event",
       "exchange_kind": "cloudevents_json",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Publish architecture and lifecycle change events for workspace context. Do not open a SQL path from naruon into this database."
     },
     {
@@ -72,6 +126,15 @@
       "direction_code": "inbound_projection",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project BandScope deployable, API, provider, version, lifecycle, and risk changes by canonical reference with source provenance; keep BandScope runtime facts authoritative in bandscope."
     },
     {
@@ -80,6 +143,15 @@
       "direction_code": "inbound_projection",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project only organization and deployable references needed for architecture decisions with exact truth and provenance; do not copy employee or HR records from Orgmetra."
     },
     {
@@ -88,6 +160,15 @@
       "direction_code": "inbound_projection",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project TEPP service, package, API, database, provider, version, lifecycle, and risk changes as architecture context while keeping learning and research facts authoritative in TEPP."
     },
     {
@@ -96,6 +177,15 @@
       "direction_code": "inbound_proposal",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Accept orchestration-generated architecture suggestions only as proposed or inferred context with provenance; require an authorized EA command before authoritative promotion."
     },
     {
@@ -104,6 +194,15 @@
       "direction_code": "inbound_evidence",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project Wardnet security-control and exposure evidence with its observed truth status, effective time, source reference, and provenance; keep detection authority in wardnet."
     },
     {
@@ -112,6 +211,15 @@
       "direction_code": "inbound_evidence",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project AppGuardrail application-security findings as evidence for affected architecture objects without promoting scanner output to authoritative architecture truth."
     },
     {
@@ -120,6 +228,15 @@
       "direction_code": "inbound_evidence",
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project control, risk, and evidence references needed for architecture decisions while keeping compliance records and attestations authoritative in governance-risk-compliance."
     }
   ]
