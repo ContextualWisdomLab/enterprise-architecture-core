@@ -8,7 +8,6 @@ import pytest
 
 from ea_core_foundation import ContractValidationError, validate_connector_catalog
 
-
 _CONNECTOR_NAME = "quarantine_sandbox_runtime"
 _EXPECTED_OWNER = "ContextualWisdomLab/quarantine-sandbox-runtime"
 _EXPECTED_DIRECTION_CODE = "inbound_projection"
