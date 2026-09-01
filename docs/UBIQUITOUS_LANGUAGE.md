@@ -36,10 +36,18 @@ These terms are the domain language for the Enterprise Architecture Decision Pla
 | Transactional Outbox | The same-transaction record of domain events emitted from an authoritative state change. |
 | Inbox / Replay Receipt | Idempotency evidence used to prevent duplicate external event effects while retaining replay/audit history. |
 | Anti-Corruption Layer | Translation at a context boundary that preserves EA semantics and prevents foreign product/domain models from becoming EA's internal model by convenience. |
+| Quarantine Sandbox Runtime | The independent reusable hostile-workload isolation product that owns sandbox lifecycle/resource enforcement/cleanup/attestation and artifact-analysis evidence. It is not the owner of caller authorization, maliciousness verdicts, incidents or EA architecture decisions. |
+| Application-Service Lease | A caller-scoped request/lease boundary through which contextual-orchestrator may run an application service in the Quarantine Sandbox Runtime. The caller's policy, application selection and secrets remain outside the runtime. |
+| Artifact-Analysis Evidence | Evidence produced by Quarantine Sandbox Runtime analysis of a hostile or unknown artifact. Wardnet may consume it for SOC policy/verdict decisions; the evidence itself is not an authoritative EA malware verdict or risk score. |
+| Architecture Risk Context | Architecture-relevant risk context about a runtime/backend/technology that may inform an EA decision with explicit source, truth status, time and provenance. It is distinct from a product-specific security verdict or scanner risk score. |
 
 ## Data/AI evidence language
 
 Names such as data product, catalog asset, lineage, output port, glossary term and trust/certification belong primarily to the Data/AI Context. EA may store receipt-bound references/projections needed for an architecture assessment, improvement dependency or impact path, but must retain source ownership and truth origin. `data_management_*` projections in the current stack therefore describe EA decision evidence and remediation state, not a replacement catalog system of record.
+
+## Isolation and security evidence language
+
+Quarantine runtime technology/provider/version/lifecycle, ownership, remediation/transformation and attestation provenance may be projected as EA context only through a released compatible Context Graph contract. Sandbox internals stay in `quarantine-sandbox-runtime`; caller authorization/application selection stays in `contextual-orchestrator`; maliciousness verdicts, incidents and quarantine/block policy stay in Wardnet. Direct database access or source copying across these contexts is not part of the model.
 
 ## Naming and path discipline
 
