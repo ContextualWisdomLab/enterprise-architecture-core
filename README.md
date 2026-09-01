@@ -1,45 +1,100 @@
 # Enterprise Architecture Core
 
-`enterprise-architecture-core` is the authoritative enterprise architecture and transformation decision plane for the ContextualWisdomLab ecosystem.
+**The authoritative enterprise-architecture decision plane for ContextualWisdomLab.**
 
-It records business capabilities, applications, interfaces, technology components, lifecycle intervals, evidence, portfolio assessments, architecture objectives/initiatives, target-state scenarios, transformations, and transactional events. It is not a data catalog, physical database designer, workflow engine, or runtime graph store.
+Enterprise Architecture Core connects business capabilities, applications, interfaces, technologies, lifecycle evidence, portfolio assessments, and target-state transformations so an organization can answer a practical question: **what is affected, what should change, and what evidence supports that decision?**
 
-## What a buyer can decide
+It is built for enterprise architects, product and platform owners, transformation leads, and security/compliance reviewers who need current-state and target-state decisions to remain traceable over both business time and system-recorded time.
 
-The current development stack includes a **Technology Change Impact & Target-State Planner** plus separately authorized approval, scheduling, start, completion, target-state verification, post-verification monitoring, target-state replanning, and data-management reassessment request/status surfaces. Given a technology version plus explicit real-world and system-recording cutoffs, the planner joins lifecycle risk to affected applications and capabilities, receipt-backed physical-schema/Data-AI evidence, remediation initiative, target scenario, and transformation state. The result carries deterministic actions such as `approve_target_state`, `schedule_transformation`, `monitor_transformation`, `replan_target_state`, and `verify_target_state`.
+> This README describes the current candidate branch. Protected integration history remains shipped authority until this branch and its dependency stack pass current governance and merge.
 
-When the planner returns `approve_target_state`, an authorized human can submit the exact proposed transformation, UUIDv7 decision request, effective time, reason, and evidence reference. EA Core derives the actor from the verified Keyverse identity, appends authoritative transformation history, and emits the privacy-minimized transformation approval outbox event atomically. Exact retries are idempotent; conflicting reuse of a decision request fails closed.
+## Why it exists
 
-After approval, a separately authorized scheduler can bind that transformation to one existing authoritative milestone of the same remediation initiative. The milestone remains the source of target-date truth; EA Core records only the governed schedule binding, business/system time, verified actor/reason/evidence, and the privacy-minimized `org.contextualwisdomlab.ea.transformation.scheduled.v1` transactional outbox event. Scheduling does not invent project/task execution state.
+Architecture evidence is usually fragmented across repositories, catalogs, schema tools, lifecycle feeds, plans, and operational systems. That makes cross-product change questions expensive and error-prone: a technology reaches end of support, but no single decision surface can reliably connect it to affected applications, capabilities, evidence gaps, remediation work, and target-state verification.
 
-A separately authorized operator can then start the scheduled transformation and later record completion. Completion is deliberately non-final: an authorized verifier must record whether the approved target state was actually achieved. A `verified` outcome advances the buyer to `monitor_target_state`; a `gap_detected` outcome advances to `replan_target_state`. Each mutation derives the actor from Keyverse, requires explicit evidence and reason, appends immutable authoritative history, and emits its transactional outbox event atomically. The event payloads do not export the decision actor or reason.
+Enterprise Architecture Core provides a governed decision plane without turning itself into every adjacent system of record.
 
-After a verified outcome, a separately authorized monitoring read evaluates the exact bitemporal verification evidence against a bounded freshness policy. `current` directs the buyer to `continue_monitoring`, `stale` to `collect_new_target_state_evidence`, and `gap_detected` to `replan_target_state`. Monitoring itself is read-only. When evidence is stale, the buyer collects newer evidence and submits another human-authorized verification decision; EA Core appends a later `verified` or `gap_detected` observation without reopening execution or rewriting prior history. A detected gap remains terminal for that transformation and requires replanning. Inferred, proposed, stale, or foreign evidence never becomes authoritative success merely by being observed.
+| Need | What Enterprise Architecture Core provides |
+| --- | --- |
+| Architecture inventory | Business capability, application, interface, technology, lifecycle, and relationship records |
+| Time-aware truth | Separate valid/effective time and system-recorded time with evidence and truth origin |
+| Portfolio decisions | Evidence-preserving assessment reads and summaries without mixing incompatible scales |
+| Change impact | Technology-risk and affected-architecture projections for target-state planning |
+| Transformation governance | Human-authorized approval, scheduling, execution-state evidence, verification, monitoring, and replanning |
+| Data/AI improvement | Evidence-gap and reassessment loops that keep the source catalog authoritative |
+| Integration | Explicit contracts and references instead of cross-service application-table reads |
+| Auditability | Immutable history plus privacy-minimized transactional events for material changes |
 
-When a terminal transformation has `gap_detected`, a separately authorized replanner can create one new governed replacement transformation. The predecessor is not reopened or rewritten: EA Core links the replacement to the terminal predecessor, supersedes the predecessor, creates the replacement in `proposed`, records immutable replan evidence, and emits `org.contextualwisdomlab.ea.transformation.replanned.v1` in the same transaction. Exact retries return the same receipt; conflicting reuse, cross-tenant references, a non-gap predecessor, an already-superseded predecessor, or reuse of a replacement identifier fails closed. The buyer's next action is `approve_target_state`, so the replacement re-enters the same human-governed lifecycle rather than becoming a parallel workflow engine.
+## Product boundary
 
-The Data/AI Context assessment improvement loop is also actionable without duplicating catalog authority. EA Core may project a versioned assessment result, convert a missing-evidence gap into accountable proposed improvement work, accept receipt-bound evidence, and—only after the final projected gap is causally closed—allow a separately authorized operator to request reassessment. That request records immutable EA-side evidence and a privacy-minimized transactional event, then returns `await_assessment_recheck`. `semantic-data-portal` remains authoritative for the source assessment and any later reassessment result; EA Core never writes that foreign store.
+Enterprise Architecture Core owns enterprise-architecture **decision truth**. It does not replace the products that produce specialized evidence or execute unrelated workflows.
 
-A separately authorized reassessment-status read follows that immutable request without promoting foreign evidence. `awaiting_result` keeps the buyer waiting for a projected successor; an authoritative or observed successor yields `evidence_gap` with `plan_remaining_assessment_gap` or `evidence_complete` with `close_assessment_improvement_loop`. An inferred, proposed, superseded, or rejected successor yields `review_required` and `review_assessment_recheck_evidence`, so weak foreign truth can never silently close the improvement loop.
+```text
+Specialist evidence owners
+        │
+        │ released contracts / governed references
+        ▼
+┌──────────────────────────────────────┐
+│       Enterprise Architecture Core   │
+│                                      │
+│ inventory · assessment · target      │
+│ state · transformation decisions     │
+└──────────────────┬───────────────────┘
+                   │
+          governed decisions / events
+                   │
+                   ▼
+      product and platform consumers
+```
 
-`semantic-data-portal` remains the Data/AI Context system of record; `pg-erd-cloud` remains physical schema/design evidence; LineageWeave evidence remains inferred/proposed unless governed elsewhere. EA Core stores canonical references and receipt evidence rather than copying those products or querying their application tables.
+Key boundaries remain explicit:
 
-## Authority and time
+- **Semantic Data Portal** owns Data/AI Context source assessments and semantic catalog truth.
+- **pg-erd-cloud** owns physical schema/design evidence.
+- **LineageWeave** provides inferred lineage evidence; inference does not become authoritative EA truth automatically.
+- **Context Graph Contracts** owns shared interoperability contracts when an immutable released contract exists.
+- **Keyverse** owns identity and OIDC authority.
+- Product-specific runtime state, employee records, project/task execution, and arbitrary workflow orchestration remain outside this repository.
 
-The canonical write model is normalized PostgreSQL with UUIDv7 identity, canonical reference checks, typed relations, separate valid/system time, non-overlapping active intervals, tenant isolation, truth-origin/provenance guards, and transactional outbox evidence. Inferred/proposed evidence cannot silently become authoritative.
+## What you can do
 
-Target-state scenarios use immutable baselines plus ordered append-preserving object/relation deltas. `project_scenario_objects(uuid)` and `project_scenario_relations(uuid)` reconstruct target state without mutating authoritative facts. Requested-present relations whose projected source or target is absent remain auditable but cannot appear active.
+### Assess architecture and technology risk
 
-## Run the process and decision surface
+Maintain architecture inventory and lifecycle evidence, inspect tenant-scoped portfolio facts, and connect technology risk to affected applications and business capabilities without flattening evidence provenance.
+
+### Plan and govern target-state change
+
+Build target-state scenarios from immutable baselines plus ordered deltas, evaluate change impact, and move a transformation through separately authorized decisions. Verification is evidence-backed and append-only; a detected gap leads to governed replanning rather than silently rewriting the prior outcome.
+
+### Close evidence gaps without stealing source authority
+
+Project external assessment evidence through explicit contracts, create accountable EA-side remediation work, and request reassessment only when the evidence boundary permits it. The source product remains authoritative for its own assessment result.
+
+## Quickstart
+
+The current package is `enterprise-architecture-core` `0.1.0`, requires Python 3.11+, and uses a locked `uv` development environment.
 
 ```bash
 uv sync --extra dev --locked
 uv run --extra dev ea-core
 ```
 
-The process binds `0.0.0.0:$PORT`. Call `GET /health`, then `GET /ready`; a 503 means repair the false dependency before serving tenant traffic.
+The process binds to `0.0.0.0:$PORT`. Use liveness and readiness separately:
 
-The planner endpoint is:
+```bash
+curl -sS http://127.0.0.1:${PORT:-8000}/health
+curl -sS http://127.0.0.1:${PORT:-8000}/ready
+```
+
+`/health` proves the process is alive. A `503` from `/ready` means a required dependency or configuration boundary is not ready and should be repaired before serving tenant traffic.
+
+Production-style decision surfaces require reviewed PostgreSQL and Keyverse OIDC configuration. See [`docs/OPERABILITY.md`](docs/OPERABILITY.md), [`docs/SECURITY.md`](docs/SECURITY.md), and [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) rather than copying environment or database internals from examples.
+
+## API and integration context
+
+The service exposes provider-neutral HTTP contracts for architecture reads and governed decision workflows. The full request/response and authorization contract lives in [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md).
+
+A representative planning read is:
 
 ```text
 GET /v1/technology-target-state-plans/{technology_version_id}
@@ -48,143 +103,27 @@ GET /v1/technology-target-state-plans/{technology_version_id}
     &planning_horizon_days=<1..3650>
 ```
 
-The governed approval endpoint is:
+Mutating workflows require purpose-specific authorization and evidence. Callers do not get database-table authority, cannot supply a trusted decision actor in place of verified identity, and cannot promote inferred or foreign evidence into authoritative architecture truth by assertion.
 
-```text
-POST /v1/architecture-transformations/{architecture_transformation_id}/approval
-Content-Type: application/json
+## Architecture principles
 
-{
-  "decision_request_id": "<UUIDv7>",
-  "effective_at": "<CWL timestamp>",
-  "decision_reason_text": "<human decision reason>",
-  "evidence_record_id": "<UUIDv7>"
-}
-```
+- **Evidence before authority.** Material assertions retain provenance or an explicit omission decision.
+- **Bitemporal by design.** Business-effective and system-recorded time are distinct.
+- **Human-governed consequential change.** Model/inferred output can inform review but does not self-promote to authoritative decisions.
+- **Append, do not rewrite.** Verification, supersession, and replanning preserve prior decision history.
+- **3NF write model.** The relational authority model stays normalized rather than becoming an unbounded graph or JSON store.
+- **No cross-service table access.** Foreign products are consumed through released contracts, governed references, or adapters.
+- **Transactional evidence.** Material writes and their privacy-minimized outbox evidence are committed together.
 
-The governed scheduling endpoint is:
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/CONTEXT_MAP.md`](docs/CONTEXT_MAP.md), and [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) for the detailed design.
 
-```text
-POST /v1/architecture-transformations/{architecture_transformation_id}/schedule
-Content-Type: application/json
+## Quality and status
 
-{
-  "decision_request_id": "<UUIDv7>",
-  "initiative_milestone_id": "<UUIDv7>",
-  "effective_at": "<CWL timestamp>",
-  "decision_reason_text": "<human scheduling reason>",
-  "evidence_record_id": "<UUIDv7>"
-}
-```
+The source tree identifies the package as **0.1.0 / Alpha**. The repository's current quality contract includes Python 3.11–3.14 coverage, strict repository validation, PostgreSQL acceptance/rehearsal, installed-package smoke checks, contract validation, and an exact **100% owned production statement/branch coverage** threshold.
 
-The governed start endpoint is:
+Those are engineering gates, not claims of customer adoption, production scale, certification, or commercial readiness. Operational, security, release, and acquisition evidence remain separate and must be evaluated from their current artifacts.
 
-```text
-POST /v1/architecture-transformations/{architecture_transformation_id}/start
-Content-Type: application/json
-
-{
-  "decision_request_id": "<UUIDv7>",
-  "effective_at": "<CWL timestamp>",
-  "decision_reason_text": "<human start reason>",
-  "evidence_record_id": "<UUIDv7>"
-}
-```
-
-The governed completion endpoint is:
-
-```text
-POST /v1/architecture-transformations/{architecture_transformation_id}/complete
-Content-Type: application/json
-
-{
-  "decision_request_id": "<UUIDv7>",
-  "effective_at": "<CWL timestamp>",
-  "decision_reason_text": "<human completion reason>",
-  "evidence_record_id": "<UUIDv7>"
-}
-```
-
-The governed target-state verification endpoint is:
-
-```text
-POST /v1/architecture-transformations/{architecture_transformation_id}/verification
-Content-Type: application/json
-
-{
-  "decision_request_id": "<UUIDv7>",
-  "effective_at": "<CWL timestamp>",
-  "decision_reason_text": "<human verification reason>",
-  "evidence_record_id": "<UUIDv7>",
-  "verification_outcome_code": "verified"
-}
-```
-
-Use `verification_outcome_code: "verified"` only when the evidence demonstrates the approved target state was achieved. Use `"gap_detected"` when evidence shows a material target-state gap; the receipt then directs the operator to replan rather than silently declaring success. After an earlier `verified` result, the same endpoint accepts a later evidence-backed human decision so stale monitoring evidence can be refreshed append-only; it never rewrites prior verification history or reopens execution.
-
-The post-verification monitoring endpoint is:
-
-```text
-GET /v1/architecture-transformations/{architecture_transformation_id}/monitoring
-    ?valid_at=<CWL timestamp>
-    &recorded_at=<CWL timestamp>
-    &max_evidence_age_days=<1..3650>
-```
-
-The default evidence-age policy is 90 days when `max_evidence_age_days` is omitted. The response binds the returned evidence UUID, verification valid/system times, evidence age, monitoring state, and next action to the requested transformation.
-
-The governed target-state replanning endpoint is:
-
-```text
-POST /v1/architecture-transformations/{architecture_transformation_id}/replan
-Content-Type: application/json
-
-{
-  "decision_request_id": "<UUIDv7>",
-  "replacement_architecture_transformation_id": "<UUIDv7>",
-  "architecture_scenario_id": "<UUIDv7>",
-  "remediation_initiative_id": "<UUIDv7>",
-  "transformation_code": "database_target_state_v2",
-  "transformation_title": "Replace the gap-detected target state",
-  "transformation_description": "Describe the bounded replacement target state.",
-  "effective_at": "<CWL timestamp>",
-  "decision_reason_text": "<human replanning reason>",
-  "evidence_record_id": "<UUIDv7>"
-}
-```
-
-The path UUID identifies the terminal predecessor; the body must identify a distinct replacement. A fresh receipt returns `next_action: "approve_target_state"`; an exact idempotent replay returns the same immutable replan evidence with `replayed: true`.
-
-The governed Data/AI Context assessment reassessment-request endpoint is:
-
-```text
-POST /v1/data-management-assessments/{data_management_assessment_projection_id}/recheck
-Content-Type: application/json
-
-{
-  "trigger_evidence_acceptance_id": "<UUIDv7>",
-  "decision_request_id": "<UUIDv7>",
-  "requested_at": "<CWL timestamp>"
-}
-```
-
-The path UUID identifies the tenant-local EA projection, not a copied source assessment. The trigger must be the acceptance that actually closed the final projected evidence gap. The receipt returns immutable `assessment_recheck_request_id`, `outbox_event_id`, and `next_action: "await_assessment_recheck"`. An exact retry returns the same receipt; a conflicting decision request or a request that predates the triggering acceptance fails closed.
-
-All governed surfaces require a Keyverse RS256 bearer. Configure `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and `EA_READ_ROLES`. Configure `EA_APPROVAL_ROLES`, `EA_SCHEDULE_ROLES`, `EA_START_ROLES`, `EA_COMPLETE_ROLES`, `EA_VERIFY_ROLES`, `EA_MONITOR_ROLES`, `EA_REPLAN_ROLES`, `EA_DATA_MANAGEMENT_RECHECK_ROLES`, `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES`, `EA_PORTFOLIO_ASSESSMENT_READ_ROLES`, and `EA_PORTFOLIO_ASSESSMENT_SUMMARY_READ_ROLES` separately for their purpose-bound mutation or read boundaries. Signature, issuer, audience, expiration, tenant UUID, and the operation-specific role are verified before database access. JWKS retrieval is same-origin, redirect-denied, bounded, and fail-closed.
-
-The implemented buyer-facing portfolio reads are `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessments`, which returns explicit bitemporal facts, and `GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessment-summary`, which groups only identical framework/version/scale/dimension/cycle facts and returns deterministic evidence next actions. It never averages scores across different scales.
-
-Follow that immutable request through the purpose-bound status read:
-
-```text
-GET /v1/data-management-assessment-rechecks/{assessment_recheck_request_id}
-```
-
-Use the returned `recheck_state_code`, explicit `successor_truth_status_code`, evidence readiness/score/gap count, and `next_action` together. Only `authoritative` or `observed` successor truth can yield ordinary `evidence_gap` or `evidence_complete`; inferred/proposed/superseded/rejected successors are `review_required` even if their projected readiness appears complete.
-
-The `ea_runtime` login has no direct application-table authority. It receives only purpose-bound PostgreSQL functions after service-side verification, including `read_technology_target_state_plan(...)`, `approve_target_state(...)`, `schedule_transformation(...)`, `start_scheduled_transformation(...)`, `complete_started_transformation(...)`, `record_target_state_verification(...)`, `read_target_state_monitoring_status(...)`, `record_target_state_replan(...)`, `request_data_management_assessment_recheck_for_tenant(...)`, `read_data_management_assessment_recheck_status(...)`, and `read_portfolio_assessment_for_tenant(...)`. Callers cannot supply a transformation decision actor, and no surface grants direct access to foreign product stores.
-
-## Validation
+Run the local validation path with:
 
 ```bash
 uv sync --extra dev --locked
@@ -193,4 +132,27 @@ uv run --extra dev python -m coverage report
 uv run --extra dev python scripts/validate_repository.py
 ```
 
-CI additionally rehearses clean install/upgrade/rollback on real PostgreSQL, runtime-role isolation, the planner and full governed transformation lifecycle, post-verification monitoring/replanning, data-management evidence closure/reassessment/status reads, OpenAPI/AsyncAPI contracts, installed-package smoke, Python 3.11–3.14, exact 100% owned production statement/branch coverage, and exact-head package/SBOM evidence.
+## Documentation map
+
+| Topic | Source |
+| --- | --- |
+| Product requirements | [`docs/PRD.md`](docs/PRD.md) |
+| Architecture | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| DDD context map | [`docs/CONTEXT_MAP.md`](docs/CONTEXT_MAP.md) |
+| API contract | [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) |
+| Data model | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) |
+| Security | [`docs/SECURITY.md`](docs/SECURITY.md) |
+| Test strategy | [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) |
+| Operability | [`docs/OPERABILITY.md`](docs/OPERABILITY.md) |
+| Product/technical gaps | [`docs/product-technical-gap-baseline.md`](docs/product-technical-gap-baseline.md) |
+| Architecture decisions | [`docs/adr/README.md`](docs/adr/README.md) |
+
+## Contributing
+
+Start with the PRD, architecture, context map, and applicable ADR before changing a domain or integration contract. Keep implementation, tests, documentation, and public claims aligned to the same revision.
+
+If a defect belongs to a dedicated product or shared-contract owner, repair it there instead of introducing a local shadow implementation. New dependencies must be commercially usable under the intended distribution model and retain required provenance and attribution.
+
+## License
+
+Enterprise Architecture Core is licensed under the [Apache License 2.0](LICENSE).
