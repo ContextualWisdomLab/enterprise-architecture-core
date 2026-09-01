@@ -26,6 +26,27 @@ _REQUIRED_CONTEXT_FABRIC_CONNECTORS = {
     "appguardrail_security_evidence",
     "governance_risk_control_evidence",
 }
+_EXPECTED_OWNER_REPOSITORIES = {
+    "keyverse_oidc": "ContextualWisdomLab/keyverse",
+    "context_graph_contracts": "ContextualWisdomLab/context-graph-contracts",
+    "semantic_data_portal": "ContextualWisdomLab/semantic-data-portal",
+    "pg_erd_cloud": "ContextualWisdomLab/pg-erd-cloud",
+    "lineage_weave": "ContextualWisdomLab/LineageWeave",
+    "naruon_workspace": "ContextualWisdomLab/naruon",
+    "naruon_product_context": "ContextualWisdomLab/naruon",
+    "github_governance": "ContextualWisdomLab/.github",
+    "bandscope_product_context": "ContextualWisdomLab/bandscope",
+    "orgmetra_organization_context": "ContextualWisdomLab/Orgmetra",
+    "tepp_learning_context": "ContextualWisdomLab/TEPP",
+    "contextual_orchestrator_proposal": (
+        "ContextualWisdomLab/contextual-orchestrator"
+    ),
+    "wardnet_security_evidence": "ContextualWisdomLab/wardnet",
+    "appguardrail_security_evidence": "ContextualWisdomLab/appguardrail",
+    "governance_risk_control_evidence": (
+        "ContextualWisdomLab/governance-risk-compliance"
+    ),
+}
 _CONTEXT_CONTRACT_BOUND_DIRECTIONS = {
     "shared_envelope",
     "inbound_projection",
@@ -54,13 +75,28 @@ def test_checked_in_connector_catalog_covers_context_fabric_projection_neighbors
             encoding="utf-8"
         )
     )
-    assert validate_connector_catalog(document) == len(_REQUIRED_CONTEXT_FABRIC_CONNECTORS)
+    assert validate_connector_catalog(document) == len(
+        _REQUIRED_CONTEXT_FABRIC_CONNECTORS
+    )
     names = {connector["connector_name"] for connector in document["connectors"]}
     assert names == _REQUIRED_CONTEXT_FABRIC_CONNECTORS
 
 
-def test_projection_directions_preserve_foreign_product_authority(repository_root) -> None:
-    """Foreign product facts enter EA only through explicit inbound evidence/proposals."""
+def test_connector_catalog_uses_canonical_repository_owners(repository_root) -> None:
+    """Every connector uses one fully qualified repository identity for drill-down."""
+
+    document = _valid_catalog(repository_root)
+    actual_owners = {
+        connector["connector_name"]: connector["owner_repository"]
+        for connector in document["connectors"]
+    }
+    assert actual_owners == _EXPECTED_OWNER_REPOSITORIES
+
+
+def test_projection_directions_preserve_foreign_product_authority(
+    repository_root,
+) -> None:
+    """Foreign facts enter EA only through explicit evidence, proposal, or projection."""
 
     document = _valid_catalog(repository_root)
     by_name = {
@@ -81,8 +117,10 @@ def test_projection_directions_preserve_foreign_product_authority(repository_roo
         assert by_name[connector_name]["direction_code"] == "inbound_evidence"
 
 
-def test_context_projection_connectors_bind_shared_release_contract(repository_root) -> None:
-    """Architecture projections bind one release manifest and preserve context semantics."""
+def test_context_projection_connectors_bind_shared_release_contract(
+    repository_root,
+) -> None:
+    """Architecture projections bind one release manifest and preserve semantics."""
 
     document = _valid_catalog(repository_root)
     bound_connectors = [
@@ -92,12 +130,15 @@ def test_context_projection_connectors_bind_shared_release_contract(repository_r
     ]
     assert bound_connectors
     for connector in bound_connectors:
-        assert connector["context_contract_dependency"] == _CONTEXT_CONTRACT_DEPENDENCY
+        assert (
+            connector["context_contract_dependency"]
+            == _CONTEXT_CONTRACT_DEPENDENCY
+        )
         assert connector["preserved_semantics"] == _PRESERVED_CONTEXT_SEMANTICS
 
 
 def test_connector_catalog_rejects_unbound_context_projection(repository_root) -> None:
-    """A product projection cannot bypass the released Context Graph dependency manifest."""
+    """A product projection cannot bypass the released dependency manifest."""
 
     document = _valid_catalog(repository_root)
     connector = next(
@@ -106,7 +147,10 @@ def test_connector_catalog_rejects_unbound_context_projection(repository_root) -
         if connector["connector_name"] == "semantic_data_portal"
     )
     connector.pop("context_contract_dependency", None)
-    with pytest.raises(ContractValidationError, match="must bind context-graph-dependency"):
+    with pytest.raises(
+        ContractValidationError,
+        match="must bind context-graph-dependency",
+    ):
         validate_connector_catalog(document)
 
 
@@ -124,7 +168,10 @@ def test_connector_catalog_rejects_context_semantic_loss(repository_root) -> Non
         for semantic in connector.get("preserved_semantics", [])
         if semantic != "provenance"
     ]
-    with pytest.raises(ContractValidationError, match="preserve exact context semantics"):
+    with pytest.raises(
+        ContractValidationError,
+        match="preserve exact context semantics",
+    ):
         validate_connector_catalog(document)
 
 
@@ -179,7 +226,7 @@ def _valid_catalog(repository_root: Path) -> dict:
 
 
 def test_connector_requires_mapping_and_two_word_name(repository_root) -> None:
-    """Connector identities follow the same two-word naming rule as database objects."""
+    """Connector identities follow the two-word naming rule used for DB objects."""
 
     document = _valid_catalog(repository_root)
     document["connectors"][0] = []
@@ -189,7 +236,8 @@ def test_connector_requires_mapping_and_two_word_name(repository_root) -> None:
     document = _valid_catalog(repository_root)
     document["connectors"][0]["connector_name"] = 1
     with pytest.raises(
-        ContractValidationError, match="connector_name must be a string"
+        ContractValidationError,
+        match="connector_name must be a string",
     ):
         validate_connector_catalog(document)
 
