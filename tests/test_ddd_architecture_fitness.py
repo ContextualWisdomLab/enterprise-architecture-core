@@ -1,6 +1,7 @@
 """Machine-check bounded-context ownership and known DDD debt."""
 
 import ast
+import importlib
 from pathlib import Path
 
 _REQUIRED_DDD_DOCUMENTS = (
@@ -119,6 +120,14 @@ def test_legacy_service_path_is_only_a_compatibility_adapter() -> None:
         and node.module == "decision_plane_http"
         for node in legacy_tree.body
     )
+
+
+def test_legacy_service_import_delegates_to_the_same_module_object() -> None:
+    """Preserve monkeypatch and private-name behavior during the compatibility window."""
+
+    legacy_module = importlib.import_module("ea_core_foundation.service")
+    owner_module = importlib.import_module("ea_core_foundation.decision_plane_http")
+    assert legacy_module is owner_module
 
 
 def test_baseline_keeps_historical_package_debt_visible() -> None:
