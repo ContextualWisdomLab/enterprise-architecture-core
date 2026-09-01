@@ -386,8 +386,7 @@ BEGIN
      AND architecture_scenario.architecture_scenario_id =
          requested_scenario_id
      AND (
-        requested_recorded_at IS NULL
-        OR architecture_scenario.superseded_at IS NULL
+        architecture_scenario.superseded_at IS NULL
         OR architecture_scenario.superseded_at > requested_recorded_at
      )
      AND architecture_scenario.truth_status_code NOT IN
@@ -417,8 +416,7 @@ BEGIN
      AND architecture_scenario.architecture_scenario_id =
          requested_scenario_id
      AND (
-        requested_recorded_at IS NULL
-        OR architecture_scenario.superseded_at IS NULL
+        architecture_scenario.superseded_at IS NULL
         OR architecture_scenario.superseded_at > requested_recorded_at
      )
      AND architecture_scenario.truth_status_code NOT IN
@@ -462,8 +460,7 @@ BEGIN
        AND scenario_object_delta.architecture_scenario_id =
            requested_scenario_id
        AND (
-          requested_recorded_at IS NULL
-          OR scenario_object_delta.superseded_at IS NULL
+          scenario_object_delta.superseded_at IS NULL
           OR scenario_object_delta.superseded_at > requested_recorded_at
        )
        AND scenario_object_delta.truth_status_code NOT IN
