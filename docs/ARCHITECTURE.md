@@ -7,12 +7,20 @@ Keyverse
    │ OIDC identity
    ▼
 Enterprise Architecture Core
-   │ authoritative CloudEvents
+   │ authoritative architecture decisions / public events
    ├────────────► Semantic Data Portal / shared graph projection
    │
    ├◄──────────── pg-erd-cloud observed schema evidence
-   └◄──────────── LineageWeave inferred relation proposals
+   ├◄──────────── LineageWeave inferred relation proposals
+   │
+   └◄──────────── Quarantine Sandbox Runtime architecture context
+                    ▲                       ▲
+                    │ application-service   │ artifact-analysis
+                    │ lease                 │ evidence
+          contextual-orchestrator         Wardnet
 ```
+
+The diagram is a responsibility map, not a claim of a shared database or direct runtime dependency. Every cross-product exchange uses a released versioned package/API/event contract or a product-owned Anti-Corruption Layer.
 
 ## Ownership
 
@@ -26,7 +34,10 @@ Enterprise Architecture Core owns:
 - objective, initiative, scenario, and transformation decision.
 
 It does not own datasets, columns, data contracts, physical schema snapshots,
-inferred narrative lineage, credentials, or project execution status.
+inferred narrative lineage, credentials, hostile-workload sandbox lifecycle,
+malware verdicts, artifact risk scores, SOC incidents, or project execution status.
+
+Quarantine Sandbox Runtime independently owns reusable hostile-workload sandbox lifecycle, resource enforcement, cleanup, attestation and artifact-analysis evidence. `contextual-orchestrator` owns Chat/Agent/task/tool caller policy, authorization, application selection, secrets and user-visible actions when requesting application-service leases. Wardnet owns maliciousness verdict, incident and quarantine/block/notification/retention policy when consuming artifact-analysis evidence. EA may project only architecture-relevant runtime/backend identity, technology/provider/version, lifecycle, architecture-risk context, ownership, remediation/transformation and attestation provenance, with source truth and bitemporal provenance preserved.
 
 ## Write and read models
 
@@ -44,6 +55,8 @@ contract. Their hot-write indexes and storage headroom prepare a future
 partition cutover without making the current service depend on physical
 partition names or weakening tenant isolation.
 
+No connector may read another product's application tables or vendor-copy its source model. Foreign evidence is represented by canonical/source references, truth status, effective/system time and provenance through the accepted Context Graph release contract.
+
 ## Temporal and truth semantics
 
 Object revisions, relationships, identity links, lifecycle intervals,
@@ -53,6 +66,8 @@ at a date and what the system knew at a historical cutoff. Assessment truth
 uses the same explicit origin vocabulary as architecture assertions:
 authoritative or observed scores require evidence, while inferred/proposed
 scores remain reviewable without silently becoming authoritative.
+
+Runtime/security evidence follows the same rule. A quarantine attestation or artifact-analysis result can support an EA architecture-risk decision, but neither transport admission nor a runtime-produced malware/risk value becomes authoritative EA truth automatically. Wardnet's verdict authority also remains outside EA.
 
 ## Process surface
 

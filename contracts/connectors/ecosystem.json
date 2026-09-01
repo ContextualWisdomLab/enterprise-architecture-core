@@ -4,7 +4,7 @@
   "connectors": [
     {
       "connector_name": "keyverse_oidc",
-      "owner_repository": "keyverse",
+      "owner_repository": "ContextualWisdomLab/keyverse",
       "direction_code": "inbound_identity",
       "exchange_kind": "openid_connect",
       "ea_core_owns": false,
@@ -12,51 +12,288 @@
     },
     {
       "connector_name": "context_graph_contracts",
-      "owner_repository": "context-graph-contracts",
+      "owner_repository": "ContextualWisdomLab/context-graph-contracts",
       "direction_code": "shared_envelope",
       "exchange_kind": "cloudevents_json",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Consume the pinned CloudEvent envelope, canonical asset URI, and provenance schemas instead of publishing a local envelope copy."
     },
     {
       "connector_name": "semantic_data_portal",
-      "owner_repository": "semantic-data-portal",
-      "direction_code": "outbound_reference",
+      "owner_repository": "ContextualWisdomLab/semantic-data-portal",
+      "direction_code": "inbound_projection",
       "exchange_kind": "canonical_asset_uri",
       "ea_core_owns": false,
-      "next_action": "Link Data/AI context objects by canonical URI only. Do not copy glossary, lineage, or certification facts into this store."
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Project Data/AI context references into EA by canonical URI with source truth and provenance only; do not copy glossary, lineage, certification, or catalog authority into this store."
     },
     {
       "connector_name": "pg_erd_cloud",
-      "owner_repository": "pg-erd-cloud",
+      "owner_repository": "ContextualWisdomLab/pg-erd-cloud",
       "direction_code": "inbound_evidence",
       "exchange_kind": "observed_schema_reference",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Accept observed physical-schema evidence as reviewable provenance references. Keep snapshots in pg-erd-cloud."
     },
     {
       "connector_name": "lineage_weave",
-      "owner_repository": "LineageWeave",
+      "owner_repository": "ContextualWisdomLab/LineageWeave",
       "direction_code": "inbound_proposal",
       "exchange_kind": "inferred_relation_proposal",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Store inferred relations as proposed or inferred truth only. Require an explicit reviewed command before they become authoritative."
     },
     {
+      "connector_name": "naruon_product_context",
+      "owner_repository": "ContextualWisdomLab/naruon",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Project naruon deployable, API, provider, version, lifecycle, ownership, and risk changes by canonical reference while keeping workspace and product runtime facts authoritative in naruon."
+    },
+    {
       "connector_name": "naruon_workspace",
-      "owner_repository": "naruon",
+      "owner_repository": "ContextualWisdomLab/naruon",
       "direction_code": "outbound_event",
       "exchange_kind": "cloudevents_json",
       "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Publish architecture and lifecycle change events for workspace context. Do not open a SQL path from naruon into this database."
     },
     {
       "connector_name": "github_governance",
-      "owner_repository": ".github",
+      "owner_repository": "ContextualWisdomLab/.github",
       "direction_code": "inbound_policy",
       "exchange_kind": "repository_governance",
       "ea_core_owns": false,
       "next_action": "Keep CI, review, and release policy aligned with the organization .github repository rather than inventing a local governance fork."
+    },
+    {
+      "connector_name": "bandscope_product_context",
+      "owner_repository": "ContextualWisdomLab/bandscope",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Project BandScope deployable, API, provider, version, lifecycle, and risk changes by canonical reference with source provenance; keep BandScope runtime facts authoritative in bandscope."
+    },
+    {
+      "connector_name": "orgmetra_organization_context",
+      "owner_repository": "ContextualWisdomLab/Orgmetra",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Project only organization and deployable references needed for architecture decisions with exact truth and provenance; do not copy employee or HR records from Orgmetra."
+    },
+    {
+      "connector_name": "tepp_learning_context",
+      "owner_repository": "ContextualWisdomLab/TEPP",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Project TEPP service, package, API, database, provider, version, lifecycle, and risk changes as architecture context while keeping learning and research facts authoritative in TEPP."
+    },
+    {
+      "connector_name": "contextual_orchestrator_proposal",
+      "owner_repository": "ContextualWisdomLab/contextual-orchestrator",
+      "direction_code": "inbound_proposal",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Accept orchestration-generated architecture suggestions only as proposed or inferred context with provenance; require an authorized EA command before authoritative promotion."
+    },
+    {
+      "connector_name": "quarantine_sandbox_runtime",
+      "owner_repository": "ContextualWisdomLab/quarantine-sandbox-runtime",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "authority_scope": [
+        "isolation_runtime",
+        "artifact_analysis_evidence"
+      ],
+      "deployment_boundary": "independent_reusable_service",
+      "capabilities": [
+        "application_service_lease",
+        "artifact_analysis_evidence"
+      ],
+      "required_interactions": [
+        {
+          "source_repository": "ContextualWisdomLab/contextual-orchestrator",
+          "target_capability": "application_service_lease"
+        },
+        {
+          "source_repository": "ContextualWisdomLab/wardnet",
+          "target_capability": "artifact_analysis_evidence"
+        }
+      ],
+      "architecture_projection_scope": [
+        "runtime_identity",
+        "backend_technology",
+        "technology_provider",
+        "technology_version",
+        "lifecycle",
+        "architecture_risk_context",
+        "ownership",
+        "remediation",
+        "transformation",
+        "attestation_provenance"
+      ],
+      "forbidden_authoritative_facts": [
+        "malware_verdict",
+        "artifact_risk_score"
+      ],
+      "prohibited_integrations": [
+        "direct_database_access",
+        "source_copy"
+      ],
+      "next_action": "Project only runtime/backend identity, lifecycle, architecture risk context, ownership, remediation, transformation, and attestation provenance after released Context Graph admission. Keep sandbox lifecycle and analysis evidence authoritative in quarantine-sandbox-runtime; keep caller authorization/application selection in contextual-orchestrator and maliciousness verdicts/incidents in Wardnet."
+    },
+    {
+      "connector_name": "wardnet_security_evidence",
+      "owner_repository": "ContextualWisdomLab/wardnet",
+      "direction_code": "inbound_evidence",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Project Wardnet security-control and exposure evidence with its observed truth status, effective time, source reference, and provenance; keep detection authority in wardnet."
+    },
+    {
+      "connector_name": "appguardrail_security_evidence",
+      "owner_repository": "ContextualWisdomLab/appguardrail",
+      "direction_code": "inbound_evidence",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Project AppGuardrail application-security findings as evidence for affected architecture objects without promoting scanner output to authoritative architecture truth."
+    },
+    {
+      "connector_name": "governance_risk_control_evidence",
+      "owner_repository": "ContextualWisdomLab/governance-risk-compliance",
+      "direction_code": "inbound_evidence",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "next_action": "Project control, risk, and evidence references needed for architecture decisions while keeping compliance records and attestations authoritative in governance-risk-compliance."
     }
   ]
 }

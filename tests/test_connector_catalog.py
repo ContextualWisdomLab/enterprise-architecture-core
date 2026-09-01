@@ -8,22 +8,178 @@ import pytest
 
 from ea_core_foundation import ContractValidationError, validate_connector_catalog
 
+_REQUIRED_CONTEXT_FABRIC_CONNECTORS = {
+    "keyverse_oidc",
+    "context_graph_contracts",
+    "semantic_data_portal",
+    "pg_erd_cloud",
+    "lineage_weave",
+    "naruon_workspace",
+    "naruon_product_context",
+    "github_governance",
+    "bandscope_product_context",
+    "orgmetra_organization_context",
+    "tepp_learning_context",
+    "contextual_orchestrator_proposal",
+    "quarantine_sandbox_runtime",
+    "wardnet_security_evidence",
+    "appguardrail_security_evidence",
+    "governance_risk_control_evidence",
+}
+_EXPECTED_OWNER_REPOSITORIES = {
+    "keyverse_oidc": "ContextualWisdomLab/keyverse",
+    "context_graph_contracts": "ContextualWisdomLab/context-graph-contracts",
+    "semantic_data_portal": "ContextualWisdomLab/semantic-data-portal",
+    "pg_erd_cloud": "ContextualWisdomLab/pg-erd-cloud",
+    "lineage_weave": "ContextualWisdomLab/LineageWeave",
+    "naruon_workspace": "ContextualWisdomLab/naruon",
+    "naruon_product_context": "ContextualWisdomLab/naruon",
+    "github_governance": "ContextualWisdomLab/.github",
+    "bandscope_product_context": "ContextualWisdomLab/bandscope",
+    "orgmetra_organization_context": "ContextualWisdomLab/Orgmetra",
+    "tepp_learning_context": "ContextualWisdomLab/TEPP",
+    "contextual_orchestrator_proposal": (
+        "ContextualWisdomLab/contextual-orchestrator"
+    ),
+    "quarantine_sandbox_runtime": (
+        "ContextualWisdomLab/quarantine-sandbox-runtime"
+    ),
+    "wardnet_security_evidence": "ContextualWisdomLab/wardnet",
+    "appguardrail_security_evidence": "ContextualWisdomLab/appguardrail",
+    "governance_risk_control_evidence": (
+        "ContextualWisdomLab/governance-risk-compliance"
+    ),
+}
+_CONTEXT_CONTRACT_BOUND_DIRECTIONS = {
+    "shared_envelope",
+    "inbound_projection",
+    "inbound_evidence",
+    "inbound_proposal",
+    "outbound_event",
+}
+_CONTEXT_CONTRACT_DEPENDENCY = "contracts/context-graph-dependency.json"
+_PRESERVED_CONTEXT_SEMANTICS = [
+    "canonical_reference",
+    "source_reference",
+    "truth_status",
+    "effective_time",
+    "system_time",
+    "provenance",
+]
 
-def test_checked_in_connector_catalog_covers_owned_neighbors(
+
+def test_checked_in_connector_catalog_covers_context_fabric_projection_neighbors(
     repository_root,
 ) -> None:
-    """The catalog names the highest-leverage owned neighbors a buyer will connect."""
+    """The catalog names every accepted Context Fabric projection owner explicitly."""
 
     document = json.loads(
         (repository_root / "contracts/connectors/ecosystem.json").read_text(
             encoding="utf-8"
         )
     )
-    assert validate_connector_catalog(document) == 7
+    assert validate_connector_catalog(document) == len(
+        _REQUIRED_CONTEXT_FABRIC_CONNECTORS
+    )
     names = {connector["connector_name"] for connector in document["connectors"]}
-    assert "keyverse_oidc" in names
-    assert "context_graph_contracts" in names
-    assert "semantic_data_portal" in names
+    assert names == _REQUIRED_CONTEXT_FABRIC_CONNECTORS
+
+
+def test_connector_catalog_uses_canonical_repository_owners(repository_root) -> None:
+    """Every connector uses one fully qualified repository identity for drill-down."""
+
+    document = _valid_catalog(repository_root)
+    actual_owners = {
+        connector["connector_name"]: connector["owner_repository"]
+        for connector in document["connectors"]
+    }
+    assert actual_owners == _EXPECTED_OWNER_REPOSITORIES
+
+
+def test_projection_directions_preserve_foreign_product_authority(
+    repository_root,
+) -> None:
+    """Keep foreign facts behind explicit evidence, proposal, or projection."""
+
+    document = _valid_catalog(repository_root)
+    by_name = {
+        connector["connector_name"]: connector for connector in document["connectors"]
+    }
+    assert by_name["semantic_data_portal"]["direction_code"] == "inbound_projection"
+    assert by_name["naruon_product_context"]["direction_code"] == "inbound_projection"
+    assert (
+        by_name["quarantine_sandbox_runtime"]["direction_code"]
+        == "inbound_projection"
+    )
+    assert (
+        by_name["contextual_orchestrator_proposal"]["direction_code"]
+        == "inbound_proposal"
+    )
+    for connector_name in (
+        "pg_erd_cloud",
+        "wardnet_security_evidence",
+        "appguardrail_security_evidence",
+        "governance_risk_control_evidence",
+    ):
+        assert by_name[connector_name]["direction_code"] == "inbound_evidence"
+
+
+def test_context_projection_connectors_bind_shared_release_contract(
+    repository_root,
+) -> None:
+    """Architecture projections bind one release manifest and preserve semantics."""
+
+    document = _valid_catalog(repository_root)
+    bound_connectors = [
+        connector
+        for connector in document["connectors"]
+        if connector["direction_code"] in _CONTEXT_CONTRACT_BOUND_DIRECTIONS
+    ]
+    assert bound_connectors
+    for connector in bound_connectors:
+        assert (
+            connector["context_contract_dependency"]
+            == _CONTEXT_CONTRACT_DEPENDENCY
+        )
+        assert connector["preserved_semantics"] == _PRESERVED_CONTEXT_SEMANTICS
+
+
+def test_connector_catalog_rejects_unbound_context_projection(repository_root) -> None:
+    """A product projection cannot bypass the released dependency manifest."""
+
+    document = _valid_catalog(repository_root)
+    connector = next(
+        connector
+        for connector in document["connectors"]
+        if connector["connector_name"] == "semantic_data_portal"
+    )
+    connector.pop("context_contract_dependency", None)
+    with pytest.raises(
+        ContractValidationError,
+        match="must bind context-graph-dependency",
+    ):
+        validate_connector_catalog(document)
+
+
+def test_connector_catalog_rejects_context_semantic_loss(repository_root) -> None:
+    """Projection metadata cannot omit source, truth, time, or provenance identity."""
+
+    document = _valid_catalog(repository_root)
+    connector = next(
+        connector
+        for connector in document["connectors"]
+        if connector["connector_name"] == "wardnet_security_evidence"
+    )
+    connector["preserved_semantics"] = [
+        semantic
+        for semantic in connector.get("preserved_semantics", [])
+        if semantic != "provenance"
+    ]
+    with pytest.raises(
+        ContractValidationError,
+        match="preserve exact context semantics",
+    ):
+        validate_connector_catalog(document)
 
 
 def test_connector_catalog_rejects_wrong_version() -> None:
@@ -77,7 +233,7 @@ def _valid_catalog(repository_root: Path) -> dict:
 
 
 def test_connector_requires_mapping_and_two_word_name(repository_root) -> None:
-    """Connector identities follow the same two-word naming rule as database objects."""
+    """Connector identities follow the two-word naming rule used for DB objects."""
 
     document = _valid_catalog(repository_root)
     document["connectors"][0] = []
@@ -87,7 +243,8 @@ def test_connector_requires_mapping_and_two_word_name(repository_root) -> None:
     document = _valid_catalog(repository_root)
     document["connectors"][0]["connector_name"] = 1
     with pytest.raises(
-        ContractValidationError, match="connector_name must be a string"
+        ContractValidationError,
+        match="connector_name must be a string",
     ):
         validate_connector_catalog(document)
 

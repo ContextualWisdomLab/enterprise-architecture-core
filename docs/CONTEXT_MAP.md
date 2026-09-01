@@ -35,7 +35,7 @@ Owns immutable baselines and ordered deltas. A scenario is a candidate state, no
 
 ### Cross-Domain Evidence Projection
 
-Owns only the receipt, normalization and bitemporal projection needed for EA decisions. It must preserve the upstream owner, source identity, truth origin and receipt/provenance. It may not recreate the full foreign product model or write directly to another product's application tables.
+Owns only the receipt, normalization and bitemporal projection needed for EA decisions. It must preserve the upstream owner, source identity, truth origin, effective/system time and receipt/provenance. It may not recreate the full foreign product model or write directly to another product's application tables.
 
 ### Target-State Planner
 
@@ -43,14 +43,22 @@ Joins EA-owned architecture facts with accepted cross-domain evidence to answer:
 
 ## External Context Map
 
+All foreign product facts enter through released versioned `context-graph-contracts` assertions/events or another explicit versioned public contract. EA stores the minimum architecture projection needed for a decision and never treats receipt, transport or a foreign observation as authority transfer.
+
 | External context | Relationship | Boundary rule |
 | --- | --- | --- |
 | `context-graph-contracts` | Published Shared Kernel / upstream contract provider | EA consumes the immutable provider-neutral contract and uses an Anti-Corruption Layer for EA-specific semantics. Shared contract types do not own EA aggregates. |
-| Data/AI Context (`semantic-data-portal`) | Upstream evidence provider | The portal remains system of record for catalog assets, glossary, lineage, domains, data products, output ports, contracts and trust/certification. EA stores only the minimum receipt-bound projection required for an architecture decision. |
+| Data/AI Context (`semantic-data-portal`) | Upstream architecture/evidence projection | The portal remains system of record for catalog assets, glossary, lineage, domains, data products, output ports, contracts and trust/certification. EA keeps only canonical references and receipt-bound projection needed for an architecture decision. |
 | Physical Schema Evidence (`pg-erd-cloud`) | Upstream evidence provider | Physical schema/design facts remain owned there. EA may reference accepted evidence; it must not become a physical schema editor or duplicate that source of truth. |
 | Inferred Lineage (`LineageWeave`) | Upstream proposed/inferred evidence provider | Inferred lineage remains inferred/proposed unless an authoritative owner explicitly accepts it. EA must preserve origin and may not silently promote it. |
-| Orchestration (`contextual-orchestrator`) | Proposal-producing client | Orchestration may call EA commands through the public application/API boundary but may not directly mutate EA tables or change policy through prompt output. |
-| Naruon / buyer-facing clients | Downstream client | Presentation/search/assistant concerns remain outside the decision-plane domain. Clients consume stable APIs/events and accessible evidence views. |
+| Orchestration (`contextual-orchestrator`) | Upstream proposal producer + command client | Orchestration may project proposed/inferred architecture context and call authorized EA commands, but prompt/model output cannot directly mutate EA tables or become authoritative architecture truth. Orchestrator also remains the caller-policy owner when it requests application-service leases from Quarantine Sandbox Runtime. |
+| Quarantine Sandbox Runtime (`quarantine-sandbox-runtime`) | Independent reusable isolation runtime + evidence provider | The runtime owns hostile-workload sandbox lifecycle/resource enforcement/cleanup/attestation and artifact-analysis evidence. `contextual-orchestrator` calls the application-service lease capability; Wardnet calls artifact-analysis/evidence. EA may project runtime/backend identity, technology/provider/version, lifecycle, architecture-risk context, ownership, remediation/transformation and attestation provenance only through a released compatible Context Graph contract. Malware verdicts and artifact risk scores are never authoritative EA facts. No source copy or direct DB access is allowed. |
+| Naruon | Upstream product-context projection + downstream client | Naruon remains authoritative for its workspace/product runtime facts. Deployable/API/provider/version/lifecycle/risk changes may project into EA; EA architecture/lifecycle events may flow back through public events without cross-service SQL. |
+| BandScope (`bandscope`) | Upstream product-context projection | BandScope remains authoritative for its runtime/product facts. EA receives only canonical deployable/API/provider/version/lifecycle/risk projections with source provenance. |
+| Organization context (`Orgmetra`) | Upstream bounded organization/product projection | Project only organization/deployable references required for EA decisions. Employee, HR and assessment records remain in Orgmetra and are not copied into the EA store. |
+| Learning/research platform (`TEPP`) | Upstream product-context projection | Project architecture-relevant service/package/API/database/provider/version/lifecycle/risk changes. Learning/research facts remain authoritative in TEPP. |
+| Security posture (`wardnet`, `appguardrail`) | Upstream observed security evidence | Findings may influence architecture risk/impact decisions only with preserved source, truth status, effective/system time and provenance. Scanner/detection output is not silently promoted to authoritative architecture truth. Wardnet additionally owns maliciousness verdict, incident and quarantine/block/notification/retention policy even when it consumes Quarantine Sandbox Runtime analysis evidence. |
+| Governance/Risk/Compliance (`governance-risk-compliance`) | Upstream control/risk evidence | EA references control, risk and evidence needed for architecture decisions; compliance records and attestations remain authoritative in the GRC product. |
 
 ## Dependency rules
 
