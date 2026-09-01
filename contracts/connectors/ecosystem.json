@@ -189,6 +189,62 @@
       "next_action": "Accept orchestration-generated architecture suggestions only as proposed or inferred context with provenance; require an authorized EA command before authoritative promotion."
     },
     {
+      "connector_name": "quarantine_sandbox_runtime",
+      "owner_repository": "ContextualWisdomLab/quarantine-sandbox-runtime",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "authority_scope": [
+        "isolation_runtime",
+        "artifact_analysis_evidence"
+      ],
+      "deployment_boundary": "independent_reusable_service",
+      "capabilities": [
+        "application_service_lease",
+        "artifact_analysis_evidence"
+      ],
+      "required_interactions": [
+        {
+          "source_repository": "ContextualWisdomLab/contextual-orchestrator",
+          "target_capability": "application_service_lease"
+        },
+        {
+          "source_repository": "ContextualWisdomLab/wardnet",
+          "target_capability": "artifact_analysis_evidence"
+        }
+      ],
+      "architecture_projection_scope": [
+        "runtime_identity",
+        "backend_technology",
+        "technology_provider",
+        "technology_version",
+        "lifecycle",
+        "architecture_risk_context",
+        "ownership",
+        "remediation",
+        "transformation",
+        "attestation_provenance"
+      ],
+      "forbidden_authoritative_facts": [
+        "malware_verdict",
+        "artifact_risk_score"
+      ],
+      "prohibited_integrations": [
+        "direct_database_access",
+        "source_copy"
+      ],
+      "next_action": "Project only runtime/backend identity, lifecycle, architecture risk context, ownership, remediation, transformation, and attestation provenance after released Context Graph admission. Keep sandbox lifecycle and analysis evidence authoritative in quarantine-sandbox-runtime; keep caller authorization/application selection in contextual-orchestrator and maliciousness verdicts/incidents in Wardnet."
+    },
+    {
       "connector_name": "wardnet_security_evidence",
       "owner_repository": "ContextualWisdomLab/wardnet",
       "direction_code": "inbound_evidence",
