@@ -26,6 +26,22 @@ _REQUIRED_CONTEXT_FABRIC_CONNECTORS = {
     "appguardrail_security_evidence",
     "governance_risk_control_evidence",
 }
+_CONTEXT_CONTRACT_BOUND_DIRECTIONS = {
+    "shared_envelope",
+    "inbound_projection",
+    "inbound_evidence",
+    "inbound_proposal",
+    "outbound_event",
+}
+_CONTEXT_CONTRACT_DEPENDENCY = "contracts/context-graph-dependency.json"
+_PRESERVED_CONTEXT_SEMANTICS = [
+    "canonical_reference",
+    "source_reference",
+    "truth_status",
+    "effective_time",
+    "system_time",
+    "provenance",
+]
 
 
 def test_checked_in_connector_catalog_covers_context_fabric_projection_neighbors(
@@ -63,6 +79,53 @@ def test_projection_directions_preserve_foreign_product_authority(repository_roo
         "governance_risk_control_evidence",
     ):
         assert by_name[connector_name]["direction_code"] == "inbound_evidence"
+
+
+def test_context_projection_connectors_bind_shared_release_contract(repository_root) -> None:
+    """Architecture projections bind one release manifest and preserve context semantics."""
+
+    document = _valid_catalog(repository_root)
+    bound_connectors = [
+        connector
+        for connector in document["connectors"]
+        if connector["direction_code"] in _CONTEXT_CONTRACT_BOUND_DIRECTIONS
+    ]
+    assert bound_connectors
+    for connector in bound_connectors:
+        assert connector["context_contract_dependency"] == _CONTEXT_CONTRACT_DEPENDENCY
+        assert connector["preserved_semantics"] == _PRESERVED_CONTEXT_SEMANTICS
+
+
+def test_connector_catalog_rejects_unbound_context_projection(repository_root) -> None:
+    """A product projection cannot bypass the released Context Graph dependency manifest."""
+
+    document = _valid_catalog(repository_root)
+    connector = next(
+        connector
+        for connector in document["connectors"]
+        if connector["connector_name"] == "semantic_data_portal"
+    )
+    connector.pop("context_contract_dependency", None)
+    with pytest.raises(ContractValidationError, match="must bind context-graph-dependency"):
+        validate_connector_catalog(document)
+
+
+def test_connector_catalog_rejects_context_semantic_loss(repository_root) -> None:
+    """Projection metadata cannot omit source, truth, time, or provenance identity."""
+
+    document = _valid_catalog(repository_root)
+    connector = next(
+        connector
+        for connector in document["connectors"]
+        if connector["connector_name"] == "wardnet_security_evidence"
+    )
+    connector["preserved_semantics"] = [
+        semantic
+        for semantic in connector.get("preserved_semantics", [])
+        if semantic != "provenance"
+    ]
+    with pytest.raises(ContractValidationError, match="preserve exact context semantics"):
+        validate_connector_catalog(document)
 
 
 def test_connector_catalog_rejects_wrong_version() -> None:
