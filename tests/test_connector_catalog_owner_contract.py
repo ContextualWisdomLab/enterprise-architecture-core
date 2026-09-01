@@ -28,3 +28,26 @@ def test_connector_catalog_rejects_unqualified_repository_owner(
         match="canonical ContextualWisdomLab repository",
     ):
         validate_connector_catalog(document)
+
+
+def test_connector_catalog_rejects_repository_owner_with_extra_path_segment(
+    repository_root,
+) -> None:
+    """Repository identity must name exactly one owner/repository pair."""
+
+    document = json.loads(
+        (repository_root / "contracts/connectors/ecosystem.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    connector = next(
+        connector
+        for connector in document["connectors"]
+        if connector["connector_name"] == "semantic_data_portal"
+    )
+    connector["owner_repository"] = "ContextualWisdomLab/semantic-data-portal/legacy"
+    with pytest.raises(
+        ContractValidationError,
+        match="canonical ContextualWisdomLab repository",
+    ):
+        validate_connector_catalog(document)
