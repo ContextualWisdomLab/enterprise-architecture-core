@@ -1,13 +1,12 @@
 """Ecosystem connector catalog regressions."""
 
-import json
 from copy import deepcopy
+import json
 from pathlib import Path
 
 import pytest
 
 from ea_core_foundation import ContractValidationError, validate_connector_catalog
-
 
 _REQUIRED_CONTEXT_FABRIC_CONNECTORS = {
     "keyverse_oidc",
@@ -100,7 +99,7 @@ def test_connector_catalog_uses_canonical_repository_owners(repository_root) -> 
 def test_projection_directions_preserve_foreign_product_authority(
     repository_root,
 ) -> None:
-    """Foreign facts enter EA only through explicit evidence, proposal, or projection."""
+    """Keep foreign facts behind explicit evidence, proposal, or projection."""
 
     document = _valid_catalog(repository_root)
     by_name = {
