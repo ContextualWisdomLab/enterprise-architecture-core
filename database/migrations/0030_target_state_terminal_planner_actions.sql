@@ -211,7 +211,10 @@ BEGIN
              technology_impact.application_object_id
          AND scenario_object.is_present
         LEFT JOIN LATERAL (
-          SELECT projected_state.transformation_state_code
+          SELECT
+            projected_state.transformation_state_code,
+            projected_state.effective_at,
+            projected_state.recorded_at
             FROM architecture_core.project_transformation_state(
                 active_transformation.architecture_transformation_id,
                 assessment_valid_at,
@@ -219,7 +222,9 @@ BEGIN
             ) AS projected_state
         ) AS transformation_state ON true
        ORDER BY
-         active_transformation.architecture_transformation_id
+         transformation_state.effective_at DESC NULLS LAST,
+         transformation_state.recorded_at DESC NULLS LAST,
+         active_transformation.architecture_transformation_id DESC
        LIMIT 1
     ) AS transformation_match ON true
    ORDER BY
@@ -236,7 +241,7 @@ COMMENT ON FUNCTION architecture_core.project_technology_target_state_plan(
     timestamptz,
     integer
 ) IS
-'Projects the tenant-scoped Technology Change Impact and Target-State Planner through terminal verification: verified targets route through the evidence-freshness monitoring boundary before any continue-monitoring decision, while gap-detected, cancelled, or rejected targets route to governed replanning. The read-only projector preserves bitemporal cutoffs and foreign truth/evidence authority.';
+'Projects the tenant-scoped Technology Change Impact and Target-State Planner through terminal verification: when multiple governed transformations share a scenario, the planner selects the latest bitemporally visible transformation state rather than an arbitrary transformation identifier; verified targets route through the evidence-freshness monitoring boundary before any continue-monitoring decision, while gap-detected, cancelled, or rejected targets route to governed replanning. The read-only projector preserves bitemporal cutoffs and foreign truth/evidence authority.';
 
 -- Carry the scenario projector repair forward instead of rewriting migration 0012.
 -- NULL is the current-system-time mode: only unsuperseded facts participate.
