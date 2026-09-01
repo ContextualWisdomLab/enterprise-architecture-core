@@ -1,5 +1,7 @@
 # Enterprise Architecture Core
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ContextualWisdomLab/enterprise-architecture-core)
+
 Enterprise Architecture Core is ContextualWisdomLab’s **enterprise architecture decision plane**. Buyers and operators use it to record target-state, capability, and transformation decisions, and to publish the contracts other hosts call. It is independently operable. Hosts consume what this repository publishes. They do not check out sibling CWL repositories to reconstruct the plane.
 
 The plane describes architecture. It does not become the system of record for employment or psychometric computation.
