@@ -31,6 +31,46 @@ _PRESERVED_CONTEXT_SEMANTICS = (
     "system_time",
     "provenance",
 )
+_QUARANTINE_CONNECTOR_NAME = "quarantine_sandbox_runtime"
+_QUARANTINE_OWNER_REPOSITORY = "ContextualWisdomLab/quarantine-sandbox-runtime"
+_QUARANTINE_AUTHORITY_SCOPE = (
+    "isolation_runtime",
+    "artifact_analysis_evidence",
+)
+_QUARANTINE_CAPABILITIES = (
+    "application_service_lease",
+    "artifact_analysis_evidence",
+)
+_QUARANTINE_INTERACTIONS = (
+    {
+        "source_repository": "ContextualWisdomLab/contextual-orchestrator",
+        "target_capability": "application_service_lease",
+    },
+    {
+        "source_repository": "ContextualWisdomLab/wardnet",
+        "target_capability": "artifact_analysis_evidence",
+    },
+)
+_QUARANTINE_PROJECTION_SCOPE = (
+    "runtime_identity",
+    "backend_technology",
+    "technology_provider",
+    "technology_version",
+    "lifecycle",
+    "architecture_risk_context",
+    "ownership",
+    "remediation",
+    "transformation",
+    "attestation_provenance",
+)
+_QUARANTINE_FORBIDDEN_AUTHORITATIVE_FACTS = (
+    "malware_verdict",
+    "artifact_risk_score",
+)
+_QUARANTINE_PROHIBITED_INTEGRATIONS = (
+    "direct_database_access",
+    "source_copy",
+)
 
 
 def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
@@ -55,12 +95,78 @@ def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
         )
 
 
+def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
+    """Keep quarantine isolation/evidence reusable without importing verdict authority."""
+
+    if connector.get("owner_repository") != _QUARANTINE_OWNER_REPOSITORY:
+        raise ContractValidationError(
+            "quarantine runtime owner_repository must be "
+            "ContextualWisdomLab/quarantine-sandbox-runtime"
+        )
+    if connector.get("authority_scope") != list(_QUARANTINE_AUTHORITY_SCOPE):
+        raise ContractValidationError(
+            "quarantine runtime authority_scope must remain isolation runtime and "
+            "artifact-analysis evidence"
+        )
+    if connector.get("deployment_boundary") != "independent_reusable_service":
+        raise ContractValidationError(
+            "quarantine runtime must remain independently deployable and reusable"
+        )
+    if connector.get("capabilities") != list(_QUARANTINE_CAPABILITIES):
+        raise ContractValidationError(
+            "quarantine runtime capabilities must include application-service lease "
+            "and artifact-analysis evidence"
+        )
+    if connector.get("required_interactions") != list(_QUARANTINE_INTERACTIONS):
+        raise ContractValidationError(
+            "quarantine runtime must declare required directional interactions from "
+            "contextual-orchestrator and Wardnet"
+        )
+    if connector.get("architecture_projection_scope") != list(
+        _QUARANTINE_PROJECTION_SCOPE
+    ):
+        raise ContractValidationError(
+            "quarantine runtime architecture projection scope must remain bounded to "
+            "runtime/backend/lifecycle/remediation context"
+        )
+    if connector.get("forbidden_authoritative_facts") != list(
+        _QUARANTINE_FORBIDDEN_AUTHORITATIVE_FACTS
+    ):
+        raise ContractValidationError(
+            "quarantine runtime must declare malware verdict and artifact risk score "
+            "as forbidden authoritative facts"
+        )
+    prohibited_integrations = connector.get("prohibited_integrations")
+    if prohibited_integrations != list(_QUARANTINE_PROHIBITED_INTEGRATIONS):
+        raise ContractValidationError(
+            "quarantine runtime boundary must prohibit direct database access and "
+            "source copy"
+        )
+
+
+def _require_quarantine_runtime_boundary(document: Mapping[str, Any]) -> None:
+    """Require exactly one explicit quarantine runtime boundary in the connector map."""
+
+    quarantine_connectors = [
+        connector
+        for connector in document["connectors"]
+        if isinstance(connector, Mapping)
+        and connector.get("connector_name") == _QUARANTINE_CONNECTOR_NAME
+    ]
+    if len(quarantine_connectors) != 1:
+        raise ContractValidationError(
+            "connector catalog must declare exactly one quarantine_sandbox_runtime"
+        )
+    _validate_quarantine_runtime_boundary(quarantine_connectors[0])
+
+
 def validate_connector_catalog(document: Mapping[str, Any]) -> int:
     """Validate connector ownership plus shared Context Graph release bindings."""
 
     connector_count = base.validate_connector_catalog(document)
     for connector in document["connectors"]:
         _validate_context_contract_binding(connector)
+    _require_quarantine_runtime_boundary(document)
     return connector_count
 
 
