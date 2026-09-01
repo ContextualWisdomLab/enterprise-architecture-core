@@ -11,11 +11,6 @@ from . import validation_data_management_recheck_status as base
 
 ContractValidationError = base.ContractValidationError
 RepositoryReport = base.RepositoryReport
-validate_asyncapi_document = base.validate_asyncapi_document
-validate_migration_inventory = base.validate_migration_inventory
-validate_migration_sql = base.validate_migration_sql
-validate_openapi_document = base.validate_openapi_document
-validate_openapi_runtime_surface = base.validate_openapi_runtime_surface
 
 _CONTEXT_CONTRACT_BOUND_DIRECTIONS = frozenset(
     {
@@ -64,8 +59,7 @@ def validate_connector_catalog(document: Mapping[str, Any]) -> int:
     """Validate connector ownership plus shared Context Graph release bindings."""
 
     connector_count = base.validate_connector_catalog(document)
-    for connector_value in document["connectors"]:
-        connector = base.core._require_mapping(connector_value, "connector")
+    for connector in document["connectors"]:
         _validate_context_contract_binding(connector)
     return connector_count
 
