@@ -21,10 +21,10 @@
     {
       "connector_name": "semantic_data_portal",
       "owner_repository": "semantic-data-portal",
-      "direction_code": "outbound_reference",
+      "direction_code": "inbound_projection",
       "exchange_kind": "canonical_asset_uri",
       "ea_core_owns": false,
-      "next_action": "Link Data/AI context objects by canonical URI only. Do not copy glossary, lineage, or certification facts into this store."
+      "next_action": "Project Data/AI context references into EA by canonical URI with source truth and provenance only; do not copy glossary, lineage, certification, or catalog authority into this store."
     },
     {
       "connector_name": "pg_erd_cloud",
@@ -41,6 +41,14 @@
       "exchange_kind": "inferred_relation_proposal",
       "ea_core_owns": false,
       "next_action": "Store inferred relations as proposed or inferred truth only. Require an explicit reviewed command before they become authoritative."
+    },
+    {
+      "connector_name": "naruon_product_context",
+      "owner_repository": "naruon",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "next_action": "Project naruon deployable, API, provider, version, lifecycle, ownership, and risk changes by canonical reference while keeping workspace and product runtime facts authoritative in naruon."
     },
     {
       "connector_name": "naruon_workspace",
