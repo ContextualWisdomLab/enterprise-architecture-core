@@ -18,6 +18,9 @@ purpose-bound function boundary.
 - Historical changes close intervals; they do not overwrite history.
 - Every table, index, and named constraint uses two or more snake-case words.
 - Graph projections are disposable and rebuildable from authoritative events.
+- Append-only evidence, receipt, outbox, and transformation-history boundaries
+  expose a deterministic tenant-derived hot-write routing contract; physical
+  HASH/LIST partitioning requires a separately measured migration.
 
 ## Identity and authorization
 

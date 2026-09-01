@@ -46,6 +46,8 @@ application is replaced.
 
 - Accepted architecture decisions are internally consistent.
 - The initial migration passes naming, temporal, outbox, and 3NF review gates.
+- Append-only write boundaries expose measured hot-write preparation without
+  claiming physical partition deployment.
 - OpenAPI identifies Keyverse verification requirements and the implemented
   health/ready process surface.
 - AsyncAPI publishes object and lifecycle change contracts.

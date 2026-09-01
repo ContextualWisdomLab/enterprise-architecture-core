@@ -38,6 +38,12 @@ atomically. Consumers build graph, search, matrix, or analytics projections from
 the events. A projection can be deleted and rebuilt without changing
 authoritative history.
 
+Append-only evidence, inbound receipts, outbox events, and transformation
+history expose the same deterministic tenant-derived 16-bucket routing
+contract. Their hot-write indexes and storage headroom prepare a future
+partition cutover without making the current service depend on physical
+partition names or weakening tenant isolation.
+
 ## Temporal and truth semantics
 
 Object revisions, relationships, identity links, lifecycle intervals,

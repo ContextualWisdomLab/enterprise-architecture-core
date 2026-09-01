@@ -42,6 +42,10 @@ OpenLineage Project. (2026). *OpenLineage specification*. Linux Foundation. http
 
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Constraints*. https://www.postgresql.org/docs/18/ddl-constraints.html
 
+PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Table partitioning*. https://www.postgresql.org/docs/18/ddl-partitioning.html
+
+PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: CREATE INDEX*. https://www.postgresql.org/docs/18/sql-createindex.html
+
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Database connection control functions*. https://www.postgresql.org/docs/18/libpq-connect.html
 
 PostgreSQL Global Development Group. (2026). *PostgreSQL 18 documentation: Environment variables*. https://www.postgresql.org/docs/18/libpq-envars.html
