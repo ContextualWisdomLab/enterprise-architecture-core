@@ -16,6 +16,7 @@ _REQUIRED_CONTEXT_FABRIC_CONNECTORS = {
     "pg_erd_cloud",
     "lineage_weave",
     "naruon_workspace",
+    "naruon_product_context",
     "github_governance",
     "bandscope_product_context",
     "orgmetra_organization_context",
@@ -40,6 +41,28 @@ def test_checked_in_connector_catalog_covers_context_fabric_projection_neighbors
     assert validate_connector_catalog(document) == len(_REQUIRED_CONTEXT_FABRIC_CONNECTORS)
     names = {connector["connector_name"] for connector in document["connectors"]}
     assert names == _REQUIRED_CONTEXT_FABRIC_CONNECTORS
+
+
+def test_projection_directions_preserve_foreign_product_authority(repository_root) -> None:
+    """Foreign product facts enter EA only through explicit inbound evidence/proposals."""
+
+    document = _valid_catalog(repository_root)
+    by_name = {
+        connector["connector_name"]: connector for connector in document["connectors"]
+    }
+    assert by_name["semantic_data_portal"]["direction_code"] == "inbound_projection"
+    assert by_name["naruon_product_context"]["direction_code"] == "inbound_projection"
+    assert (
+        by_name["contextual_orchestrator_proposal"]["direction_code"]
+        == "inbound_proposal"
+    )
+    for connector_name in (
+        "pg_erd_cloud",
+        "wardnet_security_evidence",
+        "appguardrail_security_evidence",
+        "governance_risk_control_evidence",
+    ):
+        assert by_name[connector_name]["direction_code"] == "inbound_evidence"
 
 
 def test_connector_catalog_rejects_wrong_version() -> None:
