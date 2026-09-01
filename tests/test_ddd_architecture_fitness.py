@@ -123,7 +123,7 @@ def test_legacy_service_path_is_only_a_compatibility_adapter() -> None:
 
 
 def test_legacy_service_import_delegates_to_the_same_module_object() -> None:
-    """Preserve monkeypatch and private-name behavior during the compatibility window."""
+    """Preserve module identity through the compatibility window."""
 
     legacy_module = importlib.import_module("ea_core_foundation.service")
     owner_module = importlib.import_module("ea_core_foundation.decision_plane_http")
