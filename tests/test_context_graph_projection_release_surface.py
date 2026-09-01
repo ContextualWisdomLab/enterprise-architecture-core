@@ -2,7 +2,6 @@
 
 import json
 
-
 _REQUIRED_PROJECTION_SCHEMA_IDS = {
     "https://schemas.contextualwisdomlab.org/context/"
     "canonical-authority-uri.v1.schema.json",
