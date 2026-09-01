@@ -79,7 +79,13 @@ def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
     """Require architecture projections to bind one canonical owner and release."""
 
     owner_repository = connector.get("owner_repository")
-    if not str(owner_repository).startswith(_OWNER_REPOSITORY_PREFIX):
+    repository_name = (
+        owner_repository[len(_OWNER_REPOSITORY_PREFIX) :]
+        if isinstance(owner_repository, str)
+        and owner_repository.startswith(_OWNER_REPOSITORY_PREFIX)
+        else ""
+    )
+    if not repository_name or "/" in repository_name:
         raise ContractValidationError(
             "connector owner_repository must name a canonical "
             "ContextualWisdomLab repository"
