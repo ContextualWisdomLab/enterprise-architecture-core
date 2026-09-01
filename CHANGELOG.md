@@ -47,6 +47,7 @@
 
 ### Fixed
 
+- Isolate the target-state terminal-planner PostgreSQL acceptance fixture from an older active transformation that shares its scenario/remediation path. The predecessor exact head selected the lower legacy transformation UUID and therefore observed `started` instead of the intended verified terminal state; the repair temporarily supersedes only that competing fixture inside the test transaction and rolls it back afterward, preserving the later historical planner acceptance without changing production planner ordering or weakening any gate.
 - Reject reassessment successor evidence whose knowledge cutoff predates the governed reassessment request even when the EA-local projection arrives later, so stale foreign knowledge cannot advance a newly requested remediation loop merely because system recording time is fresh.
 - Follow append-only reassessment-result supersession to the current terminal projection, with an executable 32-hop bound, so a proposed/inferred result can be superseded by reviewed evidence without pinning the buyer forever to stale `review_required` state or allowing unbounded traversal.
 - Bind reassessment admission to recorded transactional causation instead of caller-controlled `accepted_at` ordering, so an earlier acceptance with a later business timestamp cannot displace the acceptance that actually closed the final projected gap; executable PostgreSQL coverage preserves concurrency/idempotency and the test strategy states the same valid-time/system-recorded-time boundary.
