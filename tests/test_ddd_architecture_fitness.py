@@ -91,8 +91,38 @@ def test_domain_code_does_not_import_foreign_product_implementations() -> None:
     assert offenders == []
 
 
+def test_legacy_service_path_is_only_a_compatibility_adapter() -> None:
+    """Keep new decision-plane behavior out of the historical generic service path."""
+
+    legacy_path = Path("src/ea_core_foundation/service.py")
+    owner_path = Path("src/ea_core_foundation/decision_plane_http.py")
+    assert owner_path.is_file()
+
+    legacy_tree = ast.parse(
+        legacy_path.read_text(encoding="utf-8"),
+        filename=str(legacy_path),
+    )
+    behavior_nodes = (
+        ast.ClassDef,
+        ast.FunctionDef,
+        ast.AsyncFunctionDef,
+        ast.If,
+        ast.For,
+        ast.While,
+        ast.Try,
+        ast.With,
+    )
+    assert not any(isinstance(node, behavior_nodes) for node in ast.walk(legacy_tree))
+    assert any(
+        isinstance(node, ast.ImportFrom)
+        and node.level == 1
+        and node.module == "decision_plane_http"
+        for node in legacy_tree.body
+    )
+
+
 def test_baseline_keeps_historical_package_debt_visible() -> None:
-    """Keep the foundation-era package and broad service module visible as debt."""
+    """Keep the foundation-era package and remaining path debt visible."""
 
     baseline = Path("docs/product-technical-gap-baseline.md").read_text(
         encoding="utf-8"
