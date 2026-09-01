@@ -260,6 +260,66 @@ BEGIN
 END;
 $$;
 
+DO $$
+DECLARE
+  current_present boolean;
+  current_sequence integer;
+  historical_present boolean;
+  historical_sequence integer;
+  historical_scenario_count integer;
+BEGIN
+  UPDATE architecture_core.scenario_object_delta
+     SET superseded_at = '2100-01-01T00:00:00Z'
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND scenario_object_delta_id = '0196c020-1111-7111-8111-111111111113';
+
+  SELECT is_present, applied_sequence_number
+    INTO current_present, current_sequence
+    FROM architecture_core.project_scenario_objects(
+        '0196c010-1111-7111-8111-111111111111')
+   WHERE architecture_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb903';
+
+  SELECT is_present, applied_sequence_number
+    INTO historical_present, historical_sequence
+    FROM architecture_core.project_scenario_objects_at(
+        '0196c010-1111-7111-8111-111111111111',
+        '2099-01-01T00:00:00Z')
+   WHERE architecture_object_id = '0195d145-64e8-7f4f-8a23-a0cc784cb903';
+
+  IF current_present IS DISTINCT FROM true
+     OR current_sequence <> 2
+     OR historical_present IS DISTINCT FROM false
+     OR historical_sequence <> 3 THEN
+    RAISE EXCEPTION
+      'current projection did not hide superseded delta while preserving history: %, %, %, %',
+      current_present, current_sequence, historical_present, historical_sequence;
+  END IF;
+
+  UPDATE architecture_core.architecture_scenario
+     SET superseded_at = '2100-01-01T00:00:00Z'
+   WHERE tenant_record_id = '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND architecture_scenario_id = '0196c010-1111-7111-8111-111111111111';
+
+  BEGIN
+    PERFORM 1
+      FROM architecture_core.project_scenario_objects(
+          '0196c010-1111-7111-8111-111111111111');
+    RAISE EXCEPTION 'current projection exposed a superseded scenario';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  SELECT count(*)
+    INTO historical_scenario_count
+    FROM architecture_core.project_scenario_objects_at(
+        '0196c010-1111-7111-8111-111111111111',
+        '2099-01-01T00:00:00Z');
+  IF historical_scenario_count = 0 THEN
+    RAISE EXCEPTION 'historical projection lost a scenario before supersession';
+  END IF;
+END;
+$$;
+
 SET ROLE ea_runtime;
 SELECT set_config('app.tenant_record_id',
     '0195d145-64e8-7f4f-8a23-a0cc784cb711', false);
