@@ -15,11 +15,6 @@ from .authorization import (
     verify_keyverse_bearer,
     verify_rs256_signature,
 )
-from .complete import (
-    build_complete_authorization_config,
-    build_target_state_complete_writer,
-    parse_target_state_complete_request,
-)
 from .runtime import (
     SchedulingServiceHandler,
     build_schedule_authorization_config,
@@ -39,6 +34,11 @@ from .service import (
     serve_forever,
 )
 from .start import build_start_authorization_config, build_target_state_start_writer
+from .strategy_transformation.complete import (
+    build_complete_authorization_config,
+    build_target_state_complete_writer,
+    parse_target_state_complete_request,
+)
 
 _TARGET_STATE_COMMAND_PATH_PREFIX = "/v1/architecture-transformations/"
 _TARGET_STATE_COMPLETE_PATH_SUFFIX = "/complete"
