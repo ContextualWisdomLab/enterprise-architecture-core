@@ -149,9 +149,14 @@ def test_gap_baseline_does_not_persist_volatile_runner_execution_identity() -> N
         encoding="utf-8"
     )
     runner_rows = [
-        line for line in baseline.splitlines() if line.startswith("| Runner acquisition |")
+        line
+        for line in baseline.splitlines()
+        if line.startswith("| Runner acquisition |")
     ]
     assert len(runner_rows) == 1
     runner_row = runner_rows[0]
-    assert "Exact SHA/run/job identities stay in live PR/control-plane state" in runner_row
+    assert (
+        "Exact SHA/run/job identities stay in live PR/control-plane state"
+        in runner_row
+    )
     assert "runner_id:" not in runner_row
