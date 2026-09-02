@@ -25,6 +25,8 @@ Owns the EA identity and lifecycle of capabilities, applications, interfaces, te
 
 Owns assessment versions and decision-facing portfolio conclusions. Assessment input may reference evidence from other contexts, but the assessment decision and its version history are EA facts.
 
+The current bounded owner path is `src/ea_core_foundation/portfolio_assessment/`. Portfolio assessment read/summary behavior lives in `portfolio_assessment.py`; EA-owned Data/AI assessment reassessment commands and their follow-up status read live in `data_management_recheck.py` and `data_management_recheck_status.py`. The historical root modules remain behavior-free compatibility facades during consumer migration; they do not define a second bounded context or authority.
+
 ### Strategy & Transformation
 
 Owns objectives, initiatives, milestones and approved transformation history. Application services orchestrate commands; domain invariants remain independent of transport/provider DTOs. Transactional outbox records domain events atomically with state changes.
@@ -37,7 +39,7 @@ Owns immutable baselines and ordered deltas. A scenario is a candidate state, no
 
 Owns only the receipt, normalization and bitemporal projection needed for EA decisions. It must preserve the upstream owner, source identity, truth origin, effective/system time and receipt/provenance. It may not recreate the full foreign product model or write directly to another product's application tables.
 
-Connector ownership/release-binding validation for this context lives in `src/ea_core_foundation/cross_domain_evidence/connector_catalog.py`. The historical `validation_connector_catalog.py` import path is retained only as a behavior-free compatibility facade while the wider foundation-era package is decomposed by mapped responsibility.
+Connector ownership/release-binding validation lives in `src/ea_core_foundation/cross_domain_evidence/connector_catalog.py`. Foreign Data/AI reassessment-status contract validation lives in `cross_domain_evidence/data_management_recheck_status.py`. Their historical `validation_*` import paths are retained only as behavior-free compatibility facades. EA-owned reassessment decisions stay in Portfolio Assessment rather than being absorbed into this Supporting context.
 
 ### Target-State Planner
 
@@ -66,7 +68,7 @@ All foreign product facts enter through released versioned `context-graph-contra
 
 Domain rules must not depend on HTTP, framework, ORM or provider SDK DTOs. Application services may orchestrate repositories, authorization ports and event publication, but domain invariants belong to the domain model/database invariant where the transaction is authoritative. Adapters translate through explicit ports or Anti-Corruption Layers. Direct cross-service application-table SQL is prohibited.
 
-The current `src/ea_core_foundation` package predates this bounded-context decomposition and remains open DDD debt rather than being relabeled as compliant. The connector validator is now one mapped bounded-context move inside that compatibility package; the package-level debt is not closed by that single correction. `docs/product-technical-gap-baseline.md` records the correction sequence and architecture-fitness tests prevent new generic buckets, direct foreign implementation dependencies and renewed behavior in the moved compatibility facade.
+The current `src/ea_core_foundation` package predates this bounded-context decomposition and remains open DDD debt rather than being relabeled as compliant. Mapped slices now include the Cross-Domain Evidence connector/foreign-contract validators and the Core Portfolio Assessment read/reassessment ports. Historical imports for those slices are compatibility-only and architecture-fitness regressions prevent executable behavior from returning to them. The package-level debt is not closed by these moves; `docs/product-technical-gap-baseline.md` records the remaining sequence and tests still prevent new generic buckets or direct foreign implementation dependencies.
 
 ## Integration governance
 
