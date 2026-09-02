@@ -37,6 +37,8 @@ Owns immutable baselines and ordered deltas. A scenario is a candidate state, no
 
 Owns only the receipt, normalization and bitemporal projection needed for EA decisions. It must preserve the upstream owner, source identity, truth origin, effective/system time and receipt/provenance. It may not recreate the full foreign product model or write directly to another product's application tables.
 
+Connector ownership/release-binding validation for this context lives in `src/ea_core_foundation/cross_domain_evidence/connector_catalog.py`. The historical `validation_connector_catalog.py` import path is retained only as a behavior-free compatibility facade while the wider foundation-era package is decomposed by mapped responsibility.
+
 ### Target-State Planner
 
 Joins EA-owned architecture facts with accepted cross-domain evidence to answer: what changed, what is affected, what should be remediated next, what target state is proposed, and what approved transformation records the decision. Planner proposals remain proposed until the explicit approval/transition boundary succeeds.
@@ -64,7 +66,7 @@ All foreign product facts enter through released versioned `context-graph-contra
 
 Domain rules must not depend on HTTP, framework, ORM or provider SDK DTOs. Application services may orchestrate repositories, authorization ports and event publication, but domain invariants belong to the domain model/database invariant where the transaction is authoritative. Adapters translate through explicit ports or Anti-Corruption Layers. Direct cross-service application-table SQL is prohibited.
 
-The current `src/ea_core_foundation` package predates this bounded-context decomposition and is tracked as open DDD debt rather than being relabeled as compliant. `docs/product-technical-gap-baseline.md` records the correction sequence and the architecture-fitness test prevents new generic buckets or direct foreign implementation dependencies while that migration is planned.
+The current `src/ea_core_foundation` package predates this bounded-context decomposition and remains open DDD debt rather than being relabeled as compliant. The connector validator is now one mapped bounded-context move inside that compatibility package; the package-level debt is not closed by that single correction. `docs/product-technical-gap-baseline.md` records the correction sequence and architecture-fitness tests prevent new generic buckets, direct foreign implementation dependencies and renewed behavior in the moved compatibility facade.
 
 ## Integration governance
 
