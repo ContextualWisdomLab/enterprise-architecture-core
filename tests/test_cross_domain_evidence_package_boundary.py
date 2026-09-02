@@ -139,3 +139,32 @@ def test_legacy_reassessment_status_runtime_is_a_compatibility_alias() -> None:
     )
     for name in public_names:
         assert getattr(compatibility, name) is getattr(owner, name)
+
+
+def test_reassessment_command_has_portfolio_assessment_owner_path() -> None:
+    """Keep EA-owned reassessment commands in the Portfolio Assessment context."""
+
+    _assert_behavior_free_compatibility_facade(
+        owner_path=Path(
+            "src/ea_core_foundation/portfolio_assessment/data_management_recheck.py"
+        ),
+        compatibility_path=Path("src/ea_core_foundation/data_management_recheck.py"),
+        owner_module="portfolio_assessment.data_management_recheck",
+    )
+
+
+def test_legacy_reassessment_command_is_a_compatibility_alias() -> None:
+    """Preserve the command import while moving behavior to Portfolio Assessment."""
+
+    compatibility = importlib.import_module("ea_core_foundation.data_management_recheck")
+    owner = importlib.import_module(
+        "ea_core_foundation.portfolio_assessment.data_management_recheck"
+    )
+    public_names = (
+        "DataManagementRecheckRequest",
+        "build_data_management_recheck_authorization_config",
+        "build_data_management_recheck_writer",
+        "parse_data_management_recheck_request",
+    )
+    for name in public_names:
+        assert getattr(compatibility, name) is getattr(owner, name)
