@@ -38,6 +38,29 @@ def test_transformation_completion_has_bounded_context_owner_path() -> None:
     )
 
 
+def test_completion_runtime_uses_the_bounded_owner_not_the_legacy_facade() -> None:
+    """Keep internal completion composition on the canonical owner path."""
+
+    runtime_path = Path("src/ea_core_foundation/completion_runtime.py")
+    runtime_tree = ast.parse(
+        runtime_path.read_text(encoding="utf-8"),
+        filename=str(runtime_path),
+    )
+    imports = [
+        node
+        for node in runtime_tree.body
+        if isinstance(node, ast.ImportFrom)
+    ]
+    assert any(
+        node.level == 1 and node.module == "strategy_transformation.complete"
+        for node in imports
+    )
+    assert not any(
+        node.level == 1 and node.module == "complete"
+        for node in imports
+    )
+
+
 def test_legacy_transformation_completion_is_a_compatibility_alias() -> None:
     """Preserve the completion API while moving its behavior to its owner."""
 
