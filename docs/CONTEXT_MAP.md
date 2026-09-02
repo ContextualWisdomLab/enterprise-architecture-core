@@ -31,6 +31,8 @@ The current bounded owner path is `src/ea_core_foundation/portfolio_assessment/`
 
 Owns objectives, initiatives, milestones and approved transformation history. Application services orchestrate commands; domain invariants remain independent of transport/provider DTOs. Transactional outbox records domain events atomically with state changes.
 
+The bounded owner path is `src/ea_core_foundation/strategy_transformation/`. Transformation-completion command behavior lives in `strategy_transformation/complete.py`; `completion_runtime.py` composes that canonical owner directly, while the historical root `complete.py` is a behavior-free compatibility facade preserving the existing public import objects. This path move does not transfer authorization or persistence authority: completion still uses the EA-owned tenant-scoped stored command and transactional outbox semantics.
+
 ### Scenario Planning
 
 Owns immutable baselines and ordered deltas. A scenario is a candidate state, not automatically authoritative production architecture. Approval/execution is an explicit state transition through the owning strategy/transformation boundary.
@@ -68,7 +70,7 @@ All foreign product facts enter through released versioned `context-graph-contra
 
 Domain rules must not depend on HTTP, framework, ORM or provider SDK DTOs. Application services may orchestrate repositories, authorization ports and event publication, but domain invariants belong to the domain model/database invariant where the transaction is authoritative. Adapters translate through explicit ports or Anti-Corruption Layers. Direct cross-service application-table SQL is prohibited.
 
-The current `src/ea_core_foundation` package predates this bounded-context decomposition and remains open DDD debt rather than being relabeled as compliant. Mapped slices now include the Cross-Domain Evidence connector/foreign-contract validators and the Core Portfolio Assessment read/reassessment ports. Historical imports for those slices are compatibility-only and architecture-fitness regressions prevent executable behavior from returning to them. The package-level debt is not closed by these moves; `docs/product-technical-gap-baseline.md` records the remaining sequence and tests still prevent new generic buckets or direct foreign implementation dependencies.
+The current `src/ea_core_foundation` package predates this bounded-context decomposition and remains open DDD debt rather than being relabeled as compliant. Mapped slices now include the Cross-Domain Evidence connector/foreign-contract validators, the Core Portfolio Assessment read/reassessment ports, and the Core Strategy & Transformation completion command port. Historical imports for those slices are compatibility-only and architecture-fitness regressions prevent executable behavior from returning to them. The package-level debt is not closed by these moves; `docs/product-technical-gap-baseline.md` records the remaining sequence and tests still prevent new generic buckets or direct foreign implementation dependencies.
 
 ## Integration governance
 
