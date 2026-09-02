@@ -115,10 +115,18 @@ BEGIN
    WHERE application_object_id = '0196f130-3333-7333-8333-333333333333'
      AND external_object_kind_code = 'database_schema';
 
-  IF planned_row.transformation_state_code <> 'verified'
-     OR planned_row.decision_readiness_code <> 'target_state_verified'
-     OR planned_row.recommended_action_code <> 'monitor_target_state' THEN
-    RAISE EXCEPTION 'verified target state bypasses freshness monitoring in the canonical planner';
+  IF planned_row.transformation_state_code IS DISTINCT FROM 'verified'
+     OR planned_row.decision_readiness_code IS DISTINCT FROM 'target_state_verified'
+     OR planned_row.recommended_action_code IS DISTINCT FROM 'monitor_target_state' THEN
+    RAISE EXCEPTION
+      'verified planner mismatch: impact_evidence=%, external_evidence=%, scenario=%, transformation=%, state=%, readiness=%, action=%',
+      planned_row.impact_evidence_state_code,
+      planned_row.external_evidence_state_code,
+      planned_row.scenario_code,
+      planned_row.architecture_transformation_id,
+      planned_row.transformation_state_code,
+      planned_row.decision_readiness_code,
+      planned_row.recommended_action_code;
   END IF;
 END;
 $$;
@@ -164,10 +172,18 @@ BEGIN
    WHERE application_object_id = '0196f130-3333-7333-8333-333333333333'
      AND external_object_kind_code = 'database_schema';
 
-  IF planned_row.transformation_state_code <> 'gap_detected'
-     OR planned_row.decision_readiness_code <> 'plan_blocked'
-     OR planned_row.recommended_action_code <> 'replan_target_state' THEN
-    RAISE EXCEPTION 'gap-detected target state does not route the buyer to replanning';
+  IF planned_row.transformation_state_code IS DISTINCT FROM 'gap_detected'
+     OR planned_row.decision_readiness_code IS DISTINCT FROM 'plan_blocked'
+     OR planned_row.recommended_action_code IS DISTINCT FROM 'replan_target_state' THEN
+    RAISE EXCEPTION
+      'gap planner mismatch: impact_evidence=%, external_evidence=%, scenario=%, transformation=%, state=%, readiness=%, action=%',
+      planned_row.impact_evidence_state_code,
+      planned_row.external_evidence_state_code,
+      planned_row.scenario_code,
+      planned_row.architecture_transformation_id,
+      planned_row.transformation_state_code,
+      planned_row.decision_readiness_code,
+      planned_row.recommended_action_code;
   END IF;
 END;
 $$;
