@@ -32,7 +32,6 @@ from .service import (
     resolve_bind_address,
     serve_forever,
 )
-from .start import build_start_authorization_config, build_target_state_start_writer
 from .strategy_transformation.complete import (
     build_complete_authorization_config,
     build_target_state_complete_writer,
@@ -41,6 +40,10 @@ from .strategy_transformation.monitor import (
     build_monitoring_authorization_config,
     build_target_state_monitoring_reader,
     parse_target_state_monitoring_request,
+)
+from .strategy_transformation.start import (
+    build_start_authorization_config,
+    build_target_state_start_writer,
 )
 from .verification_runtime import VerificationServiceHandler
 from .verification_runtime import (
