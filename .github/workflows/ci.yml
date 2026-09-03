@@ -1,60 +1,44 @@
 name: ci
 
 on:
-  pull_request:
   push:
-    branches: [main]
+  pull_request:
 
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  validate:
+  python:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.14"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           version: "0.11.32"
           enable-cache: false
       - run: uv lock --check
-      - run: uv sync --locked --extra dev --python "${{ matrix.python-version }}"
-      - run: >-
-          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
-          python -m compileall -q src scripts
-      - run: >-
-          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
-          python -m ruff check . --output-format=github
-      - run: >-
-          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
-          python -m coverage run -m pytest -q
-      - run: >-
-          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
-          python -m coverage report
-      - run: >-
-          uv run --frozen --extra dev --python "${{ matrix.python-version }}"
-          python scripts/validate_repository.py
+      - run: uv sync --locked --extra dev --python 3.14
+      - run: uv run ruff check .
+      - run: uv run pytest --cov=ea_core_foundation --cov-report=term-missing --cov-fail-under=100
+      - name: Enforce docstring coverage
+        run: >-
+          uv run interrogate
+          -c pyproject.toml
+          src/ea_core_foundation
+      - run: uv run python scripts/validate_repository.py
 
-  postgres-migration:
+  database:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     services:
       postgres:
-        image: postgres:18.4@sha256:3a82e1f56c8f0f5616a11103ac3d47e632c3938698946a7ad26da0df1334744a
+        image: postgres:18.4-alpine3.23
         env:
           POSTGRES_DB: ea_core
           POSTGRES_USER: ea_app
@@ -208,6 +192,14 @@ jobs:
             --set ON_ERROR_STOP=1 \
             --command "SELECT tgname FROM pg_trigger WHERE tgname = 'projection_receipt_history_guard' AND NOT tgisinternal;" \
             | grep --fixed-strings 'projection_receipt_history_guard'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.context_assertion_projection_receipt') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT tgname FROM pg_trigger WHERE tgname = 'context_assertion_projection_receipt_history_guard' AND NOT tgisinternal;" \
+            | grep --fixed-strings 'context_assertion_projection_receipt_history_guard'
       - name: Prove failed migration rolls back schema and ledger atomically
         env:
           PGHOST: 127.0.0.1
@@ -245,7 +237,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core' AND table_type = 'BASE TABLE';"
           )"
-          test "$table_count" -eq 48
+          test "$table_count" -eq 49
           reference_view_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
               --tuples-only --no-align \
@@ -329,7 +321,7 @@ jobs:
           enable-cache: false
       - run: uv lock --check
       - name: Capture reviewed dependency lock
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7.0.1
         with:
           name: uv-lock-${{ github.event.pull_request.head.sha || github.sha }}
           path: uv.lock
@@ -352,4 +344,51 @@ jobs:
           assert version("enterprise-architecture-core") == "0.1.0"
           assert ea_core_foundation.__version__ == "0.1.0"
           assert find_spec("jsonschema") is None
+          PY
+
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.32"
+          enable-cache: false
+      - name: Dependency vulnerability audit
+        run: uv export --locked --extra dev --format requirements-txt --no-emit-project --no-hashes | uvx --from pip-audit==2.10.0 pip-audit --strict -r /dev/stdin
+
+  required-checks:
+    needs:
+      - python
+      - database
+      - compose-runtime
+      - package
+      - security
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require all CI lanes to pass
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          results = {
+              name: lane["result"]
+              for name, lane in json.loads(os.environ["NEEDS_JSON"]).items()
+          }
+          print(json.dumps(results, sort_keys=True))
+          failures = {
+              name: result
+              for name, result in results.items()
+              if result != "success"
+          }
+          if failures:
+              raise SystemExit(f"required CI lanes failed: {failures}")
           PY
