@@ -93,6 +93,7 @@ _EXPECTED_RESOURCES = (
 )
 _EXPECTED_SDK_EXPORTS = (
     "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+    "ContextAssertionAdmission",
     "admit_context_assertion_message",
 )
 _REQUIRED_BEFORE_MERGE = (
