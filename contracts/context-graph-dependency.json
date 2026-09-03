@@ -47,6 +47,7 @@
   ],
   "required_sdk_exports": [
     "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+    "ContextAssertionAdmission",
     "admit_context_assertion_message"
   ],
   "required_before_merge": "immutable released dependency containing every declared artifact"
