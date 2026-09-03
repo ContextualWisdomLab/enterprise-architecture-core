@@ -10,14 +10,17 @@ from typing import cast
 from urllib.parse import urlparse
 from uuid import UUID
 
-from ..authorization import AuthorizationContext, KeyverseAuthorizationConfig
-from ..service import (
+from ..decision_plane_http import (
     CommandRunner,
     PlannerExecutionError,
     PlannerRequestError,
     _parse_uuid7,
     _postgres_environment,
     build_keyverse_authorization_config,
+)
+from ..identity_authorization.authorization import (
+    AuthorizationContext,
+    KeyverseAuthorizationConfig,
 )
 
 _RECHECK_STATUS_PATH_PREFIX = "/v1/data-management-assessment-rechecks/"
