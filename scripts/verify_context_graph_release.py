@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
 import sys
 from collections.abc import Callable, Mapping
@@ -17,6 +19,32 @@ from pathlib import Path
 
 _EXPECTED_REPOSITORY = "ContextualWisdomLab/context-graph-contracts"
 _EXPECTED_DISTRIBUTION = "cwl-context-contracts"
+_EXPECTED_SOURCE_REF = "refs/heads/main"
+_EXPECTED_SIGNER_WORKFLOW = (
+    "ContextualWisdomLab/context-graph-contracts/.github/workflows/supply-chain.yml"
+)
+_EXPECTED_SOURCE_MANIFEST_FORMAT = "cwl-context-release-source-manifest/v1"
+_EXPECTED_SOURCE_NEXT_ACTION = (
+    "independently verify this manifest's artifact attestation against the same "
+    "repository, protected ref, source SHA, and signer workflow before treating "
+    "its source fields as release provenance"
+)
+_EXPECTED_SOURCE_FIELDS = frozenset(
+    {
+        "manifest_format",
+        "distribution_name",
+        "distribution_version",
+        "release_tag",
+        "source_repository",
+        "source_ref",
+        "source_commit_sha",
+        "signer_workflow",
+        "algorithm",
+        "package_snapshot_sha256",
+        "artifacts",
+        "next_action",
+    }
+)
 _EXPECTED_SCHEMA_IDS = (
     "https://schemas.contextualwisdomlab.org/context/"
     "canonical-authority-uri.v1.schema.json",
@@ -66,12 +94,17 @@ _EXPECTED_RESOURCES = (
 _REQUIRED_BEFORE_MERGE = (
     "immutable released dependency containing every declared artifact"
 )
+_SOURCE_RECEIPT_ENV = "EA_CGC_SOURCE_ATTESTATION_RECEIPT"
+_SOURCE_RECEIPT_FORMAT = "ea-cgc-source-attestation-verification/v1"
 _VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 VersionReader = Callable[[str], str]
 ResourceProbe = Callable[[str], bool]
 BundleVerifier = Callable[[object], bool]
+ReleaseAdmissionVerifier = Callable[[object, object], bool]
+SourceAttestationVerifier = Callable[[Mapping[str, object]], bool]
 
 
 class ContextGraphReleaseError(RuntimeError):
@@ -104,6 +137,60 @@ def _default_bundle_verified(approved_manifest: object) -> bool:
     return getattr(report, "verified", False) is True
 
 
+def _default_release_admitted(
+    approved_conformance_manifest: object,
+    approved_bundle_manifest: object,
+) -> bool:
+    """Execute provider semantic and bundle admission against installed bytes."""
+
+    try:
+        admission_module = import_module(
+            "cwl_context_contracts.contract_release_admission"
+        )
+        evaluator = admission_module.evaluate_packaged_contract_release_admission
+        report = evaluator(
+            approved_conformance_manifest,
+            approved_bundle_manifest,
+        )
+    except Exception:
+        return False
+    return getattr(report, "admitted", False) is True
+
+
+def _source_manifest_sha256(source_manifest: Mapping[str, object]) -> str:
+    """Return the digest of the deterministic bytes emitted by the provider CLI."""
+
+    encoded = (json.dumps(source_manifest, sort_keys=True) + "\n").encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _default_source_attestation_verified(
+    source_manifest: Mapping[str, object],
+) -> bool:
+    """Admit only a runtime-generated receipt bound to the exact manifest bytes."""
+
+    receipt_path_text = os.environ.get(_SOURCE_RECEIPT_ENV)
+    if not receipt_path_text:
+        return False
+    try:
+        receipt = json.loads(Path(receipt_path_text).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(receipt, Mapping):
+        return False
+    expected = {
+        "verification_format": _SOURCE_RECEIPT_FORMAT,
+        "verified": True,
+        "manifest_sha256": _source_manifest_sha256(source_manifest),
+        "source_repository": _EXPECTED_REPOSITORY,
+        "source_ref": _EXPECTED_SOURCE_REF,
+        "source_commit_sha": source_manifest.get("source_commit_sha"),
+        "signer_workflow": _EXPECTED_SIGNER_WORKFLOW,
+        "predicate_type": "https://slsa.dev/provenance/v1",
+    }
+    return dict(receipt) == expected
+
+
 def _require_exact_list(
     manifest: Mapping[str, object],
     field_name: str,
@@ -118,14 +205,78 @@ def _require_exact_list(
         )
 
 
+def _require_sha256(value: object) -> bool:
+    """Return whether a value is one canonical lowercase SHA-256 digest."""
+
+    return isinstance(value, str) and _SHA256_PATTERN.fullmatch(value) is not None
+
+
+def _validate_release_source_manifest(
+    source_manifest: Mapping[str, object],
+    *,
+    release_version: str,
+    release_commit_sha: str,
+) -> None:
+    """Bind attested source evidence to this exact consumed release identity."""
+
+    if set(source_manifest) != _EXPECTED_SOURCE_FIELDS:
+        raise ContextGraphReleaseError("release-source manifest has unexpected fields")
+    exact_values = {
+        "manifest_format": _EXPECTED_SOURCE_MANIFEST_FORMAT,
+        "distribution_name": _EXPECTED_DISTRIBUTION,
+        "distribution_version": release_version,
+        "release_tag": f"v{release_version}",
+        "source_repository": _EXPECTED_REPOSITORY,
+        "source_ref": _EXPECTED_SOURCE_REF,
+        "source_commit_sha": release_commit_sha,
+        "signer_workflow": _EXPECTED_SIGNER_WORKFLOW,
+        "algorithm": "sha256",
+        "next_action": _EXPECTED_SOURCE_NEXT_ACTION,
+    }
+    if any(source_manifest.get(field) != value for field, value in exact_values.items()):
+        raise ContextGraphReleaseError(
+            "release-source manifest does not bind the exact release identity"
+        )
+    if not _require_sha256(source_manifest.get("package_snapshot_sha256")):
+        raise ContextGraphReleaseError("release-source manifest package digest is invalid")
+
+    raw_artifacts = source_manifest.get("artifacts")
+    if not isinstance(raw_artifacts, list) or len(raw_artifacts) != 3:
+        raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
+    expected_names = {
+        f"cwl_context_contracts-{release_version}-py3-none-any.whl",
+        f"cwl_context_contracts-{release_version}.tar.gz",
+        "cwl-context-contracts.spdx.json",
+    }
+    artifact_names: set[str] = set()
+    for artifact in raw_artifacts:
+        if not isinstance(artifact, Mapping) or set(artifact) != {"name", "sha256"}:
+            raise ContextGraphReleaseError(
+                "release-source manifest artifact set is invalid"
+            )
+        name = artifact.get("name")
+        digest = artifact.get("sha256")
+        if not isinstance(name, str) or not _require_sha256(digest):
+            raise ContextGraphReleaseError(
+                "release-source manifest artifact set is invalid"
+            )
+        artifact_names.add(name)
+    if artifact_names != expected_names:
+        raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
+
+
 def verify_context_graph_release(
     manifest: Mapping[str, object],
     *,
     version_reader: VersionReader = distribution_version,
     resource_exists: ResourceProbe = _default_resource_exists,
     bundle_verifier: BundleVerifier = _default_bundle_verified,
+    release_admission_verifier: ReleaseAdmissionVerifier = _default_release_admitted,
+    source_attestation_verifier: SourceAttestationVerifier = (
+        _default_source_attestation_verified
+    ),
 ) -> str:
-    """Verify exact released identity and packaged resources; return source SHA."""
+    """Verify installed, semantic, bundle, and attested source release evidence."""
 
     if manifest.get("contract_repository") != _EXPECTED_REPOSITORY:
         raise ContextGraphReleaseError(
@@ -171,11 +322,26 @@ def verify_context_graph_release(
             "release_commit_sha must be a lowercase 40-hex commit"
         )
 
+    approved_conformance_manifest = manifest.get("approved_conformance_manifest")
+    if not isinstance(approved_conformance_manifest, Mapping):
+        raise ContextGraphReleaseError(
+            "approved conformance manifest is required for semantic admission"
+        )
     approved_bundle_manifest = manifest.get("approved_bundle_manifest")
     if not isinstance(approved_bundle_manifest, Mapping):
         raise ContextGraphReleaseError(
             "approved bundle manifest is required for immutable release evidence"
         )
+    release_source_manifest = manifest.get("release_source_manifest")
+    if not isinstance(release_source_manifest, Mapping):
+        raise ContextGraphReleaseError(
+            "attested release-source manifest is required for immutable provenance"
+        )
+    _validate_release_source_manifest(
+        release_source_manifest,
+        release_version=release_version,
+        release_commit_sha=release_commit_sha,
+    )
 
     try:
         installed_version = version_reader(_EXPECTED_DISTRIBUTION)
@@ -211,6 +377,31 @@ def verify_context_graph_release(
         raise ContextGraphReleaseError(
             "approved bundle manifest does not match the installed Context Graph "
             "release"
+        )
+
+    try:
+        release_admitted = release_admission_verifier(
+            approved_conformance_manifest,
+            approved_bundle_manifest,
+        )
+    except Exception as error:
+        raise ContextGraphReleaseError(
+            "Context Graph conformance admission could not be executed"
+        ) from error
+    if release_admitted is not True:
+        raise ContextGraphReleaseError(
+            "Context Graph conformance admission did not admit the installed release"
+        )
+
+    try:
+        source_verified = source_attestation_verifier(release_source_manifest)
+    except Exception as error:
+        raise ContextGraphReleaseError(
+            "release-source attestation verification could not be executed"
+        ) from error
+    if source_verified is not True:
+        raise ContextGraphReleaseError(
+            "release-source attestation did not authenticate the declared source"
         )
 
     return release_commit_sha
