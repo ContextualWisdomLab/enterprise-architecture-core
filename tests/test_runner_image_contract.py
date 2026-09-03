@@ -60,3 +60,16 @@ def test_workflow_hex_action_revisions_are_full_commit_shas() -> None:
                 f"{workflow_path} has a truncated hexadecimal action revision: "
                 f"{revision}"
             )
+
+
+def test_ci_limits_push_runs_to_integration_branch() -> None:
+    """Avoid duplicate feature-branch push and pull-request runner consumption."""
+    workflow = CI_WORKFLOW_PATH.read_text(encoding="utf-8")
+    assert "push:\n    branches: [main]\n  pull_request:" in workflow
+
+
+def test_ci_cancels_superseded_runs() -> None:
+    """Release hosted capacity when a newer run supersedes the same CI lane."""
+    workflow = CI_WORKFLOW_PATH.read_text(encoding="utf-8")
+    assert "concurrency:" in workflow
+    assert "cancel-in-progress: true" in workflow
