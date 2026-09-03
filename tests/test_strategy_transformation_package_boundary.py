@@ -4,42 +4,63 @@ import ast
 import importlib
 from pathlib import Path
 
+_BEHAVIOR_NODES = (
+    ast.ClassDef,
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+    ast.If,
+    ast.For,
+    ast.While,
+    ast.Try,
+    ast.With,
+)
 
-def test_transformation_completion_has_bounded_context_owner_path() -> None:
-    """Keep transformation-completion behavior out of the foundation root."""
 
-    owner_path = Path(
-        "src/ea_core_foundation/strategy_transformation/complete.py"
-    )
-    compatibility_path = Path("src/ea_core_foundation/complete.py")
-    assert owner_path.is_file()
+def _assert_behavior_free_facade(
+    compatibility_path: Path,
+    owner_module: str,
+) -> None:
+    """Require a legacy root path to remain an import-only compatibility facade."""
+
     compatibility_tree = ast.parse(
         compatibility_path.read_text(encoding="utf-8"),
         filename=str(compatibility_path),
     )
-    behavior_nodes = (
-        ast.ClassDef,
-        ast.FunctionDef,
-        ast.AsyncFunctionDef,
-        ast.If,
-        ast.For,
-        ast.While,
-        ast.Try,
-        ast.With,
-    )
     assert not any(
-        isinstance(node, behavior_nodes) for node in ast.walk(compatibility_tree)
+        isinstance(node, _BEHAVIOR_NODES) for node in ast.walk(compatibility_tree)
     )
     assert any(
         isinstance(node, ast.ImportFrom)
         and node.level == 1
-        and node.module == "strategy_transformation.complete"
+        and node.module == owner_module
         for node in compatibility_tree.body
     )
 
 
-def test_completion_runtime_uses_the_bounded_owner_not_the_legacy_facade() -> None:
-    """Keep internal completion composition on the canonical owner path."""
+def test_transformation_completion_has_bounded_context_owner_path() -> None:
+    """Keep transformation-completion behavior out of the foundation root."""
+
+    owner_path = Path("src/ea_core_foundation/strategy_transformation/complete.py")
+    assert owner_path.is_file()
+    _assert_behavior_free_facade(
+        Path("src/ea_core_foundation/complete.py"),
+        "strategy_transformation.complete",
+    )
+
+
+def test_transformation_start_has_bounded_context_owner_path() -> None:
+    """Keep transformation-start behavior out of the foundation root."""
+
+    owner_path = Path("src/ea_core_foundation/strategy_transformation/start.py")
+    assert owner_path.is_file()
+    _assert_behavior_free_facade(
+        Path("src/ea_core_foundation/start.py"),
+        "strategy_transformation.start",
+    )
+
+
+def test_completion_runtime_uses_bounded_transformation_command_owners() -> None:
+    """Keep completion composition on canonical transformation command ports."""
 
     runtime_path = Path("src/ea_core_foundation/completion_runtime.py")
     runtime_tree = ast.parse(
@@ -47,16 +68,17 @@ def test_completion_runtime_uses_the_bounded_owner_not_the_legacy_facade() -> No
         filename=str(runtime_path),
     )
     imports = [
-        node
-        for node in runtime_tree.body
-        if isinstance(node, ast.ImportFrom)
+        node for node in runtime_tree.body if isinstance(node, ast.ImportFrom)
     ]
-    assert any(
-        node.level == 1 and node.module == "strategy_transformation.complete"
-        for node in imports
-    )
+    for owner_module in (
+        "strategy_transformation.complete",
+        "strategy_transformation.start",
+    ):
+        assert any(
+            node.level == 1 and node.module == owner_module for node in imports
+        )
     assert not any(
-        node.level == 1 and node.module == "complete"
+        node.level == 1 and node.module in {"complete", "start"}
         for node in imports
     )
 
@@ -78,36 +100,29 @@ def test_legacy_transformation_completion_is_a_compatibility_alias() -> None:
         assert getattr(compatibility, name) is getattr(owner, name)
 
 
+def test_legacy_transformation_start_is_a_compatibility_alias() -> None:
+    """Preserve the start API while moving its behavior to its owner."""
+
+    compatibility = importlib.import_module("ea_core_foundation.start")
+    owner = importlib.import_module("ea_core_foundation.strategy_transformation.start")
+    public_names = (
+        "TargetStateStartRequest",
+        "build_start_authorization_config",
+        "build_target_state_start_writer",
+        "parse_target_state_start_request",
+    )
+    for name in public_names:
+        assert getattr(compatibility, name) is getattr(owner, name)
+
+
 def test_target_state_monitoring_has_bounded_context_owner_path() -> None:
     """Keep target-state monitoring behavior out of the foundation root."""
 
-    owner_path = Path(
-        "src/ea_core_foundation/strategy_transformation/monitor.py"
-    )
-    compatibility_path = Path("src/ea_core_foundation/monitor.py")
+    owner_path = Path("src/ea_core_foundation/strategy_transformation/monitor.py")
     assert owner_path.is_file()
-    compatibility_tree = ast.parse(
-        compatibility_path.read_text(encoding="utf-8"),
-        filename=str(compatibility_path),
-    )
-    behavior_nodes = (
-        ast.ClassDef,
-        ast.FunctionDef,
-        ast.AsyncFunctionDef,
-        ast.If,
-        ast.For,
-        ast.While,
-        ast.Try,
-        ast.With,
-    )
-    assert not any(
-        isinstance(node, behavior_nodes) for node in ast.walk(compatibility_tree)
-    )
-    assert any(
-        isinstance(node, ast.ImportFrom)
-        and node.level == 1
-        and node.module == "strategy_transformation.monitor"
-        for node in compatibility_tree.body
+    _assert_behavior_free_facade(
+        Path("src/ea_core_foundation/monitor.py"),
+        "strategy_transformation.monitor",
     )
 
 
@@ -120,20 +135,18 @@ def test_monitoring_runtime_uses_canonical_strategy_transformation_ports() -> No
         filename=str(runtime_path),
     )
     imports = [
-        node
-        for node in runtime_tree.body
-        if isinstance(node, ast.ImportFrom)
+        node for node in runtime_tree.body if isinstance(node, ast.ImportFrom)
     ]
-    assert any(
-        node.level == 1 and node.module == "strategy_transformation.complete"
-        for node in imports
-    )
-    assert any(
-        node.level == 1 and node.module == "strategy_transformation.monitor"
-        for node in imports
-    )
+    for owner_module in (
+        "strategy_transformation.complete",
+        "strategy_transformation.monitor",
+        "strategy_transformation.start",
+    ):
+        assert any(
+            node.level == 1 and node.module == owner_module for node in imports
+        )
     assert not any(
-        node.level == 1 and node.module in {"complete", "monitor"}
+        node.level == 1 and node.module in {"complete", "monitor", "start"}
         for node in imports
     )
 
@@ -144,15 +157,14 @@ def test_strategy_owner_modules_use_canonical_shared_adapters() -> None:
     for owner_path in (
         Path("src/ea_core_foundation/strategy_transformation/complete.py"),
         Path("src/ea_core_foundation/strategy_transformation/monitor.py"),
+        Path("src/ea_core_foundation/strategy_transformation/start.py"),
     ):
         owner_tree = ast.parse(
             owner_path.read_text(encoding="utf-8"),
             filename=str(owner_path),
         )
         imports = [
-            node
-            for node in owner_tree.body
-            if isinstance(node, ast.ImportFrom)
+            node for node in owner_tree.body if isinstance(node, ast.ImportFrom)
         ]
         assert not any(
             node.level == 2 and node.module in {"authorization", "service"}
