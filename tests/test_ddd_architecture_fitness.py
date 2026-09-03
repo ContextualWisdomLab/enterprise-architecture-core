@@ -140,3 +140,46 @@ def test_baseline_keeps_historical_package_debt_visible() -> None:
     assert "src/ea_core_foundation/service.py" in baseline
     assert "Open DDD debt" in baseline
     assert "Anti-Corruption Layer" in baseline
+
+
+def test_transformation_http_adapter_has_a_bounded_owner() -> None:
+    """Keep Strategy & Transformation command HTTP behavior out of root runtime.py."""
+
+    owner_path = Path("src/ea_core_foundation/strategy_transformation/http.py")
+    runtime_path = Path("src/ea_core_foundation/runtime.py")
+    assert owner_path.is_file()
+
+    owner_tree = ast.parse(
+        owner_path.read_text(encoding="utf-8"),
+        filename=str(owner_path),
+    )
+    assert any(
+        isinstance(node, ast.ClassDef) and node.name == "SchedulingServiceHandler"
+        for node in owner_tree.body
+    )
+
+    runtime_tree = ast.parse(
+        runtime_path.read_text(encoding="utf-8"),
+        filename=str(runtime_path),
+    )
+    assert not any(
+        isinstance(node, ast.ClassDef) and node.name == "SchedulingServiceHandler"
+        for node in runtime_tree.body
+    )
+
+
+def test_runtime_composes_the_bounded_transformation_http_adapter() -> None:
+    """Require the deployable root to import the bounded HTTP adapter explicitly."""
+
+    runtime_path = Path("src/ea_core_foundation/runtime.py")
+    runtime_tree = ast.parse(
+        runtime_path.read_text(encoding="utf-8"),
+        filename=str(runtime_path),
+    )
+    assert any(
+        isinstance(node, ast.ImportFrom)
+        and node.level == 1
+        and node.module == "strategy_transformation.http"
+        and any(alias.name == "SchedulingServiceHandler" for alias in node.names)
+        for node in runtime_tree.body
+    )
