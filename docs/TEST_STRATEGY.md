@@ -10,6 +10,16 @@
 - Python 3.11-3.14 validation, Ruff, installed wheel/package smoke and exact 100% owned production statement/branch coverage;
 - exact-head package/SBOM evidence; skipped applicable required evidence is non-passing.
 
+## Ordered PostgreSQL acceptance scenario
+
+A small Data/AI Context sequence intentionally exercises persisted cross-command history across separate SQL files. CI executes `database/tests/*.sql` in shell lexicographic order. These files form a **lexicographic acceptance scenario**, so this order is part of the executable acceptance contract:
+
+1. `database/tests/zzzzzzzzzzzzz_verify_data_management_improvement.sql` creates the committed assessment/improvement baseline.
+2. `database/tests/zzzzzzzzzzzzzz_verify_data_management_replay_after_supersession.sql` proves exact replay after source supersession.
+3. `database/tests/zzzzzzzzzzzzzzzzzzzzz_verify_data_management_dependencies.sql` consumes the surviving active gap/initiative state to prove prerequisite/evidence dependency semantics.
+
+`tests/test_database_acceptance_order_contract.py` fails if those paths no longer sort in that order, if the CI harness stops using the declared glob, or if this strategy stops naming the staged sequence. Renaming or reordering the staged files, or changing test enumeration, therefore requires an intentional scenario update. Acceptance tests outside this declared sequence must seed their own state rather than relying on accidental prior-file side effects.
+
 ## Technology Change Impact & Target-State Planner
 
 Real PostgreSQL acceptance proves the bitemporal path from technology lifecycle through affected applications/capabilities, receipt-bound physical-schema/Data-AI evidence, remediation initiative, immutable target scenario and append-preserving transformation state. It verifies deterministic next actions, truth-origin preservation, explicit valid/system cutoffs, bounded horizon, cross-tenant denial and the purpose-bound runtime query port.
