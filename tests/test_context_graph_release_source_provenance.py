@@ -89,6 +89,7 @@ def _verify_release(manifest: dict[str, object], **overrides) -> str:
     arguments = {
         "version_reader": lambda _name: "0.2.0",
         "resource_exists": lambda _resource: True,
+        "bundle_verifier": lambda _bundle: True,
         "release_admission_verifier": lambda _conformance, _bundle: True,
         "source_attestation_verifier": lambda _source_manifest: True,
     }
