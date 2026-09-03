@@ -10,7 +10,6 @@ from datetime import datetime
 from urllib.parse import parse_qsl, urlparse
 from uuid import UUID
 
-from ..authorization import AuthorizationContext, KeyverseAuthorizationConfig
 from ..decision_plane_http import (
     CommandRunner,
     PlannerExecutionError,
@@ -19,6 +18,10 @@ from ..decision_plane_http import (
     _parse_uuid7,
     _postgres_environment,
     build_keyverse_authorization_config,
+)
+from ..identity_authorization.authorization import (
+    AuthorizationContext,
+    KeyverseAuthorizationConfig,
 )
 
 _TARGET_STATE_MONITORING_PATH_PREFIX = "/v1/architecture-transformations/"
