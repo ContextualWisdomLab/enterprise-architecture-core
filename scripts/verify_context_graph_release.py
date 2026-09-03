@@ -91,6 +91,10 @@ _EXPECTED_RESOURCES = (
     "cwl_context_contracts.schemas:data-management-assessment.schema.json",
     "cwl_context_contracts.conformance:data-management-assessment-semantics.v1.json",
 )
+_EXPECTED_SDK_EXPORTS = (
+    "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+    "admit_context_assertion_message",
+)
 _REQUIRED_BEFORE_MERGE = (
     "immutable released dependency containing every declared artifact"
 )
@@ -110,6 +114,7 @@ _SBOM_NAME = "cwl-context-contracts.spdx.json"
 
 VersionReader = Callable[[str], str]
 ResourceProbe = Callable[[str], bool]
+SdkExportProbe = Callable[[str], bool]
 BundleVerifier = Callable[[object], bool]
 ReleaseAdmissionVerifier = Callable[[object, object], bool]
 SourceAttestationVerifier = Callable[[Mapping[str, object]], bool]
@@ -129,6 +134,21 @@ def _default_resource_exists(resource_specification: str) -> bool:
         return files(package_name).joinpath(relative_path).is_file()
     except (ImportError, TypeError):
         return False
+
+
+def _default_sdk_export_exists(export_name: str) -> bool:
+    """Return whether the installed package exposes one declared public SDK symbol."""
+
+    try:
+        package = import_module("cwl_context_contracts")
+        public_exports = getattr(package, "__all__")
+    except Exception:
+        return False
+    return (
+        isinstance(public_exports, list)
+        and export_name in public_exports
+        and hasattr(package, export_name)
+    )
 
 
 def _default_bundle_verified(approved_manifest: object) -> bool:
@@ -291,6 +311,7 @@ def verify_context_graph_release(
     *,
     version_reader: VersionReader = distribution_version,
     resource_exists: ResourceProbe = _default_resource_exists,
+    sdk_export_exists: SdkExportProbe = _default_sdk_export_exists,
     bundle_verifier: BundleVerifier = _default_bundle_verified,
     release_admission_verifier: ReleaseAdmissionVerifier = _default_release_admitted,
     source_attestation_verifier: SourceAttestationVerifier = (
@@ -310,6 +331,7 @@ def verify_context_graph_release(
         _EXPECTED_PROFILE_IDS,
     )
     _require_exact_list(manifest, "required_package_resources", _EXPECTED_RESOURCES)
+    _require_exact_list(manifest, "required_sdk_exports", _EXPECTED_SDK_EXPORTS)
     if manifest.get("required_before_merge") != _REQUIRED_BEFORE_MERGE:
         raise ContextGraphReleaseError("required_before_merge contract has drifted")
     if manifest.get("state") != "immutable-release":
@@ -385,6 +407,12 @@ def verify_context_graph_release(
             raise ContextGraphReleaseError(
                 "missing packaged resource from immutable release: "
                 f"{resource_specification}"
+            )
+    for export_name in _EXPECTED_SDK_EXPORTS:
+        if not sdk_export_exists(export_name):
+            raise ContextGraphReleaseError(
+                "missing packaged SDK export from immutable release: "
+                f"{export_name}"
             )
 
     try:
