@@ -59,6 +59,7 @@ _REQUIRED_RESOURCES = (
 )
 _REQUIRED_SDK_EXPORTS = (
     "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+    "ContextAssertionAdmission",
     "admit_context_assertion_message",
 )
 _APPROVED_CONFORMANCE_MANIFEST = {
@@ -206,8 +207,7 @@ def test_context_graph_release_gate_requires_exact_installed_sdk_surface() -> No
     with pytest.raises(ContextGraphReleaseError, match="missing packaged SDK export"):
         _verify(
             _released_manifest(),
-            sdk_export_exists=lambda export: export
-            != "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+            sdk_export_exists=lambda export: export != "ContextAssertionAdmission",
         )
 
 
