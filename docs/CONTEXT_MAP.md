@@ -43,6 +43,8 @@ Owns immutable baselines and ordered deltas. A scenario is a candidate state, no
 
 Owns only the receipt, normalization and bitemporal projection needed for EA decisions. It must preserve the upstream owner, source identity, truth origin, effective/system time and receipt/provenance. It may not recreate the full foreign product model or write directly to another product's application tables.
 
+For admitted Context Assertion CloudEvents, the receipt contract is stricter than payload projection alone: EA retains source authority; CloudEvent `id`, `source`, `type`, `subject`, `time` and `dataschema` identity; the exact admitted schema/profile/admission versions; and provenance. A projection that cannot identify the exact admitted message and compatibility contract is invalid evidence, even when its normalized EA fields are otherwise well formed.
+
 Connector ownership/release-binding validation lives in `src/ea_core_foundation/cross_domain_evidence/connector_catalog.py`. Foreign Data/AI reassessment-status contract validation lives in `cross_domain_evidence/data_management_recheck_status.py`. Their historical `validation_*` import paths are retained only as behavior-free compatibility facades. EA-owned reassessment decisions stay in Portfolio Assessment rather than being absorbed into this Supporting context.
 
 ### Identity & Authorization Adapter
