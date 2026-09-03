@@ -70,6 +70,17 @@ def test_target_state_verification_has_bounded_context_owner_path() -> None:
     )
 
 
+def test_target_state_replan_has_bounded_context_owner_path() -> None:
+    """Keep target-state replanning behavior out of the foundation root."""
+
+    owner_path = Path("src/ea_core_foundation/strategy_transformation/replan.py")
+    assert owner_path.is_file()
+    _assert_behavior_free_facade(
+        Path("src/ea_core_foundation/replan.py"),
+        "strategy_transformation.replan",
+    )
+
+
 def test_completion_runtime_uses_bounded_transformation_command_owners() -> None:
     """Keep completion composition on canonical transformation command ports."""
 
@@ -111,6 +122,29 @@ def test_verification_runtime_uses_bounded_transformation_command_owner() -> Non
     )
     assert not any(
         node.level == 1 and node.module == "verify" for node in imports
+    )
+
+
+def test_replan_runtime_uses_bounded_transformation_command_owners() -> None:
+    """Keep terminal replanning composition on canonical transformation ports."""
+
+    runtime_path = Path("src/ea_core_foundation/replan_runtime.py")
+    runtime_tree = ast.parse(
+        runtime_path.read_text(encoding="utf-8"),
+        filename=str(runtime_path),
+    )
+    imports = [
+        node for node in runtime_tree.body if isinstance(node, ast.ImportFrom)
+    ]
+    for owner_module in (
+        "strategy_transformation.replan",
+        "strategy_transformation.verify",
+    ):
+        assert any(
+            node.level == 1 and node.module == owner_module for node in imports
+        )
+    assert not any(
+        node.level == 1 and node.module in {"replan", "verify"} for node in imports
     )
 
 
@@ -161,6 +195,21 @@ def test_legacy_target_state_verification_is_a_compatibility_alias() -> None:
         assert getattr(compatibility, name) is getattr(owner, name)
 
 
+def test_legacy_target_state_replan_is_a_compatibility_alias() -> None:
+    """Preserve replanning API identity while moving behavior to its owner."""
+
+    compatibility = importlib.import_module("ea_core_foundation.replan")
+    owner = importlib.import_module("ea_core_foundation.strategy_transformation.replan")
+    public_names = (
+        "TargetStateReplanRequest",
+        "build_replan_authorization_config",
+        "build_target_state_replan_writer",
+        "parse_target_state_replan_request",
+    )
+    for name in public_names:
+        assert getattr(compatibility, name) is getattr(owner, name)
+
+
 def test_target_state_monitoring_has_bounded_context_owner_path() -> None:
     """Keep target-state monitoring behavior out of the foundation root."""
 
@@ -203,6 +252,7 @@ def test_strategy_owner_modules_use_canonical_shared_adapters() -> None:
     for owner_path in (
         Path("src/ea_core_foundation/strategy_transformation/complete.py"),
         Path("src/ea_core_foundation/strategy_transformation/monitor.py"),
+        Path("src/ea_core_foundation/strategy_transformation/replan.py"),
         Path("src/ea_core_foundation/strategy_transformation/start.py"),
         Path("src/ea_core_foundation/strategy_transformation/verify.py"),
     ):
