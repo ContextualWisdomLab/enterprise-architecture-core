@@ -111,8 +111,8 @@ def test_target_state_monitoring_has_bounded_context_owner_path() -> None:
     )
 
 
-def test_monitoring_runtime_uses_the_bounded_owner_not_the_legacy_facade() -> None:
-    """Keep internal monitoring composition on the canonical owner path."""
+def test_monitoring_runtime_uses_canonical_strategy_transformation_ports() -> None:
+    """Keep monitoring composition on canonical Strategy & Transformation ports."""
 
     runtime_path = Path("src/ea_core_foundation/monitoring_runtime.py")
     runtime_tree = ast.parse(
@@ -125,11 +125,15 @@ def test_monitoring_runtime_uses_the_bounded_owner_not_the_legacy_facade() -> No
         if isinstance(node, ast.ImportFrom)
     ]
     assert any(
+        node.level == 1 and node.module == "strategy_transformation.complete"
+        for node in imports
+    )
+    assert any(
         node.level == 1 and node.module == "strategy_transformation.monitor"
         for node in imports
     )
     assert not any(
-        node.level == 1 and node.module == "monitor"
+        node.level == 1 and node.module in {"complete", "monitor"}
         for node in imports
     )
 
