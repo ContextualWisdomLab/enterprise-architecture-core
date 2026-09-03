@@ -25,6 +25,7 @@ These terms are the domain language for the Enterprise Architecture Decision Pla
 | Scenario Projection | The deterministic candidate state produced from an immutable baseline plus ordered deltas. |
 | Transformation | An approved/executed architecture change whose history is retained rather than hard-deleted. |
 | Evidence Receipt | A durable record binding an EA projection/decision input to the exact upstream evidence identity and truth/provenance context. |
+| Projection Receipt | The admission identity retained with an admitted Context Assertion projection: source authority, CloudEvent identity (`id`, `source`, `type`, `subject`, `time`, `dataschema`), exact schema/profile/admission versions and provenance. It proves what was admitted without transferring source authority to EA. |
 | Cross-Domain Projection | The minimum normalized EA-side representation of foreign evidence required for EA decisions. Projection is not a duplicate system of record. |
 | Impact Path | The explainable chain from a triggering technology/lifecycle change through affected applications/capabilities and accepted external evidence to a decision/action. |
 | Remediation Initiative | An initiative created or selected to mitigate an identified architecture/technology risk. |
@@ -47,7 +48,7 @@ Names such as data product, catalog asset, lineage, output port, glossary term a
 
 ## Isolation and security evidence language
 
-Quarantine runtime technology/provider/version/lifecycle, ownership, remediation/transformation and attestation provenance may be projected as EA context only through a released compatible Context Graph contract. Sandbox internals stay in `quarantine-sandbox-runtime`; caller authorization/application selection stays in `contextual-orchestrator`; maliciousness verdicts, incidents and quarantine/block policy stay in Wardnet. Direct database access or source copying across these contexts is not part of the model.
+Quarantine runtime technology/provider/version/lifecycle, ownership, remediation/transformation and attestation provenance may be projected as EA context only through a released compatible Context Graph contract. Every admitted Context Assertion projection retains a Projection Receipt, so a later EA decision can identify the source authority, exact CloudEvent, schema/profile/admission version and provenance used at admission. Sandbox internals stay in `quarantine-sandbox-runtime`; caller authorization/application selection stays in `contextual-orchestrator`; maliciousness verdicts, incidents and quarantine/block policy stay in Wardnet. Direct database access or source copying across these contexts is not part of the model.
 
 ## Naming and path discipline
 
