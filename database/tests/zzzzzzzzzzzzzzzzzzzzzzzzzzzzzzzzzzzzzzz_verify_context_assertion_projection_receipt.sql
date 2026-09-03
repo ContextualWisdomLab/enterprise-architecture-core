@@ -3,10 +3,19 @@
 -- An admitted Context Assertion must remain attributable to the exact CloudEvent
 -- and compatibility contract that created the EA-side projection receipt.
 
-SET ROLE ea_runtime;
+INSERT INTO architecture_core.tenant_record (
+    tenant_record_id,
+    tenant_code,
+    tenant_title
+) VALUES (
+    '0196f300-0000-7000-8000-000000000001',
+    'receipt_tenant',
+    'Context Assertion receipt test tenant'
+);
+
 SELECT set_config(
     'app.tenant_record_id',
-    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    '0196f300-0000-7000-8000-000000000001',
     false
 );
 
@@ -18,9 +27,9 @@ INSERT INTO architecture_core.evidence_record (
     source_locator,
     recorded_at
 ) VALUES (
-    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    '0196f300-0000-7000-8000-000000000001',
     '0196f300-2000-7200-8200-000000000001',
-    'urn:cwl:tenant_001:quarantine_sandbox_runtime:attestation_provenance:0196f300-2000-7200-8200-000000000001',
+    'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:attestation_provenance:0196f300-2000-7200-8200-000000000001',
     repeat('d', 64),
     'oci://quarantine-sandbox-runtime/attestations/0196f300-2000-7200-8200-000000000001',
     '2026-09-03T09:00:00Z'
@@ -37,9 +46,9 @@ INSERT INTO architecture_core.projection_receipt (
     processed_at,
     processing_status_code
 ) VALUES (
-    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    '0196f300-0000-7000-8000-000000000001',
     '0196f300-1000-7100-8100-000000000001',
-    'urn:cwl:tenant_001:quarantine_sandbox_runtime',
+    'urn:cwl:receipt_tenant:quarantine_sandbox_runtime',
     '0196f300-1000-7100-8100-000000000101',
     repeat('e', 64),
     'context-assertion/v1',
@@ -62,11 +71,11 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     provenance_evidence_record_id,
     recorded_at
 ) VALUES (
-    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    '0196f300-0000-7000-8000-000000000001',
     '0196f300-1000-7100-8100-000000000001',
     '1.0',
     'org.contextualwisdomlab.context_graph.assertion.v1',
-    'urn:cwl:tenant_001:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001',
+    'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001',
     '2026-09-03T08:59:59Z',
     'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
     'application/cloudevents+json',
@@ -87,6 +96,8 @@ DECLARE
   actual_profile text;
   actual_admission text;
   actual_provenance uuid;
+  rls_enabled boolean;
+  rls_forced boolean;
 BEGIN
   SELECT
       base.event_source_uri,
@@ -112,19 +123,19 @@ BEGIN
     JOIN architecture_core.context_assertion_projection_receipt AS detail
       USING (tenant_record_id, projection_receipt_id)
    WHERE base.tenant_record_id =
-         '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+         '0196f300-0000-7000-8000-000000000001'
      AND base.projection_receipt_id =
          '0196f300-1000-7100-8100-000000000001';
 
   IF actual_source IS DISTINCT FROM
-        'urn:cwl:tenant_001:quarantine_sandbox_runtime'
+        'urn:cwl:receipt_tenant:quarantine_sandbox_runtime'
      OR actual_event_identifier IS DISTINCT FROM
         '0196f300-1000-7100-8100-000000000101'
      OR actual_specversion IS DISTINCT FROM '1.0'
      OR actual_event_type IS DISTINCT FROM
         'org.contextualwisdomlab.context_graph.assertion.v1'
      OR actual_subject IS DISTINCT FROM
-        'urn:cwl:tenant_001:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001'
+        'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001'
      OR actual_dataschema IS DISTINCT FROM
         'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json'
      OR actual_profile IS DISTINCT FROM 'context-assertion/v1'
@@ -133,8 +144,39 @@ BEGIN
         '0196f300-2000-7200-8200-000000000001'::uuid THEN
     RAISE EXCEPTION 'Context Assertion projection receipt lost admitted identity';
   END IF;
+
+  SELECT relrowsecurity, relforcerowsecurity
+    INTO rls_enabled, rls_forced
+    FROM pg_class
+   WHERE oid = 'architecture_core.context_assertion_projection_receipt'::regclass;
+
+  IF rls_enabled IS DISTINCT FROM true OR rls_forced IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'Context Assertion projection receipt must use forced RLS';
+  END IF;
 END;
 $$;
+
+INSERT INTO architecture_core.projection_receipt (
+    tenant_record_id,
+    projection_receipt_id,
+    event_source_uri,
+    event_identifier,
+    payload_sha256,
+    schema_version,
+    received_at,
+    processed_at,
+    processing_status_code
+) VALUES (
+    '0196f300-0000-7000-8000-000000000001',
+    '0196f300-1000-7100-8100-000000000002',
+    'urn:cwl:receipt_tenant:quarantine_sandbox_runtime',
+    '0196f300-1000-7100-8100-000000000102',
+    repeat('f', 64),
+    'context-assertion/v1',
+    '2026-09-03T09:01:01Z',
+    '2026-09-03T09:01:02Z',
+    'processed'
+);
 
 DO $$
 BEGIN
@@ -152,12 +194,12 @@ BEGIN
         admission_version,
         provenance_evidence_record_id
     ) VALUES (
-        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
-        '0196f300-1000-7100-8100-000000000001',
+        '0196f300-0000-7000-8000-000000000001',
+        '0196f300-1000-7100-8100-000000000002',
         '0.3',
         'org.contextualwisdomlab.context_graph.assertion.v1',
-        'urn:cwl:tenant_001:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001',
-        '2026-09-03T08:59:59Z',
+        'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001',
+        '2026-09-03T09:00:59Z',
         'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
         'application/cloudevents+json',
         'context-assertion/v1',
@@ -177,7 +219,7 @@ BEGIN
     UPDATE architecture_core.context_assertion_projection_receipt
        SET admission_version = 'rewritten/v2'
      WHERE tenant_record_id =
-           '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+           '0196f300-0000-7000-8000-000000000001'
        AND projection_receipt_id =
            '0196f300-1000-7100-8100-000000000001';
     RAISE EXCEPTION 'Context Assertion admission identity was rewritten';
@@ -192,7 +234,7 @@ BEGIN
   BEGIN
     DELETE FROM architecture_core.context_assertion_projection_receipt
      WHERE tenant_record_id =
-           '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+           '0196f300-0000-7000-8000-000000000001'
        AND projection_receipt_id =
            '0196f300-1000-7100-8100-000000000001';
     RAISE EXCEPTION 'Context Assertion projection receipt was hard-deleted';
@@ -201,5 +243,3 @@ BEGIN
   END;
 END;
 $$;
-
-RESET ROLE;
