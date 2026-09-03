@@ -45,6 +45,7 @@ _REQUIRED_PROJECTION_RESOURCES = {
 }
 _REQUIRED_PROJECTION_SDK_EXPORTS = {
     "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+    "ContextAssertionAdmission",
     "admit_context_assertion_message",
 }
 
