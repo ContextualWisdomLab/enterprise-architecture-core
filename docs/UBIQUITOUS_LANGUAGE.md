@@ -37,6 +37,7 @@ These terms are the domain language for the Enterprise Architecture Decision Pla
 | Transactional Outbox | The same-transaction record of domain events emitted from an authoritative state change. |
 | Inbox / Replay Receipt | Idempotency evidence used to prevent duplicate external event effects while retaining replay/audit history. |
 | Anti-Corruption Layer | Translation at a context boundary that preserves EA semantics and prevents foreign product/domain models from becoming EA's internal model by convenience. |
+| Noema Projection | A receipt-bound architecture projection of Noema deployable/runtime/service/API/worker capability identity, infrastructure technology/provider/version, lifecycle, ownership, architecture-risk context, remediation or transformation. It never transfers Agent Runtime, Workflow/Task, Tool/Capability, State/Checkpoint, Policy/Approval, Observability or Recovery truth to EA. |
 | Quarantine Sandbox Runtime | The independent reusable hostile-workload isolation product that owns sandbox lifecycle/resource enforcement/cleanup/attestation and artifact-analysis evidence. It is not the owner of caller authorization, maliciousness verdicts, incidents or EA architecture decisions. |
 | Application-Service Lease | A caller-scoped request/lease boundary through which contextual-orchestrator may run an application service in the Quarantine Sandbox Runtime. The caller's policy, application selection and secrets remain outside the runtime. |
 | Artifact-Analysis Evidence | Evidence produced by Quarantine Sandbox Runtime analysis of a hostile or unknown artifact. Wardnet may consume it for SOC policy/verdict decisions; the evidence itself is not an authoritative EA malware verdict or risk score. |
@@ -45,6 +46,10 @@ These terms are the domain language for the Enterprise Architecture Decision Pla
 ## Data/AI evidence language
 
 Names such as data product, catalog asset, lineage, output port, glossary term and trust/certification belong primarily to the Data/AI Context. EA may store receipt-bound references/projections needed for an architecture assessment, improvement dependency or impact path, but must retain source ownership and truth origin. `data_management_*` projections in the current stack therefore describe EA decision evidence and remediation state, not a replacement catalog system of record.
+
+## Agent runtime projection language
+
+Noema remains authoritative for Agent tasks/results/reasoning, tool payloads, workflow execution state, approval decisions, checkpoint/prompt content, model output and user business data. EA may receive only the architecture-relevant projection named above, through released Context Graph admission with a Projection Receipt. A Noema event or model-backed result cannot become authoritative EA truth by ingestion; direct database access and source copying remain outside the integration model.
 
 ## Isolation and security evidence language
 
