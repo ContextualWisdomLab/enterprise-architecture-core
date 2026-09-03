@@ -12,6 +12,7 @@ Enterprise Architecture Core
    │
    ├◄──────────── pg-erd-cloud observed schema evidence
    ├◄──────────── LineageWeave inferred relation proposals
+   ├◄──────────── Noema deployable/runtime architecture context
    │
    └◄──────────── Quarantine Sandbox Runtime architecture context
                     ▲                       ▲
@@ -35,7 +36,10 @@ Enterprise Architecture Core owns:
 
 It does not own datasets, columns, data contracts, physical schema snapshots,
 inferred narrative lineage, credentials, hostile-workload sandbox lifecycle,
+Agent tasks/results/reasoning, workflow execution state, checkpoint content,
 malware verdicts, artifact risk scores, SOC incidents, or project execution status.
+
+Noema independently owns Agent Runtime, Workflow/Task Execution, Tool/Capability boundaries, State/Checkpoint, Isolation Integration, Policy/Approval, Observability and Recovery. EA may project only Noema deployable/runtime/service/API/worker capability identity; database/queue/object-storage/runtime technology; provider/version; lifecycle; ownership; architecture-risk context; remediation and transformation after released Context Graph admission. Tool payloads, workflow state, approvals, checkpoints, prompts, model outputs and user business data remain Noema truth and cannot become authoritative EA facts by ingestion.
 
 Quarantine Sandbox Runtime independently owns reusable hostile-workload sandbox lifecycle, resource enforcement, cleanup, attestation and artifact-analysis evidence. `contextual-orchestrator` owns Chat/Agent/task/tool caller policy, authorization, application selection, secrets and user-visible actions when requesting application-service leases. Wardnet owns maliciousness verdict, incident and quarantine/block/notification/retention policy when consuming artifact-analysis evidence. EA may project only architecture-relevant runtime/backend identity, technology/provider/version, lifecycle, architecture-risk context, ownership, remediation/transformation and attestation provenance, with source truth and bitemporal provenance preserved.
 
@@ -67,7 +71,7 @@ uses the same explicit origin vocabulary as architecture assertions:
 authoritative or observed scores require evidence, while inferred/proposed
 scores remain reviewable without silently becoming authoritative.
 
-Runtime/security evidence follows the same rule. A quarantine attestation or artifact-analysis result can support an EA architecture-risk decision, but neither transport admission nor a runtime-produced malware/risk value becomes authoritative EA truth automatically. Wardnet's verdict authority also remains outside EA.
+Runtime/security evidence follows the same rule. Noema runtime/workflow/model output and quarantine attestation/artifact-analysis results can support an EA architecture-risk decision only through the bounded released projection. Neither transport admission nor a foreign runtime-produced result becomes authoritative EA truth automatically. Wardnet's verdict authority also remains outside EA.
 
 ## Process surface
 
