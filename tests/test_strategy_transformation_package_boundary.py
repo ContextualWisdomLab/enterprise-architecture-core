@@ -59,6 +59,17 @@ def test_transformation_start_has_bounded_context_owner_path() -> None:
     )
 
 
+def test_target_state_verification_has_bounded_context_owner_path() -> None:
+    """Keep target-state verification behavior out of the foundation root."""
+
+    owner_path = Path("src/ea_core_foundation/strategy_transformation/verify.py")
+    assert owner_path.is_file()
+    _assert_behavior_free_facade(
+        Path("src/ea_core_foundation/verify.py"),
+        "strategy_transformation.verify",
+    )
+
+
 def test_completion_runtime_uses_bounded_transformation_command_owners() -> None:
     """Keep completion composition on canonical transformation command ports."""
 
@@ -80,6 +91,26 @@ def test_completion_runtime_uses_bounded_transformation_command_owners() -> None
     assert not any(
         node.level == 1 and node.module in {"complete", "start"}
         for node in imports
+    )
+
+
+def test_verification_runtime_uses_bounded_transformation_command_owner() -> None:
+    """Keep verification composition on the canonical transformation command port."""
+
+    runtime_path = Path("src/ea_core_foundation/verification_runtime.py")
+    runtime_tree = ast.parse(
+        runtime_path.read_text(encoding="utf-8"),
+        filename=str(runtime_path),
+    )
+    imports = [
+        node for node in runtime_tree.body if isinstance(node, ast.ImportFrom)
+    ]
+    assert any(
+        node.level == 1 and node.module == "strategy_transformation.verify"
+        for node in imports
+    )
+    assert not any(
+        node.level == 1 and node.module == "verify" for node in imports
     )
 
 
@@ -110,6 +141,21 @@ def test_legacy_transformation_start_is_a_compatibility_alias() -> None:
         "build_start_authorization_config",
         "build_target_state_start_writer",
         "parse_target_state_start_request",
+    )
+    for name in public_names:
+        assert getattr(compatibility, name) is getattr(owner, name)
+
+
+def test_legacy_target_state_verification_is_a_compatibility_alias() -> None:
+    """Preserve verification API identity while moving behavior to its owner."""
+
+    compatibility = importlib.import_module("ea_core_foundation.verify")
+    owner = importlib.import_module("ea_core_foundation.strategy_transformation.verify")
+    public_names = (
+        "TargetStateVerificationRequest",
+        "build_target_state_verification_writer",
+        "build_verification_authorization_config",
+        "parse_target_state_verification_request",
     )
     for name in public_names:
         assert getattr(compatibility, name) is getattr(owner, name)
@@ -158,6 +204,7 @@ def test_strategy_owner_modules_use_canonical_shared_adapters() -> None:
         Path("src/ea_core_foundation/strategy_transformation/complete.py"),
         Path("src/ea_core_foundation/strategy_transformation/monitor.py"),
         Path("src/ea_core_foundation/strategy_transformation/start.py"),
+        Path("src/ea_core_foundation/strategy_transformation/verify.py"),
     ):
         owner_tree = ast.parse(
             owner_path.read_text(encoding="utf-8"),
