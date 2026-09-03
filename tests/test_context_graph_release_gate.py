@@ -150,6 +150,7 @@ def _verify(manifest: dict[str, object], **overrides) -> str:
     arguments = {
         "version_reader": lambda _name: "0.2.0",
         "resource_exists": lambda _resource: True,
+        "sdk_export_exists": lambda _export: True,
         "bundle_verifier": _bundle_verified,
         "release_admission_verifier": lambda _conformance, _bundle: True,
         "source_attestation_verifier": lambda _source_manifest: True,
