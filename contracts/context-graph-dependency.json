@@ -5,7 +5,9 @@
   "release_version": null,
   "release_tag": null,
   "release_commit_sha": null,
+  "approved_conformance_manifest": null,
   "approved_bundle_manifest": null,
+  "release_source_manifest": null,
   "required_schema_ids": [
     "https://schemas.contextualwisdomlab.org/context/canonical-authority-uri.v1.schema.json",
     "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json",
