@@ -49,11 +49,6 @@ from .portfolio_assessment.portfolio_assessment import (
     parse_portfolio_assessment_request,
     parse_portfolio_assessment_summary_request,
 )
-from .replan import (
-    build_replan_authorization_config,
-    build_target_state_replan_writer,
-    parse_target_state_replan_request,
-)
 from .runtime import (
     build_schedule_authorization_config,
     build_target_state_schedule_writer,
@@ -66,11 +61,16 @@ from .strategy_transformation.monitor import (
     build_monitoring_authorization_config,
     build_target_state_monitoring_reader,
 )
+from .strategy_transformation.replan import (
+    build_replan_authorization_config,
+    build_target_state_replan_writer,
+    parse_target_state_replan_request,
+)
 from .strategy_transformation.start import (
     build_start_authorization_config,
     build_target_state_start_writer,
 )
-from .verify import (
+from .strategy_transformation.verify import (
     build_target_state_verification_writer,
     build_verification_authorization_config,
 )
