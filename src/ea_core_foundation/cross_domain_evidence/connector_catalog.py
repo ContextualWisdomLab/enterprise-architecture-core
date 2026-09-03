@@ -22,6 +22,7 @@ _CONTEXT_CONTRACT_BOUND_DIRECTIONS = frozenset(
     }
 )
 _CONTEXT_CONTRACT_DEPENDENCY = "contracts/context-graph-dependency.json"
+_CONTEXT_ASSERTION_EXCHANGE_KIND = "context_assertion_cloudevent"
 _OWNER_REPOSITORY_PREFIX = "ContextualWisdomLab/"
 _PRESERVED_CONTEXT_SEMANTICS = (
     "canonical_reference",
@@ -29,6 +30,14 @@ _PRESERVED_CONTEXT_SEMANTICS = (
     "truth_status",
     "effective_time",
     "system_time",
+    "provenance",
+)
+_PROJECTION_RECEIPT_SEMANTICS = (
+    "source_authority",
+    "cloudevent_identity",
+    "schema_version",
+    "profile_version",
+    "admission_version",
     "provenance",
 )
 _QUARANTINE_CONNECTOR_NAME = "quarantine_sandbox_runtime"
@@ -76,7 +85,7 @@ _QUARANTINE_PROHIBITED_INTEGRATIONS = (
 
 
 def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
-    """Require architecture projections to bind one canonical owner and release."""
+    """Require projections to bind canonical release and receipt semantics."""
 
     owner_repository = connector.get("owner_repository")
     repository_name = (
@@ -101,6 +110,13 @@ def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
         raise ContractValidationError(
             "Context Fabric projection must preserve exact context semantics"
         )
+    if connector.get("exchange_kind") == _CONTEXT_ASSERTION_EXCHANGE_KIND:
+        receipt_semantics = connector.get("projection_receipt_semantics")
+        if receipt_semantics != list(_PROJECTION_RECEIPT_SEMANTICS):
+            raise ContractValidationError(
+                "Context Assertion projection must preserve exact projection receipt "
+                "semantics"
+            )
 
 
 def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
