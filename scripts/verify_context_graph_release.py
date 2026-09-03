@@ -116,6 +116,7 @@ _SBOM_NAME = "cwl-context-contracts.spdx.json"
 VersionReader = Callable[[str], str]
 ResourceProbe = Callable[[str], bool]
 SdkExportProbe = Callable[[str], bool]
+ProjectionSdkVerifier = Callable[[], bool]
 BundleVerifier = Callable[[object], bool]
 ReleaseAdmissionVerifier = Callable[[object, object], bool]
 SourceAttestationVerifier = Callable[[Mapping[str, object]], bool]
@@ -149,6 +150,47 @@ def _default_sdk_export_exists(export_name: str) -> bool:
         isinstance(public_exports, list)
         and export_name in public_exports
         and hasattr(package, export_name)
+    )
+
+
+def _default_projection_sdk_verified() -> bool:
+    """Verify that installed Context Assertion admission retains projection identity."""
+
+    try:
+        package = import_module("cwl_context_contracts")
+        media_type = getattr(package, "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE")
+        admission_type = getattr(package, "ContextAssertionAdmission")
+        admit = getattr(package, "admit_context_assertion_message")
+        profile = json.loads(
+            files("cwl_context_contracts.conformance")
+            .joinpath("context-assertion-event-semantics.v1.json")
+            .read_text(encoding="utf-8")
+        )
+        valid_vectors = profile.get("valid_vectors")
+        if not isinstance(valid_vectors, list) or not valid_vectors:
+            return False
+        vector = valid_vectors[0]
+        if not isinstance(vector, Mapping):
+            return False
+        event = vector.get("value")
+        if not isinstance(event, Mapping):
+            return False
+        admitted = admit(media_type, event)
+        if not isinstance(admitted, admission_type):
+            return False
+        envelope_mapping = admitted.envelope.to_mapping()
+        assertion_mapping = admitted.assertion.to_mapping()
+    except Exception:
+        return False
+
+    return (
+        media_type == "application/cloudevents+json"
+        and envelope_mapping == event
+        and assertion_mapping == event.get("data")
+        and admitted.profile_id
+        == "urn:cwl:context-contracts:context-assertion-event-semantics:v1"
+        and admitted.profile_version == 1
+        and admitted.admission_version == 1
     )
 
 
@@ -313,13 +355,14 @@ def verify_context_graph_release(
     version_reader: VersionReader = distribution_version,
     resource_exists: ResourceProbe = _default_resource_exists,
     sdk_export_exists: SdkExportProbe = _default_sdk_export_exists,
+    projection_sdk_verifier: ProjectionSdkVerifier = _default_projection_sdk_verified,
     bundle_verifier: BundleVerifier = _default_bundle_verified,
     release_admission_verifier: ReleaseAdmissionVerifier = _default_release_admitted,
     source_attestation_verifier: SourceAttestationVerifier = (
         _default_source_attestation_verified
     ),
 ) -> str:
-    """Verify installed, semantic, bundle, and attested source release evidence."""
+    """Verify installed, semantic, bundle, SDK, and attested source release evidence."""
 
     if manifest.get("contract_repository") != _EXPECTED_REPOSITORY:
         raise ContextGraphReleaseError(
@@ -415,6 +458,18 @@ def verify_context_graph_release(
                 "missing packaged SDK export from immutable release: "
                 f"{export_name}"
             )
+
+    try:
+        projection_sdk_verified = projection_sdk_verifier()
+    except Exception as error:
+        raise ContextGraphReleaseError(
+            "Context Assertion projection SDK behavior could not be verified"
+        ) from error
+    if projection_sdk_verified is not True:
+        raise ContextGraphReleaseError(
+            "Context Assertion projection SDK behavior does not retain the "
+            "admitted CloudEvent receipt"
+        )
 
     try:
         bundle_verified = bundle_verifier(approved_bundle_manifest)
