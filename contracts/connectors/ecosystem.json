@@ -274,6 +274,76 @@
       "next_action": "Accept orchestration-generated architecture suggestions only as proposed or inferred context with provenance; require an authorized EA command before authoritative promotion."
     },
     {
+      "connector_name": "noema_projection",
+      "owner_repository": "ContextualWisdomLab/noema",
+      "direction_code": "inbound_projection",
+      "exchange_kind": "context_assertion_cloudevent",
+      "ea_core_owns": false,
+      "context_contract_dependency": "contracts/context-graph-dependency.json",
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
+      "architecture_projection_scope": [
+        "runtime_identity",
+        "service_identity",
+        "api_identity",
+        "worker_identity",
+        "workflow_runtime_capability_identity",
+        "database_technology",
+        "queue_technology",
+        "object_storage_technology",
+        "runtime_technology",
+        "technology_provider",
+        "technology_version",
+        "lifecycle",
+        "ownership",
+        "architecture_risk_context",
+        "remediation",
+        "transformation"
+      ],
+      "forbidden_authoritative_facts": [
+        "agent_task",
+        "agent_result",
+        "agent_reasoning",
+        "tool_payload",
+        "workflow_execution_state",
+        "approval_decision",
+        "checkpoint_content",
+        "prompt_content",
+        "model_output",
+        "user_business_data",
+        "malware_verdict",
+        "security_risk_score"
+      ],
+      "prohibited_integrations": [
+        "direct_database_access",
+        "source_copy"
+      ],
+      "next_action": "Project only Noema deployable, runtime, service/API/worker capability, technology/provider/version, lifecycle, ownership, architecture-risk, remediation, and transformation context after released Context Graph admission. Keep Agent tasks/results/reasoning, tool payloads, workflow/checkpoint state, approvals, prompts, model output, and user business data authoritative in Noema."
+    },
+    {
       "connector_name": "quarantine_sandbox_runtime",
       "owner_repository": "ContextualWisdomLab/quarantine-sandbox-runtime",
       "direction_code": "inbound_projection",
