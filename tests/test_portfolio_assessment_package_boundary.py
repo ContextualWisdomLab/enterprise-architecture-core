@@ -57,3 +57,40 @@ def test_legacy_portfolio_read_model_is_a_compatibility_alias() -> None:
     )
     for name in public_names:
         assert getattr(compatibility, name) is getattr(owner, name)
+
+
+def test_recheck_owner_ports_use_canonical_shared_adapters() -> None:
+    """Keep bounded Portfolio Assessment ports off historical root facades."""
+
+    for owner_path in (
+        Path(
+            "src/ea_core_foundation/portfolio_assessment/"
+            "data_management_recheck.py"
+        ),
+        Path(
+            "src/ea_core_foundation/portfolio_assessment/"
+            "data_management_recheck_status.py"
+        ),
+    ):
+        owner_tree = ast.parse(
+            owner_path.read_text(encoding="utf-8"),
+            filename=str(owner_path),
+        )
+        imports = [
+            node
+            for node in owner_tree.body
+            if isinstance(node, ast.ImportFrom)
+        ]
+        assert not any(
+            node.level == 2 and node.module in {"authorization", "service"}
+            for node in imports
+        )
+        assert any(
+            node.level == 2
+            and node.module == "identity_authorization.authorization"
+            for node in imports
+        )
+        assert any(
+            node.level == 2 and node.module == "decision_plane_http"
+            for node in imports
+        )
