@@ -45,5 +45,9 @@
     "cwl_context_contracts.schemas:data-management-assessment.schema.json",
     "cwl_context_contracts.conformance:data-management-assessment-semantics.v1.json"
   ],
+  "required_sdk_exports": [
+    "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+    "admit_context_assertion_message"
+  ],
   "required_before_merge": "immutable released dependency containing every declared artifact"
 }
