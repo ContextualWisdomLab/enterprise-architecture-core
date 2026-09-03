@@ -59,6 +59,34 @@ def test_transformation_start_has_bounded_context_owner_path() -> None:
     )
 
 
+def test_target_state_schedule_has_bounded_context_owner_path() -> None:
+    """Keep milestone-scheduling command behavior in Strategy & Transformation."""
+
+    owner_path = Path("src/ea_core_foundation/strategy_transformation/schedule.py")
+    assert owner_path.is_file()
+    runtime_path = Path("src/ea_core_foundation/runtime.py")
+    runtime_tree = ast.parse(
+        runtime_path.read_text(encoding="utf-8"),
+        filename=str(runtime_path),
+    )
+    imports = [node for node in runtime_tree.body if isinstance(node, ast.ImportFrom)]
+    assert any(
+        node.level == 1 and node.module == "strategy_transformation.schedule"
+        for node in imports
+    )
+    defined_names = {
+        node.name
+        for node in runtime_tree.body
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    assert not {
+        "TargetStateScheduleRequest",
+        "parse_target_state_schedule_request",
+        "build_schedule_authorization_config",
+        "build_target_state_schedule_writer",
+    } & defined_names
+
+
 def test_target_state_verification_has_bounded_context_owner_path() -> None:
     """Keep target-state verification behavior out of the foundation root."""
 
@@ -146,6 +174,22 @@ def test_replan_runtime_uses_bounded_transformation_command_owners() -> None:
     assert not any(
         node.level == 1 and node.module in {"replan", "verify"} for node in imports
     )
+
+
+def test_runtime_reexports_schedule_owner_objects() -> None:
+    """Preserve the runtime schedule API while moving command behavior to its owner."""
+
+    runtime = importlib.import_module("ea_core_foundation.runtime")
+    owner = importlib.import_module("ea_core_foundation.strategy_transformation.schedule")
+    public_names = (
+        "TargetStateScheduleRequest",
+        "TargetStateScheduleWriter",
+        "build_schedule_authorization_config",
+        "build_target_state_schedule_writer",
+        "parse_target_state_schedule_request",
+    )
+    for name in public_names:
+        assert getattr(runtime, name) is getattr(owner, name)
 
 
 def test_legacy_transformation_completion_is_a_compatibility_alias() -> None:
@@ -253,6 +297,7 @@ def test_strategy_owner_modules_use_canonical_shared_adapters() -> None:
         Path("src/ea_core_foundation/strategy_transformation/complete.py"),
         Path("src/ea_core_foundation/strategy_transformation/monitor.py"),
         Path("src/ea_core_foundation/strategy_transformation/replan.py"),
+        Path("src/ea_core_foundation/strategy_transformation/schedule.py"),
         Path("src/ea_core_foundation/strategy_transformation/start.py"),
         Path("src/ea_core_foundation/strategy_transformation/verify.py"),
     ):
