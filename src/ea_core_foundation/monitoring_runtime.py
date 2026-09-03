@@ -8,18 +8,7 @@ from http.server import ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlparse
 
-from .authorization import (
-    AuthorizationError,
-    KeyverseAuthorizationConfig,
-    load_keyverse_jwks,
-    verify_keyverse_bearer,
-    verify_rs256_signature,
-)
-from .runtime import (
-    build_schedule_authorization_config,
-    build_target_state_schedule_writer,
-)
-from .service import (
+from .decision_plane_http import (
     BindAddress,
     PlannerExecutionError,
     PlannerRequestError,
@@ -31,6 +20,17 @@ from .service import (
     probe_context_contract,
     resolve_bind_address,
     serve_forever,
+)
+from .identity_authorization.authorization import (
+    AuthorizationError,
+    KeyverseAuthorizationConfig,
+    load_keyverse_jwks,
+    verify_keyverse_bearer,
+    verify_rs256_signature,
+)
+from .runtime import (
+    build_schedule_authorization_config,
+    build_target_state_schedule_writer,
 )
 from .strategy_transformation.complete import (
     build_complete_authorization_config,
