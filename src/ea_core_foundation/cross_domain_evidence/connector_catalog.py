@@ -40,6 +40,15 @@ _PROJECTION_RECEIPT_SEMANTICS = (
     "admission_version",
     "provenance",
 )
+_CLOUDEVENT_IDENTITY_FIELDS = (
+    "id",
+    "source",
+    "specversion",
+    "type",
+    "time",
+    "subject",
+    "dataschema",
+)
 _QUARANTINE_CONNECTOR_NAME = "quarantine_sandbox_runtime"
 _QUARANTINE_OWNER_REPOSITORY = "ContextualWisdomLab/quarantine-sandbox-runtime"
 _QUARANTINE_DIRECTION_CODE = "inbound_projection"
@@ -116,6 +125,12 @@ def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
             raise ContractValidationError(
                 "Context Assertion projection must preserve exact projection receipt "
                 "semantics"
+            )
+        identity_fields = connector.get("cloudevent_identity_fields")
+        if identity_fields != list(_CLOUDEVENT_IDENTITY_FIELDS):
+            raise ContractValidationError(
+                "Context Assertion projection must preserve exact CloudEvent identity "
+                "fields"
             )
 
 
