@@ -138,6 +138,32 @@ def test_monitoring_runtime_uses_canonical_strategy_transformation_ports() -> No
     )
 
 
+def test_strategy_owner_modules_do_not_depend_on_legacy_service_facade() -> None:
+    """Keep new bounded behavior off the historical generic service import."""
+
+    for owner_path in (
+        Path("src/ea_core_foundation/strategy_transformation/complete.py"),
+        Path("src/ea_core_foundation/strategy_transformation/monitor.py"),
+    ):
+        owner_tree = ast.parse(
+            owner_path.read_text(encoding="utf-8"),
+            filename=str(owner_path),
+        )
+        imports = [
+            node
+            for node in owner_tree.body
+            if isinstance(node, ast.ImportFrom)
+        ]
+        assert not any(
+            node.level == 2 and node.module == "service"
+            for node in imports
+        )
+        assert any(
+            node.level == 2 and node.module == "decision_plane_http"
+            for node in imports
+        )
+
+
 def test_legacy_target_state_monitoring_is_a_compatibility_alias() -> None:
     """Preserve monitoring API identity while moving behavior to its owner."""
 
