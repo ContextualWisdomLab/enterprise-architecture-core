@@ -15,6 +15,15 @@ _REQUIRED_RECEIPT_SEMANTICS = [
     "admission_version",
     "provenance",
 ]
+_REQUIRED_CLOUDEVENT_IDENTITY_FIELDS = [
+    "id",
+    "source",
+    "specversion",
+    "type",
+    "time",
+    "subject",
+    "dataschema",
+]
 
 
 def _catalog(repository_root: Path) -> dict:
@@ -45,6 +54,9 @@ def test_context_assertion_projections_retain_receipt_identity(repository_root) 
     assert connectors
     for connector in connectors:
         assert connector["projection_receipt_semantics"] == _REQUIRED_RECEIPT_SEMANTICS
+        assert connector["cloudevent_identity_fields"] == (
+            _REQUIRED_CLOUDEVENT_IDENTITY_FIELDS
+        )
 
 
 def test_connector_catalog_rejects_projection_receipt_identity_loss(
@@ -67,5 +79,29 @@ def test_connector_catalog_rejects_projection_receipt_identity_loss(
     with pytest.raises(
         ContractValidationError,
         match="projection receipt semantics",
+    ):
+        validate_connector_catalog(document)
+
+
+def test_connector_catalog_rejects_cloud_event_identity_field_loss(
+    repository_root,
+) -> None:
+    """Reject a Context Assertion connector that omits CloudEvent specversion."""
+
+    document = _catalog(repository_root)
+    connector = next(
+        connector
+        for connector in _context_assertion_connectors(document)
+        if connector["connector_name"] == "quarantine_sandbox_runtime"
+    )
+    connector["cloudevent_identity_fields"] = [
+        field
+        for field in _REQUIRED_CLOUDEVENT_IDENTITY_FIELDS
+        if field != "specversion"
+    ]
+
+    with pytest.raises(
+        ContractValidationError,
+        match="CloudEvent identity fields",
     ):
         validate_connector_catalog(document)
