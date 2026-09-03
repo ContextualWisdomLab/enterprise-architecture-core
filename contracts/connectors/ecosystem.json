@@ -93,6 +93,14 @@
         "system_time",
         "provenance"
       ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
+        "provenance"
+      ],
       "next_action": "Project naruon deployable, API, provider, version, lifecycle, ownership, and risk changes by canonical reference while keeping workspace and product runtime facts authoritative in naruon."
     },
     {
@@ -135,6 +143,14 @@
         "system_time",
         "provenance"
       ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
+        "provenance"
+      ],
       "next_action": "Project BandScope deployable, API, provider, version, lifecycle, and risk changes by canonical reference with source provenance; keep BandScope runtime facts authoritative in bandscope."
     },
     {
@@ -150,6 +166,14 @@
         "truth_status",
         "effective_time",
         "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
         "provenance"
       ],
       "next_action": "Project only organization and deployable references needed for architecture decisions with exact truth and provenance; do not copy employee or HR records from Orgmetra."
@@ -169,6 +193,14 @@
         "system_time",
         "provenance"
       ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
+        "provenance"
+      ],
       "next_action": "Project TEPP service, package, API, database, provider, version, lifecycle, and risk changes as architecture context while keeping learning and research facts authoritative in TEPP."
     },
     {
@@ -186,6 +218,14 @@
         "system_time",
         "provenance"
       ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
+        "provenance"
+      ],
       "next_action": "Accept orchestration-generated architecture suggestions only as proposed or inferred context with provenance; require an authorized EA command before authoritative promotion."
     },
     {
@@ -201,6 +241,14 @@
         "truth_status",
         "effective_time",
         "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
         "provenance"
       ],
       "authority_scope": [
@@ -259,6 +307,14 @@
         "system_time",
         "provenance"
       ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
+        "provenance"
+      ],
       "next_action": "Project Wardnet security-control and exposure evidence with its observed truth status, effective time, source reference, and provenance; keep detection authority in wardnet."
     },
     {
@@ -276,6 +332,14 @@
         "system_time",
         "provenance"
       ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
+        "provenance"
+      ],
       "next_action": "Project AppGuardrail application-security findings as evidence for affected architecture objects without promoting scanner output to authoritative architecture truth."
     },
     {
@@ -291,6 +355,14 @@
         "truth_status",
         "effective_time",
         "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_version",
+        "admission_version",
         "provenance"
       ],
       "next_action": "Project control, risk, and evidence references needed for architecture decisions while keeping compliance records and attestations authoritative in governance-risk-compliance."
