@@ -11,7 +11,7 @@ from urllib.parse import parse_qsl, urlparse
 from uuid import UUID
 
 from ..authorization import AuthorizationContext, KeyverseAuthorizationConfig
-from ..service import (
+from ..decision_plane_http import (
     CommandRunner,
     PlannerExecutionError,
     PlannerRequestError,
