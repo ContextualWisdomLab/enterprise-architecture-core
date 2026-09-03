@@ -138,8 +138,8 @@ def test_monitoring_runtime_uses_canonical_strategy_transformation_ports() -> No
     )
 
 
-def test_strategy_owner_modules_do_not_depend_on_legacy_service_facade() -> None:
-    """Keep new bounded behavior off the historical generic service import."""
+def test_strategy_owner_modules_use_canonical_shared_adapters() -> None:
+    """Keep bounded strategy behavior off historical root shared-adapter facades."""
 
     for owner_path in (
         Path("src/ea_core_foundation/strategy_transformation/complete.py"),
@@ -155,7 +155,12 @@ def test_strategy_owner_modules_do_not_depend_on_legacy_service_facade() -> None
             if isinstance(node, ast.ImportFrom)
         ]
         assert not any(
-            node.level == 2 and node.module == "service"
+            node.level == 2 and node.module in {"authorization", "service"}
+            for node in imports
+        )
+        assert any(
+            node.level == 2
+            and node.module == "identity_authorization.authorization"
             for node in imports
         )
         assert any(
