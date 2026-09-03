@@ -21,6 +21,7 @@ _REQUIRED_CONTEXT_FABRIC_CONNECTORS = {
     "orgmetra_organization_context",
     "tepp_learning_context",
     "contextual_orchestrator_proposal",
+    "noema_projection",
     "quarantine_sandbox_runtime",
     "wardnet_security_evidence",
     "appguardrail_security_evidence",
@@ -41,6 +42,7 @@ _EXPECTED_OWNER_REPOSITORIES = {
     "contextual_orchestrator_proposal": (
         "ContextualWisdomLab/contextual-orchestrator"
     ),
+    "noema_projection": "ContextualWisdomLab/noema",
     "quarantine_sandbox_runtime": (
         "ContextualWisdomLab/quarantine-sandbox-runtime"
     ),
@@ -107,6 +109,7 @@ def test_projection_directions_preserve_foreign_product_authority(
     }
     assert by_name["semantic_data_portal"]["direction_code"] == "inbound_projection"
     assert by_name["naruon_product_context"]["direction_code"] == "inbound_projection"
+    assert by_name["noema_projection"]["direction_code"] == "inbound_projection"
     assert (
         by_name["quarantine_sandbox_runtime"]["direction_code"]
         == "inbound_projection"
