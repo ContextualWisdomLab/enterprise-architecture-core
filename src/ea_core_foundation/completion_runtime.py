@@ -33,11 +33,14 @@ from .service import (
     resolve_bind_address,
     serve_forever,
 )
-from .start import build_start_authorization_config, build_target_state_start_writer
 from .strategy_transformation.complete import (
     build_complete_authorization_config,
     build_target_state_complete_writer,
     parse_target_state_complete_request,
+)
+from .strategy_transformation.start import (
+    build_start_authorization_config,
+    build_target_state_start_writer,
 )
 
 _TARGET_STATE_COMMAND_PATH_PREFIX = "/v1/architecture-transformations/"
