@@ -99,6 +99,14 @@ _SOURCE_RECEIPT_FORMAT = "ea-cgc-source-attestation-verification/v1"
 _VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 _COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+_WHEEL_PATTERN = re.compile(
+    r"^cwl_context_contracts-([0-9]+\.[0-9]+\.[0-9]+)-"
+    r"[^-]+-[^-]+-[^-]+\.whl$"
+)
+_SDIST_PATTERN = re.compile(
+    r"^cwl_context_contracts-([0-9]+\.[0-9]+\.[0-9]+)\.tar\.gz$"
+)
+_SBOM_NAME = "cwl-context-contracts.spdx.json"
 
 VersionReader = Callable[[str], str]
 ResourceProbe = Callable[[str], bool]
@@ -243,12 +251,7 @@ def _validate_release_source_manifest(
     raw_artifacts = source_manifest.get("artifacts")
     if not isinstance(raw_artifacts, list) or len(raw_artifacts) != 3:
         raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
-    expected_names = {
-        f"cwl_context_contracts-{release_version}-py3-none-any.whl",
-        f"cwl_context_contracts-{release_version}.tar.gz",
-        "cwl-context-contracts.spdx.json",
-    }
-    artifact_names: set[str] = set()
+    artifact_names: list[str] = []
     for artifact in raw_artifacts:
         if not isinstance(artifact, Mapping) or set(artifact) != {"name", "sha256"}:
             raise ContextGraphReleaseError(
@@ -260,8 +263,26 @@ def _validate_release_source_manifest(
             raise ContextGraphReleaseError(
                 "release-source manifest artifact set is invalid"
             )
-        artifact_names.add(name)
-    if artifact_names != expected_names:
+        artifact_names.append(name)
+    if len(set(artifact_names)) != len(artifact_names):
+        raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
+
+    wheel_names = [name for name in artifact_names if name.endswith(".whl")]
+    sdist_names = [name for name in artifact_names if name.endswith(".tar.gz")]
+    if (
+        len(wheel_names) != 1
+        or len(sdist_names) != 1
+        or artifact_names.count(_SBOM_NAME) != 1
+    ):
+        raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
+    wheel_match = _WHEEL_PATTERN.fullmatch(wheel_names[0])
+    sdist_match = _SDIST_PATTERN.fullmatch(sdist_names[0])
+    if (
+        wheel_match is None
+        or sdist_match is None
+        or wheel_match.group(1) != release_version
+        or sdist_match.group(1) != release_version
+    ):
         raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
 
 
