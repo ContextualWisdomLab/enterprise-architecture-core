@@ -14,6 +14,9 @@ from scripts.verify_context_graph_release import (
 )
 
 _RELEASE_SHA = "a" * 40
+_WHEEL_NAME = (
+    "cwl_context_contracts-0.2.0-cp314-cp314-manylinux_2_39_x86_64.whl"
+)
 
 
 def _released_manifest() -> dict[str, object]:
@@ -59,10 +62,7 @@ def _released_manifest() -> dict[str, object]:
                 "algorithm": "sha256",
                 "package_snapshot_sha256": "b" * 64,
                 "artifacts": [
-                    {
-                        "name": "cwl_context_contracts-0.2.0-py3-none-any.whl",
-                        "sha256": "c" * 64,
-                    },
+                    {"name": _WHEEL_NAME, "sha256": "c" * 64},
                     {
                         "name": "cwl_context_contracts-0.2.0.tar.gz",
                         "sha256": "d" * 64,
@@ -146,6 +146,30 @@ def test_release_source_manifest_must_bind_exact_release_identity() -> None:
         manifest["release_source_manifest"] = source_manifest
         with pytest.raises(ContextGraphReleaseError, match="release-source manifest"):
             _verify_release(manifest)
+
+
+def test_release_source_manifest_accepts_provider_valid_wheel_tags() -> None:
+    """Do not narrow the provider contract to a py3-none-any wheel tag."""
+
+    assert _verify_release(_released_manifest()) == _RELEASE_SHA
+
+
+def test_release_source_manifest_rejects_cross_version_wheel() -> None:
+    """Wheel and source distribution must bind the declared semantic version."""
+
+    manifest = _released_manifest()
+    source_manifest = deepcopy(manifest["release_source_manifest"])
+    assert isinstance(source_manifest, dict)
+    artifacts = deepcopy(source_manifest["artifacts"])
+    assert isinstance(artifacts, list)
+    artifacts[0]["name"] = (
+        "cwl_context_contracts-0.3.0-cp314-cp314-manylinux_2_39_x86_64.whl"
+    )
+    source_manifest["artifacts"] = artifacts
+    manifest["release_source_manifest"] = source_manifest
+
+    with pytest.raises(ContextGraphReleaseError, match="artifact set"):
+        _verify_release(manifest)
 
 
 def test_exact_conformance_and_attested_source_evidence_admit_release() -> None:
