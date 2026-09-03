@@ -44,7 +44,7 @@ from .strategy_transformation.start import (
     build_start_authorization_config,
     build_target_state_start_writer,
 )
-from .verify import (
+from .strategy_transformation.verify import (
     build_target_state_verification_writer,
     build_verification_authorization_config,
     parse_target_state_verification_request,
