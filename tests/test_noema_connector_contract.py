@@ -111,7 +111,10 @@ def test_noema_projection_connector_preserves_owner_and_admission_boundary(
         "dataschema",
     ]
     assert connector["architecture_projection_scope"] == _PROJECTION_SCOPE
-    assert connector["forbidden_authoritative_facts"] == _FORBIDDEN_AUTHORITATIVE_FACTS
+    assert (
+        connector["forbidden_authoritative_facts"]
+        == _FORBIDDEN_AUTHORITATIVE_FACTS
+    )
     assert connector["prohibited_integrations"] == _PROHIBITED_INTEGRATIONS
     assert validate_connector_catalog(document) == len(document["connectors"])
 
@@ -146,7 +149,11 @@ def test_noema_projection_is_required_exactly_once(repository_root) -> None:
 @pytest.mark.parametrize(
     ("field", "replacement", "message"),
     [
-        ("owner_repository", "ContextualWisdomLab/contextual-orchestrator", "owner_repository"),
+        (
+            "owner_repository",
+            "ContextualWisdomLab/contextual-orchestrator",
+            "owner_repository",
+        ),
         ("direction_code", "inbound_proposal", "direction_code"),
         ("exchange_kind", "cloudevents_json", "exchange_kind"),
         (
