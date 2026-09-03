@@ -15,15 +15,6 @@ from .authorization import (
     verify_keyverse_bearer,
     verify_rs256_signature,
 )
-from .complete import (
-    build_complete_authorization_config,
-    build_target_state_complete_writer,
-)
-from .monitor import (
-    build_monitoring_authorization_config,
-    build_target_state_monitoring_reader,
-    parse_target_state_monitoring_request,
-)
 from .runtime import (
     build_schedule_authorization_config,
     build_target_state_schedule_writer,
@@ -42,6 +33,15 @@ from .service import (
     serve_forever,
 )
 from .start import build_start_authorization_config, build_target_state_start_writer
+from .strategy_transformation.complete import (
+    build_complete_authorization_config,
+    build_target_state_complete_writer,
+)
+from .strategy_transformation.monitor import (
+    build_monitoring_authorization_config,
+    build_target_state_monitoring_reader,
+    parse_target_state_monitoring_request,
+)
 from .verification_runtime import VerificationServiceHandler
 from .verification_runtime import (
     create_runtime_server as create_verification_runtime_server,
