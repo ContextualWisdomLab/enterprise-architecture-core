@@ -54,6 +54,8 @@ Key boundaries remain explicit:
 - **LineageWeave** provides inferred lineage evidence; inference does not become authoritative EA truth automatically.
 - **Context Graph Contracts** owns shared interoperability contracts when an immutable released contract exists.
 - **Keyverse** owns identity and OIDC authority.
+- **Noema** owns Agent Runtime, Workflow/Task Execution, Tool/Capability boundaries, State/Checkpoint, Isolation Integration, Policy/Approval, Observability and Recovery. EA can receive only the bounded deployable/runtime/technology/lifecycle/ownership/risk/remediation/transformation projection through released Context Graph admission; Agent tasks/results/reasoning, tool payloads, workflow state, approvals, checkpoints, prompts, model output and user business data remain Noema truth.
+- **Quarantine Sandbox Runtime** owns reusable hostile-workload isolation lifecycle/resource enforcement/cleanup/attestation and artifact-analysis evidence. EA can receive only its bounded architecture projection; Wardnet retains maliciousness verdict/incident policy and contextual-orchestrator retains caller authorization/application selection.
 - Product-specific runtime state, employee records, project/task execution, and arbitrary workflow orchestration remain outside this repository.
 
 ## What you can do
