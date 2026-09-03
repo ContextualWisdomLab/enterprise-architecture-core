@@ -4,6 +4,7 @@ import ast
 from pathlib import Path
 
 _RUNTIME_PATHS = (
+    Path("src/ea_core_foundation/runtime.py"),
     Path("src/ea_core_foundation/completion_runtime.py"),
     Path("src/ea_core_foundation/verification_runtime.py"),
     Path("src/ea_core_foundation/monitoring_runtime.py"),
