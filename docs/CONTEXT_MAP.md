@@ -43,6 +43,10 @@ Owns only the receipt, normalization and bitemporal projection needed for EA dec
 
 Connector ownership/release-binding validation lives in `src/ea_core_foundation/cross_domain_evidence/connector_catalog.py`. Foreign Data/AI reassessment-status contract validation lives in `cross_domain_evidence/data_management_recheck_status.py`. Their historical `validation_*` import paths are retained only as behavior-free compatibility facades. EA-owned reassessment decisions stay in Portfolio Assessment rather than being absorbed into this Supporting context.
 
+### Identity & Authorization Adapter
+
+This Generic context verifies Keyverse/OIDC bearer identity and binds authenticated tenant/role/subject context for EA application ports. It does not own architecture facts, business authorization policy outside the EA runtime boundary, or caller-supplied tenant truth. Provider-facing verification behavior lives under `src/ea_core_foundation/identity_authorization/authorization.py`; the historical root `authorization.py` remains a behavior-free compatibility facade that resolves to the same module object while internal and external imports migrate. Core and Supporting contexts consume the verified authorization context/ports rather than becoming identity providers themselves.
+
 ### Target-State Planner
 
 Joins EA-owned architecture facts with accepted cross-domain evidence to answer: what changed, what is affected, what should be remediated next, what target state is proposed, and what approved transformation records the decision. Planner proposals remain proposed until the explicit approval/transition boundary succeeds.
@@ -70,7 +74,7 @@ All foreign product facts enter through released versioned `context-graph-contra
 
 Domain rules must not depend on HTTP, framework, ORM or provider SDK DTOs. Application services may orchestrate repositories, authorization ports and event publication, but domain invariants belong to the domain model/database invariant where the transaction is authoritative. Adapters translate through explicit ports or Anti-Corruption Layers. Direct cross-service application-table SQL is prohibited.
 
-The current `src/ea_core_foundation` package predates this bounded-context decomposition and remains open DDD debt rather than being relabeled as compliant. Mapped slices now include the Cross-Domain Evidence connector/foreign-contract validators, the Core Portfolio Assessment read/reassessment ports, and the Core Strategy & Transformation completion and target-state monitoring ports. Historical imports for those slices are compatibility-only and architecture-fitness regressions prevent executable behavior from returning to them. The package-level debt is not closed by these moves; `docs/product-technical-gap-baseline.md` records the remaining sequence and tests still prevent new generic buckets or direct foreign implementation dependencies.
+The current `src/ea_core_foundation` package predates this bounded-context decomposition and remains open DDD debt rather than being relabeled as compliant. Mapped slices now include the Cross-Domain Evidence connector/foreign-contract validators, the Core Portfolio Assessment read/reassessment ports, the Core Strategy & Transformation completion/target-state monitoring ports, and the Generic Identity & Authorization adapter. Historical imports for those slices are compatibility-only and architecture-fitness regressions prevent executable behavior from returning to them. The package-level debt is not closed by these moves; `docs/product-technical-gap-baseline.md` records the remaining sequence and tests still prevent new generic buckets or direct foreign implementation dependencies.
 
 ## Integration governance
 
