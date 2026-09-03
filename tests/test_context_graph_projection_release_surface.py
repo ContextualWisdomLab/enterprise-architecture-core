@@ -43,6 +43,10 @@ _REQUIRED_PROJECTION_RESOURCES = {
     "cwl_context_contracts.conformance:cwl-timestamp-profile.v1.json",
     "cwl_context_contracts.contracts:context-fabric.asyncapi.json",
 }
+_REQUIRED_PROJECTION_SDK_EXPORTS = {
+    "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+    "admit_context_assertion_message",
+}
 
 
 def test_context_projection_dependency_declares_complete_shared_release_surface(
@@ -62,3 +66,4 @@ def test_context_projection_dependency_declares_complete_shared_release_surface(
     assert _REQUIRED_PROJECTION_RESOURCES <= set(
         manifest["required_package_resources"]
     )
+    assert _REQUIRED_PROJECTION_SDK_EXPORTS <= set(manifest["required_sdk_exports"])
