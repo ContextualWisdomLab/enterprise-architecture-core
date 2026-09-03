@@ -57,6 +57,10 @@ _REQUIRED_RESOURCES = (
     "cwl_context_contracts.schemas:data-management-assessment.schema.json",
     "cwl_context_contracts.conformance:data-management-assessment-semantics.v1.json",
 )
+_REQUIRED_SDK_EXPORTS = (
+    "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
+    "admit_context_assertion_message",
+)
 _APPROVED_CONFORMANCE_MANIFEST = {
     "manifest_format": "cwl-context-conformance-manifest/v1",
     "distribution_name": "cwl-context-contracts",
@@ -127,6 +131,7 @@ def _released_manifest() -> dict[str, object]:
         "required_schema_ids": list(_SCHEMA_IDS),
         "required_conformance_profile_ids": list(_PROFILE_IDS),
         "required_package_resources": list(_REQUIRED_RESOURCES),
+        "required_sdk_exports": list(_REQUIRED_SDK_EXPORTS),
         "required_before_merge": (
             "immutable released dependency containing every declared artifact"
         ),
@@ -186,6 +191,22 @@ def test_context_graph_release_gate_requires_every_consumed_packaged_artifact() 
         _verify(
             manifest,
             resource_exists=lambda resource: resource != missing_resource,
+        )
+
+
+def test_context_graph_release_gate_requires_exact_installed_sdk_surface() -> None:
+    """Reject manifest drift or an installed package missing an advertised SDK export."""
+
+    manifest = _released_manifest()
+    manifest["required_sdk_exports"] = ["admit_context_assertion_message"]
+    with pytest.raises(ContextGraphReleaseError, match="required_sdk_exports"):
+        _verify(manifest)
+
+    with pytest.raises(ContextGraphReleaseError, match="missing packaged SDK export"):
+        _verify(
+            _released_manifest(),
+            sdk_export_exists=lambda export: export
+            != "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE",
         )
 
 
