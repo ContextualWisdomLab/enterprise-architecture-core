@@ -8,36 +8,40 @@ from http.server import ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlparse
 
-from .authorization import (
+from .decision_plane_http import (
+    BindAddress,
+    PlannerRequestError,
+    build_approval_authorization_config,
+    build_database_readiness_probe,
+    build_keyverse_authorization_config,
+    build_target_state_approval_writer,
+    build_target_state_plan_reader,
+    probe_context_contract,
+    resolve_bind_address,
+    serve_forever,
+)
+from .identity_authorization.authorization import (
     AuthorizationError,
     KeyverseAuthorizationConfig,
     load_keyverse_jwks,
     verify_keyverse_bearer,
     verify_rs256_signature,
 )
-from .complete import (
-    build_complete_authorization_config,
-    build_target_state_complete_writer,
-)
-from .data_management_recheck import (
-    build_data_management_recheck_authorization_config,
-    build_data_management_recheck_writer,
-    parse_data_management_recheck_request,
-)
-from .data_management_recheck_status import (
-    build_data_management_recheck_status_authorization_config,
-    build_data_management_recheck_status_reader,
-    parse_data_management_recheck_status_request,
-)
-from .monitor import (
-    build_monitoring_authorization_config,
-    build_target_state_monitoring_reader,
-)
 from .monitoring_runtime import MonitoringServiceHandler
 from .monitoring_runtime import (
     create_runtime_server as create_monitoring_runtime_server,
 )
-from .portfolio import (
+from .portfolio_assessment.data_management_recheck import (
+    build_data_management_recheck_authorization_config,
+    build_data_management_recheck_writer,
+    parse_data_management_recheck_request,
+)
+from .portfolio_assessment.data_management_recheck_status import (
+    build_data_management_recheck_status_authorization_config,
+    build_data_management_recheck_status_reader,
+    parse_data_management_recheck_status_request,
+)
+from .portfolio_assessment.portfolio_assessment import (
     build_portfolio_assessment_authorization_config,
     build_portfolio_assessment_reader,
     build_portfolio_assessment_summary_authorization_config,
@@ -54,19 +58,18 @@ from .runtime import (
     build_schedule_authorization_config,
     build_target_state_schedule_writer,
 )
-from .service import (
-    BindAddress,
-    PlannerRequestError,
-    build_approval_authorization_config,
-    build_database_readiness_probe,
-    build_keyverse_authorization_config,
-    build_target_state_approval_writer,
-    build_target_state_plan_reader,
-    probe_context_contract,
-    resolve_bind_address,
-    serve_forever,
+from .strategy_transformation.complete import (
+    build_complete_authorization_config,
+    build_target_state_complete_writer,
 )
-from .start import build_start_authorization_config, build_target_state_start_writer
+from .strategy_transformation.monitor import (
+    build_monitoring_authorization_config,
+    build_target_state_monitoring_reader,
+)
+from .strategy_transformation.start import (
+    build_start_authorization_config,
+    build_target_state_start_writer,
+)
 from .verify import (
     build_target_state_verification_writer,
     build_verification_authorization_config,
