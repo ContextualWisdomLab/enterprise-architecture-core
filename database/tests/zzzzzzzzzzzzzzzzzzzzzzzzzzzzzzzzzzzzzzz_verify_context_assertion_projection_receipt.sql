@@ -66,6 +66,7 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     event_time,
     event_dataschema_uri,
     transport_media_type,
+    context_profile_id,
     context_profile_version,
     admission_version,
     provenance_evidence_record_id,
@@ -79,8 +80,9 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     '2026-09-03T08:59:59Z',
     'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
     'application/cloudevents+json',
-    'context-assertion/v1',
-    'context-fabric-admission/v1',
+    'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+    1,
+    1,
     '0196f300-2000-7200-8200-000000000001',
     '2026-09-03T09:00:03Z'
 );
@@ -93,8 +95,9 @@ DECLARE
   actual_event_type text;
   actual_subject text;
   actual_dataschema text;
-  actual_profile text;
-  actual_admission text;
+  actual_profile_id text;
+  actual_profile_version integer;
+  actual_admission integer;
   actual_provenance uuid;
   rls_enabled boolean;
   rls_forced boolean;
@@ -106,6 +109,7 @@ BEGIN
       detail.event_type,
       detail.event_subject_uri,
       detail.event_dataschema_uri,
+      detail.context_profile_id,
       detail.context_profile_version,
       detail.admission_version,
       detail.provenance_evidence_record_id
@@ -116,7 +120,8 @@ BEGIN
       actual_event_type,
       actual_subject,
       actual_dataschema,
-      actual_profile,
+      actual_profile_id,
+      actual_profile_version,
       actual_admission,
       actual_provenance
     FROM architecture_core.projection_receipt AS base
@@ -125,7 +130,8 @@ BEGIN
    WHERE base.tenant_record_id =
          '0196f300-0000-7000-8000-000000000001'
      AND base.projection_receipt_id =
-         '0196f300-1000-7100-8100-000000000001';
+         '0196f300-0000-7000-8000-000000000001'::uuid +
+         '00000000-1000-0100-0100-000000000000'::uuid;
 
   IF actual_source IS DISTINCT FROM
         'urn:cwl:receipt_tenant:quarantine_sandbox_runtime'
@@ -135,14 +141,16 @@ BEGIN
      OR actual_event_type IS DISTINCT FROM
         'org.contextualwisdomlab.context_graph.assertion.v1'
      OR actual_subject IS DISTINCT FROM
-        'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001'
+        'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7301-8300-000000000001'
      OR actual_dataschema IS DISTINCT FROM
         'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json'
-     OR actual_profile IS DISTINCT FROM 'context-assertion/v1'
-     OR actual_admission IS DISTINCT FROM 'context-fabric-admission/v1'
+     OR actual_profile_id IS DISTINCT FROM
+        'urn:cwl:context-contracts:context-assertion-event-semantics:v1'
+     OR actual_profile_version IS DISTINCT FROM 1
+     OR actual_admission IS DISTINCT FROM 1
      OR actual_provenance IS DISTINCT FROM
         '0196f300-2000-7200-8200-000000000001'::uuid THEN
-    RAISE EXCEPTION 'Context Assertion projection receipt lost admitted identity';
+    RERAISE;
   END IF;
 
   SELECT relrowsecurity, relforcerowsecurity
@@ -190,6 +198,7 @@ BEGIN
         event_time,
         event_dataschema_uri,
         transport_media_type,
+        context_profile_id,
         context_profile_version,
         admission_version,
         provenance_evidence_record_id
@@ -202,8 +211,9 @@ BEGIN
         '2026-09-03T09:00:59Z',
         'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
         'application/cloudevents+json',
-        'context-assertion/v1',
-        'context-fabric-admission/v1',
+        'urn:cwl:context-contracts:context_assertion_event_semantics:v1',
+        1,
+        1,
         '0196f300-2000-7200-8200-000000000001'
     );
     RAISE EXCEPTION 'non-1.0 CloudEvent specversion was accepted';
@@ -217,7 +227,7 @@ DO $$
 BEGIN
   BEGIN
     UPDATE architecture_core.context_assertion_projection_receipt
-       SET admission_version = 'rewritten/v2'
+       SET admission_version = 2
      WHERE tenant_record_id =
            '0196f300-0000-7000-8000-000000000001'
        AND projection_receipt_id =
