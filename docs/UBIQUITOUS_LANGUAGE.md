@@ -12,13 +12,13 @@ These terms are the domain language for the Enterprise Architecture Decision Pla
 | Technology Provider | The provider/vendor context for a technology component/version. |
 | Organization Context | The organizational owner, stakeholder or operating context used in EA decisions. It is not authentication identity by itself. |
 | Architecture Relation | A typed, tenant-safe relation between EA objects with explicit temporal and truth-origin semantics. |
-| Lifecycle | The effective state/history of an architecture object or technology version, including time-sensitive lifecycle risk such as EOL. |
+| Lifecycle | The effective state/history of an architecture object or technology version, including time-sensitive risk such as EOL. |
 | Truth Origin | The epistemic status of evidence: authoritative, observed, inferred, proposed, superseded or rejected as applicable. No ingestion path silently promotes inferred/proposed evidence. |
 | Valid Time | When an architecture fact is asserted to hold in the real world. |
 | System Time | When a fact/version is recorded by the EA system. It is distinct from Valid Time. |
 | Portfolio Assessment | A versioned EA evaluation used to support a portfolio decision. It can consume accepted evidence but remains an EA-owned decision artifact. |
-| Objective | An intended product or architecture outcome advanced by initiatives. |
-| Initiative | A governed body of work intended to move architecture toward an objective or target state. |
+| Objective | An intended architecture/business outcome that can be advanced by initiatives. |
+| Initiative | A governed body of work intended to move architecture toward an objective/target state. |
 | Milestone | A versioned checkpoint within an initiative/transformation plan. |
 | Scenario Baseline | An immutable starting architecture snapshot/reference used by scenario projection. |
 | Scenario Delta | An ordered proposed change applied deterministically to a Scenario Baseline. It does not mutate the baseline. |
