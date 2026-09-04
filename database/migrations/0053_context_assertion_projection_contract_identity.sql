@@ -19,7 +19,7 @@ BEGIN
       SELECT 1
         FROM architecture_core.context_assertion_projection_receipt
        WHERE context_profile_id IS DISTINCT FROM 'context-assertion/v1'
-          OR admission_version IS DISTINCT FROM 'context-fabric-ading/v1'
+          OR admission_version IS DISTINCT FROM 'context-fabric-admission/v1'
   ) THEN
     RAISE EXCEPTION
       'unknown provisional Context Assertion admission identity cannot be migrated';
