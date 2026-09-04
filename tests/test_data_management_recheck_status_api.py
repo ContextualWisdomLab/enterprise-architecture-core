@@ -94,15 +94,11 @@ def test_recheck_status_authority_is_distinct_and_fail_closed() -> None:
         "EA_TENANT_CLAIM": "tenant",
         "EA_ROLE_CLAIM": "role",
         "EA_DATA_MANAGEMENT_RECHECK_ROLES": "ea_data_management_rechecker",
-        "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES": (
-            "ea_data_management_recheck_reader"
-        ),
+        "EA_DATA_MANAGEMENT_RECHECK_READ_ROLES": "ea_data_management_recheck_reader",
     }
     config = build_data_management_recheck_status_authorization_config(environment)
     assert config is not None
-    assert config.allowed_roles == frozenset(
-        {"ea_data_management_recheck_reader"}
-    )
+    assert config.allowed_roles == frozenset({"ea_data_management_recheck_reader"})
 
     environment.pop("EA_DATA_MANAGEMENT_RECHECK_READ_ROLES")
     assert (
@@ -227,7 +223,7 @@ def test_recheck_status_reader_fails_closed_on_transport_errors() -> None:
 
 
 def test_recheck_status_reader_rejects_invalid_storage_evidence() -> None:
-    """Malformed JSON and semantic drift in storage evidence fail closed."""
+    """Malformed JSON, IDs, truth, and state drift fail closed."""
 
     request = parse_data_management_recheck_status_request(_PATH)
     invalid_payloads = (

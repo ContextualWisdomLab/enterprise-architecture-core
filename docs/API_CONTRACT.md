@@ -26,6 +26,8 @@ Start the `ea-core` process, call `GET /health`, then call `GET /ready`. Use the
 
 `GET /v1/data-management-assessment-rechecks/{assessment_recheck_request_id}` is the separately purpose-authorized follow-up read for one immutable reassessment request. It reads only tenant-local EA projections through `architecture_core.read_data_management_assessment_recheck_status(...)` and preserves the current successor's explicit truth origin. With no successor it returns `awaiting_result` and `await_assessment_recheck`. Assessment projection meaning is append-only, so a weak proposed/inferred result can later be superseded by reviewed evidence rather than mutated in place; the read follows that unique linear supersession chain to its current terminal projection with a hard 32-hop bound and fails closed on a broken or excessive chain. An `authoritative` or `observed` current successor may return `evidence_gap` with `plan_remaining_assessment_gap` or `evidence_complete` with `close_assessment_improvement_loop`. An `inferred`, `proposed`, `superseded`, or `rejected` current successor is always `review_required` with `review_assessment_recheck_evidence`, even when its projected readiness would otherwise look complete. Selected evidence whose system record or knowledge cutoff predates the governed reassessment request is rejected. The read never mutates the source assessment, successor projection, or EA history.
 
+`GET /v1/architecture-objects/{architecture_object_id}/portfolio-assessments` exposes the first buyer-facing application-portfolio slice. Supply explicit `valid_at` and `recorded_at` cutoffs and optionally filter by lower-snake `framework_code` or `cycle_code`. The purpose-bound SQL read returns normalized framework, scale, dimension, cycle, score, truth-origin, and evidence identities; superseded and rejected facts are excluded, while inferred and proposed facts remain labeled for review. The route uses the dedicated `EA_PORTFOLIO_ASSESSMENT_READ_ROLES` Keyverse allow-list and does not provide a portfolio scoring mutation or UI.
+
 All target-state mutation commands use UUIDv7 decision/evidence/transformation identities, explicit business-effective time, bounded human reason, actor derivation from verified identity, exact idempotency-key receipt binding, and fail-closed conflicting replay. Outbound events omit the private decision actor and reason. The data-management reassessment command is separately purpose-authorized and receipt-bound; it reuses the established immutable assessment projection/evidence history instead of manufacturing source truth. Its status read is separately purpose-authorized and cannot upgrade weak foreign truth into ordinary completion.
 
 The read and command surfaces remain Enterprise Architecture authority. pg-erd-cloud physical-schema evidence, Semantic Data Portal Data/AI Context, and LineageWeave inferred/proposed lineage remain foreign authority reached only through governed receipt/canonical-reference projection. No API performs cross-service application-table SQL or promotes foreign inferred evidence to authoritative truth.
@@ -54,6 +56,7 @@ No direct runtime privilege is granted to this overload in `database/init/003_gr
 - Target-state replanning uses `EA_REPLAN_ROLES`.
 - Data-management reassessment requests use `EA_DATA_MANAGEMENT_RECHECK_ROLES`.
 - Data-management reassessment status reads use `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES`.
+- Portfolio assessment reads use `EA_PORTFOLIO_ASSESSMENT_READ_ROLES`.
 - Mutation and monitoring/read roles are purpose-bound and do not inherit authority from read or sibling roles.
 - Keyverse configuration is fail-closed and includes `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and every operation-specific role allow-list above.
 - JWKS retrieval remains HTTPS, same-origin, redirect-denied, bounded, timeout-limited, and fail-closed.
@@ -73,6 +76,7 @@ The `ea_runtime` login has no direct application-table authority. After service-
 - `record_target_state_replan(...)`
 - `request_data_management_assessment_recheck_for_tenant(...)`
 - `read_data_management_assessment_recheck_status(...)`
+- `read_portfolio_assessment_for_tenant(...)`
 
 Each wrapper transaction-locally binds the already verified tenant UUID before tenant-scoped work. The reassessment command wrapper delegates only to the existing authoritative reassessment command and restores the caller tenant context before returning. The reassessment-status wrapper is read-only and follows only the unique tenant-local assessment supersession chain, bounded to 32 projections, to select current evidence for the buyer decision. The runtime role is not granted direct access to the underlying projectors, evidence tables, or foreign-product stores.
 
