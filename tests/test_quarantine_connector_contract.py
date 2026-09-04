@@ -26,7 +26,12 @@ _EXPECTED_INTERACTIONS = [
 ]
 _EXPECTED_PROJECTION_SCOPE = [
     "runtime_identity",
+    "application_service_identity",
+    "api_identity",
+    "backend_identity",
     "backend_technology",
+    "container_runtime_technology",
+    "security_technology",
     "technology_provider",
     "technology_version",
     "lifecycle",
