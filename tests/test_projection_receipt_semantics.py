@@ -11,6 +11,7 @@ _REQUIRED_RECEIPT_SEMANTICS = [
     "source_authority",
     "cloudevent_identity",
     "schema_version",
+    "profile_id",
     "profile_version",
     "admission_version",
     "provenance",
@@ -47,7 +48,7 @@ def _context_assertion_connectors(document: dict) -> list[dict]:
 
 
 def test_context_assertion_projections_retain_receipt_identity(repository_root) -> None:
-    """Require authority, event, version, and provenance identity on projections."""
+    """Require authority, event, schema/profile, admission, and provenance identity."""
 
     document = _catalog(repository_root)
     connectors = _context_assertion_connectors(document)
@@ -74,6 +75,30 @@ def test_connector_catalog_rejects_projection_receipt_identity_loss(
         semantic
         for semantic in _REQUIRED_RECEIPT_SEMANTICS
         if semantic != "cloudevent_identity"
+    ]
+
+    with pytest.raises(
+        ContractValidationError,
+        match="projection receipt semantics",
+    ):
+        validate_connector_catalog(document)
+
+
+def test_connector_catalog_rejects_projection_profile_identity_loss(
+    repository_root,
+) -> None:
+    """Reject a receipt contract that keeps a version but drops its profile identity."""
+
+    document = _catalog(repository_root)
+    connector = next(
+        connector
+        for connector in _context_assertion_connectors(document)
+        if connector["connector_name"] == "quarantine_sandbox_runtime"
+    )
+    connector["projection_receipt_semantics"] = [
+        semantic
+        for semantic in _REQUIRED_RECEIPT_SEMANTICS
+        if semantic != "profile_id"
     ]
 
     with pytest.raises(
