@@ -36,6 +36,7 @@ _PROJECTION_RECEIPT_SEMANTICS = (
     "source_authority",
     "cloudevent_identity",
     "schema_version",
+    "profile_id",
     "profile_version",
     "admission_version",
     "provenance",
