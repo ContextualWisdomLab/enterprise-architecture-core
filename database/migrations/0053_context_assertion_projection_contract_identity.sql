@@ -2,7 +2,7 @@ BEGIN;
 
 -- The original receipt shape stored local compatibility labels in fields named
 -- as CGC profile/admission versions. Preserve only the exact previously emitted
--- candidate labels, then normalize them to the identity actually exported by
+-- candidate labels, then replace them with the identity actually exported by
 -- ContextAssertionAdmission. Any unknown candidate value fails closed instead
 -- of being reinterpreted as released contract evidence.
 ALTER TABLE architecture_core.context_assertion_projection_receipt
@@ -11,15 +11,17 @@ ALTER TABLE architecture_core.context_assertion_projection_receipt
     DROP CONSTRAINT context_assertion_projection_receipt_admission_version;
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
-    RENAME COLUMN context_profile_version TO context_profile_id;
+    RENAME COLUMN context_profile_version TO legacy_context_profile_label;
+ALTER TABLE architecture_core.context_assertion_projection_receipt
+    RENAME COLUMN admission_version TO legacy_admission_label;
 
 DO $$
 BEGIN
   IF EXISTS (
       SELECT 1
         FROM architecture_core.context_assertion_projection_receipt
-       WHERE context_profile_id IS DISTINCT FROM 'context-assertion/v1'
-          OR admission_version IS DISTINCT FROM 'context-fabric-admission/v1'
+       WHERE legacy_context_profile_label IS DISTINCT FROM 'context-assertion/v1'
+          OR legacy_admission_label IS DISTINCT FROM 'context-fabric-admission/v1'
   ) THEN
     RAISE EXCEPTION
       'unknown provisional Context Assertion admission identity cannot be migrated';
@@ -27,32 +29,24 @@ BEGIN
 END;
 $$;
 
--- Use DDL transformations rather than UPDATE so the append-only receipt history
--- guard remains enabled throughout the migration. The old candidate markers are
--- the only values eligible for deterministic conversion.
+-- Constant ADD COLUMN defaults backfill the exact v1 identity without issuing
+-- row UPDATE statements, so the immutable receipt-history trigger stays enabled
+-- for the entire migration. Defaults are removed immediately because future
+-- inserts must supply the identity returned by the admitted CGC SDK receipt.
 ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ALTER COLUMN context_profile_id TYPE text
-    USING (
-        CASE context_profile_id
-            WHEN 'context-assertion/v1' THEN
-                'urn:cwl:context-contracts:context-assertion-event-semantics:v1'
-            ELSE NULL
-        END
-    );
+    ADD COLUMN context_profile_id text NOT NULL DEFAULT
+        'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+    ADD COLUMN context_profile_version integer NOT NULL DEFAULT 1,
+    ADD COLUMN admission_version integer NOT NULL DEFAULT 1;
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ADD COLUMN context_profile_version integer NOT NULL DEFAULT 1;
-ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ALTER COLUMN context_profile_version DROP DEFAULT;
+    ALTER COLUMN context_profile_id DROP DEFAULT,
+    ALTER COLUMN context_profile_version DROP DEFAULT,
+    ALTER COLUMN admission_version DROP DEFAULT;
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ALTER COLUMN admission_version TYPE integer
-    USING (
-        CASE admission_version
-            WHEN 'context-fabric-admission/v1' THEN 1
-            ELSE NULL
-        END
-    );
+    DROP COLUMN legacy_context_profile_label,
+    DROP COLUMN legacy_admission_label;
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
     ADD CONSTRAINT context_assertion_projection_receipt_profile_id
