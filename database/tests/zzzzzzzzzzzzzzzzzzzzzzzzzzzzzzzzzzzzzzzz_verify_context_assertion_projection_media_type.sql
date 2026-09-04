@@ -55,7 +55,7 @@ INSERT INTO architecture_core.projection_receipt (
         repeat('b', 64),
         'context-assertion/v1',
         '2026-09-04T00:00:01Z',
-        '2026-09-04T00:00:02Z',
+        '2026-09-03T00:00:02Z',
         'processed'
     ),
     (
@@ -101,6 +101,7 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     event_time,
     event_dataschema_uri,
     transport_media_type,
+    context_profile_id,
     context_profile_version,
     admission_version,
     provenance_evidence_record_id,
@@ -114,8 +115,9 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     '2026-09-03T23:59:59Z',
     'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
     E' \tAPPLICATION/CLOUDEVENTS+JSON ; CHARSET = "UTF-8"\t',
-    'context-assertion/v1',
-    'context-fabric-admission/v1',
+    'urn:cwl:context:context-assertion-event-semantics:v1',
+    1,
+    1,
     '0196f301-2000-7200-8200-000000000001',
     '2026-09-04T00:00:09Z'
 );
@@ -163,6 +165,7 @@ BEGIN
           event_time,
           event_dataschema_uri,
           transport_media_type,
+          context_profile_id,
           context_profile_version,
           admission_version,
           provenance_evidence_record_id
@@ -175,8 +178,9 @@ BEGIN
           '2026-09-03T23:59:59Z',
           'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
           bad_media_types[index_value],
-          'context-assertion/v1',
-          'context-fabric-admission/v1',
+          'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+          1,
+          1,
           '0196f301-2000-7200-8200-000000000001'
       );
       RAISE EXCEPTION 'hostile Context Assertion transport media type was accepted';
