@@ -19,7 +19,7 @@ BEGIN
       SELECT 1
         FROM architecture_core.context_assertion_projection_receipt
        WHERE context_profile_id IS DISTINCT FROM 'context-assertion/v1'
-          OR admission_version IS DISTINCT FROM 'context-fabric-admission/v1'
+          OR admission_version IS DISTINCT FROM 'context-fabric-ading/v1'
   ) THEN
     RAISE EXCEPTION
       'unknown provisional Context Assertion admission identity cannot be migrated';
@@ -27,20 +27,32 @@ BEGIN
 END;
 $$;
 
+-- Use DDL transformations rather than UPDATE so the append-only receipt history
+-- guard remains enabled throughout the migration. The old candidate markers are
+-- the only values eligible for deterministic conversion.
 ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ADD COLUMN context_profile_version integer;
-
-UPDATE architecture_core.context_assertion_projection_receipt
-   SET context_profile_id =
-         'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
-       context_profile_version = 1,
-       admission_version = '1';
+    ALTER COLUMN context_profile_id TYPE text
+    USING (
+        CASE context_profile_id
+            WHEN 'context-assertion/v1' THEN
+                'urn:cwl:context-contracts:context-assertion-event-semantics:v1'
+            ELSE NULL
+        END
+    );
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ALTER COLUMN context_profile_version SET NOT NULL;
+    ADD COLUMN context_profile_version integer NOT NULL DEFAULT 1;
+ALTER TABLE architecture_core.context_assertion_projection_receipt
+    ALTER COLUMN context_profile_version DROP DEFAULT;
+
 ALTER TABLE architecture_core.context_assertion_projection_receipt
     ALTER COLUMN admission_version TYPE integer
-    USING admission_version::integer;
+    USING (
+        CASE admission_version
+            WHEN 'context-fabric-admission/v1' THEN 1
+            ELSE NULL
+        END
+    );
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
     ADD CONSTRAINT context_assertion_projection_receipt_profile_id
