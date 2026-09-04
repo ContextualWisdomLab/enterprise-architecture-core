@@ -73,7 +73,12 @@ _QUARANTINE_INTERACTIONS = (
 )
 _QUARANTINE_PROJECTION_SCOPE = (
     "runtime_identity",
+    "application_service_identity",
+    "api_identity",
+    "backend_identity",
     "backend_technology",
+    "container_runtime_technology",
+    "security_technology",
     "technology_provider",
     "technology_version",
     "lifecycle",
@@ -214,7 +219,7 @@ def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
     ):
         raise ContractValidationError(
             "quarantine runtime architecture projection scope must remain bounded to "
-            "runtime/backend/lifecycle/remediation context"
+            "runtime/service/API/backend/security/lifecycle/remediation context"
         )
     if connector.get("forbidden_authoritative_facts") != list(
         _QUARANTINE_FORBIDDEN_AUTHORITATIVE_FACTS
