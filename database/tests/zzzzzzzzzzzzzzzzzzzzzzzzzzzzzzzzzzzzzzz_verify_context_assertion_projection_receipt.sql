@@ -130,8 +130,7 @@ BEGIN
    WHERE base.tenant_record_id =
          '0196f300-0000-7000-8000-000000000001'
      AND base.projection_receipt_id =
-         '0196f300-0000-7000-8000-000000000001'::uuid +
-         '00000000-1000-0100-0100-000000000000'::uuid;
+         '0196f300-1000-7100-8100-000000000001';
 
   IF actual_source IS DISTINCT FROM
         'urn:cwl:receipt_tenant:quarantine_sandbox_runtime'
@@ -141,7 +140,7 @@ BEGIN
      OR actual_event_type IS DISTINCT FROM
         'org.contextualwisdomlab.context_graph.assertion.v1'
      OR actual_subject IS DISTINCT FROM
-        'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7301-8300-000000000001'
+        'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001'
      OR actual_dataschema IS DISTINCT FROM
         'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json'
      OR actual_profile_id IS DISTINCT FROM
@@ -150,7 +149,7 @@ BEGIN
      OR actual_admission IS DISTINCT FROM 1
      OR actual_provenance IS DISTINCT FROM
         '0196f300-2000-7200-8200-000000000001'::uuid THEN
-    RERAISE;
+    RAISE EXCEPTION 'Context Assertion projection receipt lost admitted identity';
   END IF;
 
   SELECT relrowsecurity, relforcerowsecurity
@@ -211,7 +210,7 @@ BEGIN
         '2026-09-03T09:00:59Z',
         'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
         'application/cloudevents+json',
-        'urn:cwl:context-contracts:context_assertion_event_semantics:v1',
+        'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
         1,
         1,
         '0196f300-2000-7200-8200-000000000001'
