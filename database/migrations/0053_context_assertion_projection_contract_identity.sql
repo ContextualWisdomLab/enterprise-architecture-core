@@ -19,7 +19,7 @@ BEGIN
       SELECT 1
         FROM architecture_core.context_assertion_projection_receipt
        WHERE context_profile_id IS DISTINCT FROM 'context-assertion/v1'
-          OR admission_version IS DISTINCT FROM 'contextual-fabric-admission/v1'
+          OR admission_version IS DISTINCT FROM 'context-fabric-admission/v1'
   ) THEN
     RAISE EXCEPTION
       'unknown provisional Context Assertion admission identity cannot be migrated';
@@ -58,6 +58,6 @@ COMMENT ON COLUMN architecture_core.context_assertion_projection_receipt.context
 COMMENT ON COLUMN architecture_core.context_assertion_projection_receipt.context_profile_version IS
 'Exact semantic profile version retained from the admitted CGC ContextAssertionAdmission receipt.';
 COMMENT ON COLUMN architecture_core.context_assertion_projection_receipt.admission_version IS
-'Exact admission implementation version retained from the admitted CGK ContextAssertionAdmission receipt.';
+'Exact admission implementation version retained from the admitted CGC ContextAssertionAdmission receipt.';
 
 COMMIT;
