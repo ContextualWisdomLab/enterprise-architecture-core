@@ -396,7 +396,12 @@
       ],
       "architecture_projection_scope": [
         "runtime_identity",
+        "application_service_identity",
+        "api_identity",
+        "backend_identity",
         "backend_technology",
+        "container_runtime_technology",
+        "security_technology",
         "technology_provider",
         "technology_version",
         "lifecycle",
@@ -414,7 +419,7 @@
         "direct_database_access",
         "source_copy"
       ],
-      "next_action": "Project only runtime/backend identity, lifecycle, architecture risk context, ownership, remediation, transformation, and attestation provenance after released Context Graph admission. Keep sandbox lifecycle and analysis evidence authoritative in quarantine-sandbox-runtime; keep caller authorization/application selection in contextual-orchestrator and maliciousness verdicts/incidents in Wardnet."
+      "next_action": "Project only application-service/API/backend identity, container-runtime and security technology/provider/version, lifecycle, architecture risk context, ownership, remediation, transformation, and attestation provenance after released Context Graph admission. Keep sandbox lifecycle and analysis evidence authoritative in quarantine-sandbox-runtime; keep caller authorization/application selection in contextual-orchestrator and maliciousness verdicts/incidents in Wardnet."
     },
     {
       "connector_name": "wardnet_security_evidence",
