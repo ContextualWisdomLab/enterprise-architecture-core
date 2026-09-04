@@ -12,20 +12,20 @@ These terms are the domain language for the Enterprise Architecture Decision Pla
 | Technology Provider | The provider/vendor context for a technology component/version. |
 | Organization Context | The organizational owner, stakeholder or operating context used in EA decisions. It is not authentication identity by itself. |
 | Architecture Relation | A typed, tenant-safe relation between EA objects with explicit temporal and truth-origin semantics. |
-| Lifecycle | The effective state/history of an architecture object or technology version, including time-sensitive risk such as EOL. |
+| Lifecycle | The effective state/history of an architecture object or technology version, including time-sensitive lifecycle risk such as EOL. |
 | Truth Origin | The epistemic status of evidence: authoritative, observed, inferred, proposed, superseded or rejected as applicable. No ingestion path silently promotes inferred/proposed evidence. |
 | Valid Time | When an architecture fact is asserted to hold in the real world. |
 | System Time | When a fact/version is recorded by the EA system. It is distinct from Valid Time. |
 | Portfolio Assessment | A versioned EA evaluation used to support a portfolio decision. It can consume accepted evidence but remains an EA-owned decision artifact. |
-| Objective | An intended architecture/business outcome that can be advanced by initiatives. |
-| Initiative | A governed body of work intended to move architecture toward an objective/target state. |
+| Objective | An intended product or architecture outcome advanced by initiatives. |
+| Initiative | A governed body of work intended to move architecture toward an objective or target state. |
 | Milestone | A versioned checkpoint within an initiative/transformation plan. |
 | Scenario Baseline | An immutable starting architecture snapshot/reference used by scenario projection. |
 | Scenario Delta | An ordered proposed change applied deterministically to a Scenario Baseline. It does not mutate the baseline. |
 | Scenario Projection | The deterministic candidate state produced from an immutable baseline plus ordered deltas. |
 | Transformation | An approved/executed architecture change whose history is retained rather than hard-deleted. |
 | Evidence Receipt | A durable record binding an EA projection/decision input to the exact upstream evidence identity and truth/provenance context. |
-| Projection Receipt | The admission identity retained with an admitted Context Assertion projection: source authority, CloudEvent identity (`id`, `source`, `type`, `subject`, `time`, `dataschema`), exact schema/profile/admission versions and provenance. It proves what was admitted without transferring source authority to EA. |
+| Projection Receipt | The admission identity retained with an admitted Context Assertion projection: source authority, CloudEvent identity (`id`, `source`, `specversion`, `type`, `time`, `subject`, `dataschema`), exact schema version, semantic profile id/version, admission version and provenance. It proves what was admitted without transferring source authority to EA. |
 | Cross-Domain Projection | The minimum normalized EA-side representation of foreign evidence required for EA decisions. Projection is not a duplicate system of record. |
 | Impact Path | The explainable chain from a triggering technology/lifecycle change through affected applications/capabilities and accepted external evidence to a decision/action. |
 | Remediation Initiative | An initiative created or selected to mitigate an identified architecture/technology risk. |
@@ -53,7 +53,7 @@ Noema remains authoritative for Agent tasks/results/reasoning, tool payloads, wo
 
 ## Isolation and security evidence language
 
-Quarantine application-service/API/backend identity and container-runtime/security technology/provider/version, lifecycle, ownership, remediation/transformation and attestation provenance may be projected as EA context only through a released compatible Context Graph contract. These names are EA projection categories, not a claim that a currently unreleased producer API, backend or technology fact exists. Every admitted Context Assertion projection retains a Projection Receipt, so a later EA decision can identify the source authority, exact CloudEvent, schema/profile/admission version and provenance used at admission. Sandbox internals stay in `quarantine-sandbox-runtime`; caller authorization/application selection stays in `contextual-orchestrator`; maliciousness verdicts, incidents and quarantine/block policy stay in Wardnet. Direct database access or source copying across these contexts is not part of the model.
+Quarantine application-service/API/backend identity and container-runtime/security technology/provider/version, lifecycle, ownership, remediation/transformation and attestation provenance may be projected as EA context only through a released compatible Context Graph contract. These names are EA projection categories, not a claim that a currently unreleased producer API, backend or technology fact exists. Every admitted Context Assertion projection retains a Projection Receipt, so a later EA decision can identify the source authority, exact CloudEvent, schema version, semantic profile id/version, admission version and provenance used at admission. Sandbox internals stay in `quarantine-sandbox-runtime`; caller authorization/application selection stays in `contextual-orchestrator`; maliciousness verdicts, incidents and quarantine/block policy stay in Wardnet. Direct database access or source copying across these contexts is not part of the model.
 
 ## Naming and path discipline
 
