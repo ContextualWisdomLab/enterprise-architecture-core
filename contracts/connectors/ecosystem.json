@@ -97,6 +97,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -156,6 +157,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -190,6 +192,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -224,6 +227,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -258,6 +262,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -292,6 +297,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -362,6 +368,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -440,6 +447,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -474,6 +482,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
@@ -508,6 +517,7 @@
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
         "admission_version",
         "provenance"
