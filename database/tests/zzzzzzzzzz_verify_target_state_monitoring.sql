@@ -39,6 +39,75 @@ BEGIN
 END;
 $$;
 
+-- A SECURITY DEFINER read may install the verified tenant only inside its own
+-- bounded query. Pooled runtime transactions must retain the caller tenant on
+-- both a normal return and a raised read, matching the other purpose-bound EA
+-- database ports instead of leaking authority into the next operation.
+DO $$
+DECLARE
+  caller_tenant text;
+  success_restored boolean;
+  failure_restored boolean := false;
+  failure_rejected boolean := false;
+BEGIN
+  caller_tenant := pg_catalog.current_setting('app.tenant_record_id', true);
+
+  PERFORM pg_catalog.set_config(
+      'app.tenant_record_id',
+      '0195d145-64e8-7f4f-8a23-a0cc784cb712',
+      true
+  );
+  PERFORM *
+    FROM architecture_core.read_target_state_monitoring_status(
+        '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+        '0196e010-1111-7111-8111-111111111191',
+        '2027-02-02T00:00:00Z',
+        clock_timestamp(),
+        90
+    );
+  success_restored :=
+      pg_catalog.current_setting('app.tenant_record_id', true) IS NOT DISTINCT FROM
+      '0195d145-64e8-7f4f-8a23-a0cc784cb712';
+
+  PERFORM pg_catalog.set_config(
+      'app.tenant_record_id',
+      '0195d145-64e8-7f4f-8a23-a0cc784cb712',
+      true
+  );
+  BEGIN
+    PERFORM *
+      FROM architecture_core.read_target_state_monitoring_status(
+          '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+          '0196e010-1111-7111-8111-111111111192',
+          '2027-02-02T00:00:00Z',
+          clock_timestamp(),
+          90
+      );
+  EXCEPTION WHEN check_violation THEN
+    failure_rejected := true;
+  END;
+  failure_restored :=
+      pg_catalog.current_setting('app.tenant_record_id', true) IS NOT DISTINCT FROM
+      '0195d145-64e8-7f4f-8a23-a0cc784cb712';
+
+  PERFORM pg_catalog.set_config(
+      'app.tenant_record_id',
+      COALESCE(caller_tenant, ''),
+      true
+  );
+
+  IF NOT failure_rejected THEN
+    RAISE EXCEPTION 'missing target-state monitoring evidence was accepted';
+  END IF;
+  IF NOT success_restored OR NOT failure_restored THEN
+    RAISE EXCEPTION
+      'target-state monitoring leaked tenant context: success_restored=%, failure_restored=%',
+      success_restored,
+      failure_restored;
+  END IF;
+END;
+$$;
+
 -- The freshness threshold is inclusive. Bind the boundary to the latest
 -- verification observation so a later append-only re-verification cannot make
 -- this acceptance test accidentally exercise an older evidence record.
