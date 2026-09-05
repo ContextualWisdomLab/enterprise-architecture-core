@@ -91,7 +91,16 @@ The monitoring read is tested as an executable authority and evidence boundary r
 
 ## Data-management assessment reassessment
 
-The assessment-improvement loop is tested at the authoritative PostgreSQL command boundary as well as the authenticated HTTP/runtime port:
+The assessment-improvement loop is tested at the authoritative PostgreSQL command boundary as well as the authenticated HTTP/runtime port.
+
+The **reassessment replay acceptance sequence** intentionally reuses committed state and therefore has an explicit lexicographic dependency contract:
+
+1. `database/tests/zzzzzzzzzzzzz_verify_data_management_improvement.sql` creates the one-gap assessment, improvement plan, accepted evidence and transactional causation baseline.
+2. `database/tests/zzzzzzzzzzzzzzzzzzz_verify_data_management_recheck.sql` appends the durable reassessment request and outbox receipt after the final gap closes.
+3. `database/tests/zzzzzzzzzzzzzzzzzzzz_verify_data_management_recheck_runtime_port.sql` proves the tenant-bound runtime port replays that same decision without leaking delegated tenant context.
+4. `database/tests/zzzzzzzzzzzzzzzzzzzzzzzzzzzz_verify_data_management_recheck_replay_receipt.sql` requires the later exact retry to expose the original durable request/outbox identities as replay evidence.
+
+`tests/test_database_acceptance_order_contract.py` binds those four paths, their sort order and the CI glob to this documented sequence. A reassessment acceptance file not named in that contract must seed its own fixture unless its dependency is added deliberately with a corresponding order-contract update.
 
 - reassessment is available only after every projected missing-evidence gap has accepted evidence and the request binds to the acceptance whose transactional evidence proves it causally closed the final gap; business-time ordering of `accepted_at` cannot substitute for that recorded causation;
 - exact decision replay must return the original immutable reassessment-request and transactional-outbox identities, while changed meaning for the same decision or a second decision for the same assessment fails closed;
