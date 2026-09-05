@@ -1,4 +1,4 @@
-"""Deployable HTTP runtime for governed EA replanning and reassessment commands."""
+"""Deployable HTTP runtime for governed EA replanning and reassessment workflows."""
 
 from __future__ import annotations
 
@@ -23,6 +23,11 @@ from .data_management_recheck import (
     build_data_management_recheck_authorization_config,
     build_data_management_recheck_writer,
     parse_data_management_recheck_request,
+)
+from .data_management_recheck_status import (
+    build_data_management_recheck_status_authorization_config,
+    build_data_management_recheck_status_reader,
+    parse_data_management_recheck_status_request,
 )
 from .monitor import (
     build_monitoring_authorization_config,
@@ -63,10 +68,11 @@ _TARGET_STATE_COMMAND_PATH_PREFIX = "/v1/architecture-transformations/"
 _TARGET_STATE_REPLAN_PATH_SUFFIX = "/replan"
 _DATA_MANAGEMENT_RECHECK_PATH_PREFIX = "/v1/data-management-assessments/"
 _DATA_MANAGEMENT_RECHECK_PATH_SUFFIX = "/recheck"
+_DATA_MANAGEMENT_RECHECK_STATUS_PATH_PREFIX = "/v1/data-management-assessment-rechecks/"
 
 
 class ReplanServiceHandler(MonitoringServiceHandler):
-    """Add governed replanning and reassessment writes to the complete runtime."""
+    """Add governed replanning and reassessment behavior to the complete runtime."""
 
     def _replan_authorization_config(self) -> KeyverseAuthorizationConfig | None:
         """Return the distinct Keyverse replanning profile or fail closed."""
@@ -98,6 +104,34 @@ class ReplanServiceHandler(MonitoringServiceHandler):
         writer = getattr(self.server, "data_management_recheck_writer", None)
         return writer if callable(writer) else None
 
+    def _data_management_recheck_status_authorization_config(
+        self,
+    ) -> KeyverseAuthorizationConfig | None:
+        """Return the distinct Keyverse reassessment-status read profile."""
+
+        config = getattr(
+            self.server,
+            "data_management_recheck_status_authorization_config",
+            None,
+        )
+        return config if isinstance(config, KeyverseAuthorizationConfig) else None
+
+    def _data_management_recheck_status_reader(self):
+        """Return the configured purpose-bound reassessment-status reader."""
+
+        reader = getattr(self.server, "data_management_recheck_status_reader", None)
+        return reader if callable(reader) else None
+
+    def do_GET(self) -> None:
+        """Route reassessment status reads before delegating earlier read surfaces."""
+
+        request_target = self.requestline.split(" ", 2)[1]
+        normalized_path = urlparse(request_target).path
+        if normalized_path.startswith(_DATA_MANAGEMENT_RECHECK_STATUS_PATH_PREFIX):
+            self._serve_data_management_recheck_status(request_target)
+            return
+        super().do_GET()
+
     def do_POST(self) -> None:
         """Route terminal command extensions before delegating earlier commands."""
 
@@ -116,6 +150,71 @@ class ReplanServiceHandler(MonitoringServiceHandler):
             self._serve_target_state_replan(request_target)
             return
         super().do_POST()
+
+    def _serve_data_management_recheck_status(self, request_target: str) -> None:
+        """Authorize and read the next action for one reassessment request."""
+
+        config = self._data_management_recheck_status_authorization_config()
+        reader = self._data_management_recheck_status_reader()
+        if config is None or reader is None:
+            self._write_json(
+                503,
+                {
+                    "error_code": "data_management_recheck_status_unavailable",
+                    "next_action": (
+                        "Configure Keyverse reassessment-status read roles and the "
+                        "EA runtime database."
+                    ),
+                },
+            )
+            return
+        jwks_loader = getattr(self.server, "jwks_loader", load_keyverse_jwks)
+        signature_verifier = getattr(
+            self.server,
+            "signature_verifier",
+            verify_rs256_signature,
+        )
+        try:
+            context = verify_keyverse_bearer(
+                self.headers.get("Authorization"),
+                config,
+                jwks_loader=jwks_loader,
+                signature_verifier=signature_verifier,
+            )
+        except AuthorizationError as error:
+            self._write_json(
+                error.http_status,
+                {"error_code": error.error_code, "next_action": error.next_action},
+            )
+            return
+        try:
+            request = parse_data_management_recheck_status_request(request_target)
+        except PlannerRequestError:
+            self._write_json(
+                400,
+                {
+                    "error_code": "invalid_data_management_recheck_status_request",
+                    "next_action": (
+                        "Request one canonical reassessment-request UUIDv7 resource."
+                    ),
+                },
+            )
+            return
+        try:
+            status = reader(context, request)
+        except Exception:
+            self._write_json(
+                503,
+                {
+                    "error_code": "data_management_recheck_status_read_failed",
+                    "next_action": (
+                        "Retry the same reassessment status resource after projected "
+                        "assessment evidence is available."
+                    ),
+                },
+            )
+            return
+        self._write_json(200, status)
 
     def _serve_data_management_recheck(self, request_target: str) -> None:
         """Authorize and atomically request one evidence-backed reassessment."""
@@ -264,9 +363,13 @@ def create_runtime_server(
         KeyverseAuthorizationConfig | None
     ) = None,
     data_management_recheck_writer: Any = None,
+    data_management_recheck_status_authorization_config: (
+        KeyverseAuthorizationConfig | None
+    ) = None,
+    data_management_recheck_status_reader: Any = None,
     **runtime_kwargs: Any,
 ) -> ThreadingHTTPServer:
-    """Create the complete runtime plus purpose-bound terminal command behavior."""
+    """Create the complete runtime plus purpose-bound reassessment workflow."""
 
     server = create_monitoring_runtime_server(bind_address, **runtime_kwargs)
     server.RequestHandlerClass = ReplanServiceHandler
@@ -276,6 +379,10 @@ def create_runtime_server(
         data_management_recheck_authorization_config
     )
     server.data_management_recheck_writer = data_management_recheck_writer
+    server.data_management_recheck_status_authorization_config = (
+        data_management_recheck_status_authorization_config
+    )
+    server.data_management_recheck_status_reader = data_management_recheck_status_reader
     return server
 
 
@@ -305,6 +412,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         data_management_recheck_authorization_config=(
             build_data_management_recheck_authorization_config(environment)
         ),
+        data_management_recheck_status_authorization_config=(
+            build_data_management_recheck_status_authorization_config(environment)
+        ),
         target_state_plan_reader=build_target_state_plan_reader(database_dsn),
         target_state_approval_writer=build_target_state_approval_writer(database_dsn),
         target_state_schedule_writer=build_target_state_schedule_writer(database_dsn),
@@ -319,6 +429,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         target_state_replan_writer=build_target_state_replan_writer(database_dsn),
         data_management_recheck_writer=build_data_management_recheck_writer(
             database_dsn
+        ),
+        data_management_recheck_status_reader=(
+            build_data_management_recheck_status_reader(database_dsn)
         ),
     )
     try:

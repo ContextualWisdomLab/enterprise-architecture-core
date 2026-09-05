@@ -99,8 +99,17 @@ The assessment-improvement loop is tested at the authoritative PostgreSQL comman
 - the serialization lock is tenant-local to the immutable assessment projection and does not make Semantic Data Portal evidence authoritative inside EA Core;
 - runtime acceptance preserves separate `EA_DATA_MANAGEMENT_RECHECK_ROLES`, strict UUIDv7/time/body parsing, bounded credential-safe libpq execution, tenant restoration, exact receipt shape, and fail-closed 400/401/403/503 handling.
 
+The separately authorized reassessment-status read is also executable rather than a documentation-only follow-up:
+
+- `EA_DATA_MANAGEMENT_RECHECK_READ_ROLES` is independent from reassessment mutation authority, and `ea_runtime` receives only the purpose-bound `read_data_management_assessment_recheck_status(...)` port;
+- with no successor, the read returns `awaiting_result`; `authoritative` or `observed` current evidence may produce ordinary `evidence_gap`/`evidence_complete`, while inferred/proposed/superseded/rejected current evidence remains `review_required`;
+- a late-arriving successor whose `knowledge_cutoff_at` predates the governed reassessment request fails closed even when its EA-local system receipt is newer, preserving valid-time knowledge causality independently from system-recording order;
+- immutable truth review is exercised by appending a proposed successor and then an observed successor that supersedes it; the status reader must follow the unique linear supersession chain to the reviewed current evidence instead of pinning the buyer to stale `review_required` state;
+- the supersession traversal has a fixed 32-projection bound. Real PostgreSQL acceptance constructs a 33-projection chain inside a nested subtransaction, requires the exact depth failure, and proves the synthetic chain rolls back without leaking fixture state;
+- tenant context is restored on success and failure, cross-tenant reads fail closed, readiness/missing-evidence consistency is checked on the selected current projection, and the read never mutates Semantic Data Portal or EA history.
+
 ## Remaining future requirements
 
-Before corresponding future features merge, add executable evidence for additional command/outbox concurrency races beyond the reassessment boundary, bounded graph traversal/injection handling, OpenLineage ingestion/replay storms, cross-domain receipt stress and recovery, and accessible exact-value/export behavior for buyer UI surfaces. Backup/restore and release rehearsal must prove the entire governed lifecycle, terminal verification evidence, monitoring source evidence, and reassessment request/outbox state survive restoration consistently.
+Before corresponding future features merge, add executable evidence for additional command/outbox concurrency races beyond the reassessment boundary, bounded traversal and injection handling for future general-purpose graph surfaces, OpenLineage ingestion/replay storms, cross-domain receipt stress and recovery, and accessible exact-value/export behavior for buyer UI surfaces. Backup/restore and release rehearsal must prove the entire governed lifecycle, terminal verification evidence, monitoring source evidence, and reassessment request/status/outbox state survive restoration consistently.
 
 No source-text assertion substitutes for a real PostgreSQL, HTTP, cryptographic, package or integration boundary when that executable boundary exists.
