@@ -89,8 +89,27 @@ The monitoring read is tested as an executable authority and evidence boundary r
 - OpenAPI mutation regressions reject monitoring operation-ID, authorization or parameter-set drift; repository contract counts and operator configuration must remain synchronized;
 - monitoring is read-only and tests never accept stale/gap/inferred evidence as authoritative current success.
 
+## Data-management assessment reassessment
+
+The assessment-improvement loop is tested at the authoritative PostgreSQL command boundary as well as the authenticated HTTP/runtime port.
+
+The **reassessment replay acceptance sequence** intentionally reuses committed state and therefore has an explicit lexicographic dependency contract:
+
+1. `database/tests/zzzzzzzzzzzzz_verify_data_management_improvement.sql` creates the one-gap assessment, improvement plan, accepted evidence and transactional causation baseline.
+2. `database/tests/zzzzzzzzzzzzzzzzzzz_verify_data_management_recheck.sql` appends the durable reassessment request and outbox receipt after the final gap closes.
+3. `database/tests/zzzzzzzzzzzzzzzzzzzz_verify_data_management_recheck_runtime_port.sql` proves the tenant-bound runtime port replays that same decision without leaking delegated tenant context.
+4. `database/tests/zzzzzzzzzzzzzzzzzzzzzzzzzzzz_verify_data_management_recheck_replay_receipt.sql` requires the later exact retry to expose the original durable request/outbox identities as replay evidence.
+
+`tests/test_database_acceptance_order_contract.py` binds those four paths, their sort order and the CI glob to this documented sequence. A reassessment acceptance file not named in that contract must seed its own fixture unless its dependency is added deliberately with a corresponding order-contract update.
+
+- reassessment is available only after every projected missing-evidence gap has accepted evidence and the request binds to the acceptance whose transactional evidence proves it causally closed the final gap; business-time ordering of `accepted_at` cannot substitute for that recorded causation;
+- exact decision replay must return the original immutable reassessment-request and transactional-outbox identities, while changed meaning for the same decision or a second decision for the same assessment fails closed;
+- concurrent exact replay is exercised with two independent PostgreSQL sessions and an explicitly observed row-lock wait, proving callers serialize before replay-state inspection and converge on one durable request/outbox pair instead of racing unique constraints;
+- the serialization lock is tenant-local to the immutable assessment projection and does not make Semantic Data Portal evidence authoritative inside EA Core;
+- runtime acceptance preserves separate `EA_DATA_MANAGEMENT_RECHECK_ROLES`, strict UUIDv7/time/body parsing, bounded credential-safe libpq execution, tenant restoration, exact receipt shape, and fail-closed 400/401/403/503 handling.
+
 ## Remaining future requirements
 
-Before corresponding future features merge, add executable evidence for broader command/outbox concurrency races, bounded graph traversal/injection handling, OpenLineage ingestion/replay storms, cross-domain receipt stress and recovery, and accessible exact-value/export behavior for buyer UI surfaces. Backup/restore and release rehearsal must prove the entire governed lifecycle, terminal verification evidence and monitoring source evidence survive restoration consistently.
+Before corresponding future features merge, add executable evidence for additional command/outbox concurrency races beyond the reassessment boundary, bounded graph traversal/injection handling, OpenLineage ingestion/replay storms, cross-domain receipt stress and recovery, and accessible exact-value/export behavior for buyer UI surfaces. Backup/restore and release rehearsal must prove the entire governed lifecycle, terminal verification evidence, monitoring source evidence, and reassessment request/outbox state survive restoration consistently.
 
 No source-text assertion substitutes for a real PostgreSQL, HTTP, cryptographic, package or integration boundary when that executable boundary exists.

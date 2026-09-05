@@ -15,7 +15,8 @@
     "transformationReplanEvents": {"address": "org.contextualwisdomlab.ea.transformation.replanned.v1", "messages": {"TransformationReplanned": {"$ref": "#/components/messages/TransformationReplanned"}}},
     "dataManagementImprovementEvents": {"address": "org.contextualwisdomlab.ea.data_management.improvement_initiative_created.v1", "messages": {"DataManagementImprovementInitiativeCreated": {"$ref": "#/components/messages/DataManagementImprovementInitiativeCreated"}}},
     "dataManagementEvidenceAcceptedEvents": {"address": "org.contextualwisdomlab.ea.data_management.evidence_accepted.v1", "messages": {"DataManagementEvidenceAccepted": {"$ref": "#/components/messages/DataManagementEvidenceAccepted"}}},
-    "dataManagementMilestoneCompletedEvents": {"address": "org.contextualwisdomlab.ea.data_management.milestone_completed.v1", "messages": {"DataManagementMilestoneCompleted": {"$ref": "#/components/messages/DataManagementMilestoneCompleted"}}}
+    "dataManagementMilestoneCompletedEvents": {"address": "org.contextualwisdomlab.ea.data_management.milestone_completed.v1", "messages": {"DataManagementMilestoneCompleted": {"$ref": "#/components/messages/DataManagementMilestoneCompleted"}}},
+    "dataManagementAssessmentRecheckEvents": {"address": "org.contextualwisdomlab.ea.data_management.assessment_recheck_requested.v1", "messages": {"DataManagementAssessmentRecheckRequested": {"$ref": "#/components/messages/DataManagementAssessmentRecheckRequested"}}}
   },
   "operations": {
     "publishObjectChanged": {"action": "send", "channel": {"$ref": "#/channels/architectureObjectEvents"}, "messages": [{"$ref": "#/channels/architectureObjectEvents/messages/ArchitectureObjectChanged"}]},
@@ -28,7 +29,8 @@
     "publishTransformationReplanned": {"action": "send", "channel": {"$ref": "#/channels/transformationReplanEvents"}, "messages": [{"$ref": "#/channels/transformationReplanEvents/messages/TransformationReplanned"}]},
     "publishDataManagementImprovementInitiativeCreated": {"action": "send", "channel": {"$ref": "#/channels/dataManagementImprovementEvents"}, "messages": [{"$ref": "#/channels/dataManagementImprovementEvents/messages/DataManagementImprovementInitiativeCreated"}]},
     "publishDataManagementEvidenceAccepted": {"action": "send", "channel": {"$ref": "#/channels/dataManagementEvidenceAcceptedEvents"}, "messages": [{"$ref": "#/channels/dataManagementEvidenceAcceptedEvents/messages/DataManagementEvidenceAccepted"}]},
-    "publishDataManagementMilestoneCompleted": {"action": "send", "channel": {"$ref": "#/channels/dataManagementMilestoneCompletedEvents"}, "messages": [{"$ref": "#/channels/dataManagementMilestoneCompletedEvents/messages/DataManagementMilestoneCompleted"}]}
+    "publishDataManagementMilestoneCompleted": {"action": "send", "channel": {"$ref": "#/channels/dataManagementMilestoneCompletedEvents"}, "messages": [{"$ref": "#/channels/dataManagementMilestoneCompletedEvents/messages/DataManagementMilestoneCompleted"}]},
+    "publishDataManagementAssessmentRecheckRequested": {"action": "send", "channel": {"$ref": "#/channels/dataManagementAssessmentRecheckEvents"}, "messages": [{"$ref": "#/channels/dataManagementAssessmentRecheckEvents/messages/DataManagementAssessmentRecheckRequested"}]}
   },
   "components": {
     "messages": {
@@ -192,6 +194,19 @@
             "causation_event_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
             "completed_at": {"type": "string", "format": "date-time"},
             "next_action": {"type": "string", "enum": ["close_remaining_assessment_gap", "request_assessment_recheck"]}
+          }, "additionalProperties": false}}}
+        ]}}
+      },
+      "DataManagementAssessmentRecheckRequested": {
+        "contentType": "application/cloudevents+json",
+        "payload": {"schemaFormat": "application/schema+json;version=draft-2020-12", "schema": {"allOf": [
+          {"$ref": "https://schemas.contextualwisdomlab.org/context/cloudevent-envelope.v1.schema.json"},
+          {"type": "object", "required": ["type", "data"], "properties": {"type": {"const": "org.contextualwisdomlab.ea.data_management.assessment_recheck_requested.v1"}, "data": {"type": "object", "required": ["assessment_recheck_request_id", "data_management_assessment_projection_id", "trigger_evidence_acceptance_id", "assessment_result_uri", "next_action"], "properties": {
+            "assessment_recheck_request_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+            "data_management_assessment_projection_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+            "trigger_evidence_acceptance_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+            "assessment_result_uri": {"$ref": "https://schemas.contextualwisdomlab.org/context/canonical-asset-uri.v1.schema.json"},
+            "next_action": {"const": "await_assessment_recheck"}
           }, "additionalProperties": false}}}
         ]}}
       }

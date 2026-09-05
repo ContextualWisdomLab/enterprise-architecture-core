@@ -13,6 +13,7 @@ _CANONICAL_ASSET_SCHEMA = (
 _CANONICAL_ASSET_FIELDS = (
     ("DataManagementImprovementInitiativeCreated", "assessment_result_uri"),
     ("DataManagementEvidenceAccepted", "evidence_uri"),
+    ("DataManagementAssessmentRecheckRequested", "assessment_result_uri"),
 )
 
 

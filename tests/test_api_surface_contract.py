@@ -36,6 +36,10 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         "/v1/architecture-transformations/"
         "{architecture_transformation_id}/replan"
     )
+    reassessment_path = (
+        "/v1/data-management-assessments/"
+        "{data_management_assessment_projection_id}/recheck"
+    )
     assert set(openapi_document["paths"]) == {
         "/health",
         "/ready",
@@ -47,6 +51,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
         verification_path,
         monitoring_path,
         replan_path,
+        reassessment_path,
     }
     assert set(openapi_document["paths"]["/health"]) == {"get"}
     assert set(openapi_document["paths"]["/ready"]) == {"get"}
@@ -58,6 +63,7 @@ def test_openapi_exposes_only_implemented_process_and_decision_surface(
     assert set(openapi_document["paths"][verification_path]) == {"post"}
     assert set(openapi_document["paths"][monitoring_path]) == {"get"}
     assert set(openapi_document["paths"][replan_path]) == {"post"}
+    assert set(openapi_document["paths"][reassessment_path]) == {"post"}
 
 
 def test_openapi_binds_governed_approval_request_receipt_and_role(

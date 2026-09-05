@@ -157,8 +157,11 @@ def parse_target_state_replan_request(
     """Bind strict replacement JSON to the terminal predecessor named by the path."""
 
     parsed = urlparse(path)
-    if parsed.query or parsed.fragment:
-        raise PlannerRequestError("replan path cannot contain query or fragment data")
+    if parsed.scheme or parsed.netloc or parsed.params or parsed.query or parsed.fragment:
+        raise PlannerRequestError(
+            "replan path must use local origin form without authority, parameters, "
+            "query, or fragment data"
+        )
     route = parsed.path
     if (
         not route.startswith(_TARGET_STATE_COMMAND_PATH_PREFIX)

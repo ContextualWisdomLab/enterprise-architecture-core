@@ -22,7 +22,9 @@ Start the `ea-core` process, call `GET /health`, then call `GET /ready`. Use the
 
 `POST /v1/architecture-transformations/{architecture_transformation_id}/replan` is the separate human-authorized replacement boundary after `gap_detected`. The path UUID is the terminal predecessor. The strict body supplies a distinct canonical UUIDv7 replacement transformation, decision request, scenario, remediation initiative, transformation code/title/description, effective time, human reason, and evidence reference. EA Core never reopens the predecessor: it supersedes it, creates the replacement as authoritative `proposed` target-state work, records immutable `transformation_replan_record` evidence, and emits `org.contextualwisdomlab.ea.transformation.replanned.v1` transactionally. Exact retries are idempotent. Conflicting decision reuse, cross-tenant or missing references, non-gap/previously superseded predecessors, duplicate replacement IDs, and pre-gap effective times fail closed. The receipt directs the buyer to `approve_target_state` so the replacement follows the existing governed approval/execution lifecycle.
 
-All mutation commands use UUIDv7 decision/evidence/transformation identities, explicit business-effective time, bounded human reason, actor derivation from verified identity, exact idempotency-key receipt binding, and fail-closed conflicting replay. Outbound events omit the private decision actor and reason.
+`POST /v1/data-management-assessments/{data_management_assessment_projection_id}/recheck` makes the evidence-closure next action executable without changing the Data/AI Context source assessment. The path names the tenant-local EA projection of the foreign assessment. The strict body contains canonical UUIDv7 `trigger_evidence_acceptance_id` and `decision_request_id` plus a CWL `requested_at` timestamp. Only the acceptance whose transactional evidence event proved the final projected gap closed may trigger the request, and the request cannot predate that acceptance. EA Core records immutable reassessment-request evidence and `org.contextualwisdomlab.ea.data_management.assessment_recheck_requested.v1` outbox evidence atomically. A newly committed decision returns HTTP `201` with stable request/outbox identifiers, `replayed: false`, and `await_assessment_recheck`; an exact retry returns the same durable identifiers with HTTP `200` and `replayed: true`. Conflicting decision reuse fails closed. `semantic-data-portal` remains authoritative for the assessment result and later reassessment outcome; this command never mutates or copies that source authority.
+
+All target-state mutation commands use UUIDv7 decision/evidence/transformation identities, explicit business-effective time, bounded human reason, actor derivation from verified identity, exact idempotency-key receipt binding, and fail-closed conflicting replay. Outbound events omit the private decision actor and reason. The data-management reassessment command is separately purpose-authorized and receipt-bound; it reuses the established immutable assessment projection/evidence history instead of manufacturing source truth.
 
 The read and command surfaces remain Enterprise Architecture authority. pg-erd-cloud physical-schema evidence, Semantic Data Portal Data/AI Context, and LineageWeave inferred/proposed lineage remain foreign authority reached only through governed receipt/canonical-reference projection. No API performs cross-service application-table SQL or promotes foreign inferred evidence to authoritative truth.
 
@@ -48,6 +50,7 @@ No direct runtime privilege is granted to this overload in `database/init/003_gr
 - Target-state verification uses `EA_VERIFY_ROLES`.
 - Post-verification monitoring uses `EA_MONITOR_ROLES`.
 - Target-state replanning uses `EA_REPLAN_ROLES`.
+- Data-management reassessment requests use `EA_DATA_MANAGEMENT_RECHECK_ROLES`.
 - Mutation and monitoring roles are purpose-bound and do not inherit authority from read or sibling roles.
 - Keyverse configuration is fail-closed and includes `EA_OIDC_ISSUER`, `EA_OIDC_AUDIENCE`, `EA_OIDC_JWKS_URL`, `EA_TENANT_CLAIM`, `EA_ROLE_CLAIM`, and every operation-specific role allow-list above.
 - JWKS retrieval remains HTTPS, same-origin, redirect-denied, bounded, timeout-limited, and fail-closed.
@@ -65,8 +68,9 @@ The `ea_runtime` login has no direct application-table authority. After service-
 - `record_target_state_verification(...)`
 - `read_target_state_monitoring_status(...)`
 - `record_target_state_replan(...)`
+- `request_data_management_assessment_recheck_for_tenant(...)`
 
-Each wrapper transaction-locally binds the already verified tenant UUID before tenant-scoped work. The runtime role is not granted direct access to the underlying projectors or foreign-product stores.
+Each wrapper transaction-locally binds the already verified tenant UUID before tenant-scoped work. The reassessment wrapper delegates only to the existing authoritative reassessment command and restores the caller tenant context before returning. The runtime role is not granted direct access to the underlying projectors, evidence tables, or foreign-product stores.
 
 ## Command and evidence rules
 
@@ -76,11 +80,12 @@ Each wrapper transaction-locally binds the already verified tenant UUID before t
 - A stale monitoring result is not a mutation. After new evidence is collected, the same purpose-bound verification command may append a later `verified` or `gap_detected` observation following `verified`; prior history remains immutable and `gap_detected` does not reopen.
 - Monitoring is read-only and uses explicit bitemporal cutoffs plus a bounded freshness policy; it cannot mutate authoritative history.
 - Replanning creates a new proposed transformation linked to the terminal gap-detected predecessor; it never mutates prior history into success or bypasses approval.
-- Human actor, reason, evidence identity, valid time, and system-recorded time remain auditable in authoritative history; privacy-minimized events carry only consumer-required references.
+- Data-management reassessment is allowed only after the projected final evidence gap is causally closed. It records an EA-side immutable request and outbox event, but it cannot promote the foreign assessment result or create the reassessment outcome on behalf of `semantic-data-portal`.
+- Human actor, reason, evidence identity, valid time, and system-recorded time remain auditable in authoritative transformation history; privacy-minimized events carry only consumer-required references. Data-management reassessment remains tied to its verified Keyverse request boundary and immutable triggering evidence acceptance.
 - Authoritative history and transactional outbox evidence commit atomically. A failed command cannot leave one without the other.
-- Exact retries return the immutable receipt; decision-request reuse with different meaning fails closed.
+- Exact retries return the immutable receipt; mutation receipts expose a boolean replay signal, while decision-request reuse with different meaning fails closed.
 - Mutations are never inferred from planner or LLM output.
 
 ## Error contract
 
-Planner, approval, scheduling, start, completion, verification, monitoring, and replanning errors expose stable `error_code` and `next_action` fields for missing or invalid authorization, malformed requests, forbidden roles, unavailable purpose-bound ports, or command/query failure. Internal SQL, token, credential, actor/reason, and connector details never appear in error responses.
+Planner, approval, scheduling, start, completion, verification, monitoring, replanning, and data-management reassessment errors expose stable `error_code` and `next_action` fields for missing or invalid authorization, malformed requests, forbidden roles, unavailable purpose-bound ports, or command/query failure. Internal SQL, token, credential, actor/reason, and connector details never appear in error responses.
