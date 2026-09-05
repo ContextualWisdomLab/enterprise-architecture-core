@@ -100,8 +100,13 @@ def test_parse_replan_binds_terminal_predecessor_to_explicit_replacement() -> No
             _PATH,
             _payload(truth_status_code="authoritative"),
         )
-    with pytest.raises(PlannerRequestError, match="replan path"):
-        parse_target_state_replan_request(_PATH + "?unsafe=1", _payload())
+    for hostile_target in (
+        _PATH + "?unsafe=1",
+        _PATH + ";unexpected=1",
+        f"https://attacker.invalid{_PATH}",
+    ):
+        with pytest.raises(PlannerRequestError, match="replan path"):
+            parse_target_state_replan_request(hostile_target, _payload())
 
 
 def test_replan_authority_is_separate_and_fail_closed() -> None:
