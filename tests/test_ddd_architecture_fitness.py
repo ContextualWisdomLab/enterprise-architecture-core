@@ -142,6 +142,17 @@ def test_baseline_keeps_historical_package_debt_visible() -> None:
     assert "Anti-Corruption Layer" in baseline
 
 
+def test_baseline_tracks_the_current_protected_main_transition() -> None:
+    """Keep governance prose aligned with protected main before default migration."""
+
+    baseline = Path("docs/product-technical-gap-baseline.md").read_text(
+        encoding="utf-8"
+    )
+    assert "default_branch=develop" in baseline
+    assert "both `develop` and `main` are protected" in baseline
+    assert "Change repository default to the already-protected `main`" in baseline
+
+
 def test_transformation_http_adapter_has_a_bounded_owner() -> None:
     """Keep Strategy & Transformation command HTTP behavior out of root runtime.py."""
 
