@@ -10,6 +10,7 @@ WORKFLOW_PATHS = (
 )
 CI_WORKFLOW_PATH = Path(".github/workflows/ci.yml")
 PYPROJECT_PATH = Path("pyproject.toml")
+EXACT_SOURCE_SHA = "${{ github.event.pull_request.head.sha || github.sha }}"
 
 
 def test_hosted_workflows_pin_supported_runner_image() -> None:
@@ -60,6 +61,22 @@ def test_workflow_hex_action_revisions_are_full_commit_shas() -> None:
                 f"{workflow_path} has a truncated hexadecimal action revision: "
                 f"{revision}"
             )
+
+
+def test_pr_workflows_checkout_and_verify_the_exact_source_head() -> None:
+    """Prevent pull-request merge refs from masquerading as exact-source evidence."""
+    exact_ref = f"ref: {EXACT_SOURCE_SHA}"
+    exact_expected_sha = f"EXPECTED_SHA: {EXACT_SOURCE_SHA}"
+
+    for workflow_path in WORKFLOW_PATHS:
+        workflow = workflow_path.read_text(encoding="utf-8")
+        checkout_count = workflow.count("uses: actions/checkout@")
+        assert checkout_count > 0, workflow_path
+        assert workflow.count(exact_ref) == checkout_count, workflow_path
+        assert workflow.count(exact_expected_sha) == checkout_count, workflow_path
+        assert workflow.count('run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"') == (
+            checkout_count
+        ), workflow_path
 
 
 def test_ci_limits_push_runs_to_integration_branch() -> None:
