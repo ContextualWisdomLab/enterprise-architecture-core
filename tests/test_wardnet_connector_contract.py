@@ -67,6 +67,20 @@ def test_checked_in_wardnet_connector_keeps_verdicts_out_of_ea_authority(
     assert validate_connector_catalog(document) == len(document["connectors"])
 
 
+def test_wardnet_evidence_boundary_is_required(repository_root) -> None:
+    """Reject a catalog that drops the explicit Wardnet evidence boundary."""
+
+    document = _catalog(repository_root)
+    document["connectors"] = [
+        connector
+        for connector in document["connectors"]
+        if connector.get("connector_name") != _CONNECTOR_NAME
+    ]
+
+    with pytest.raises(ContractValidationError, match="exactly one Wardnet"):
+        validate_connector_catalog(document)
+
+
 @pytest.mark.parametrize(
     ("field", "replacement", "message"),
     [
