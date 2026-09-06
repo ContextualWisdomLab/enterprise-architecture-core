@@ -82,7 +82,8 @@ def test_pr_workflows_checkout_and_verify_the_exact_source_head() -> None:
 def test_ci_limits_push_runs_to_integration_branch() -> None:
     """Avoid duplicate feature-branch push and pull-request runner consumption."""
     workflow = CI_WORKFLOW_PATH.read_text(encoding="utf-8")
-    assert "push:\n    branches: [main]\n  pull_request:" in workflow
+    assert re.search(r"(?m)^  push:\n    branches: \[main\]$", workflow)
+    assert re.search(r"(?m)^  pull_request:$", workflow)
 
 
 def test_ci_cancels_superseded_runs() -> None:
