@@ -329,6 +329,64 @@ def _require_noema_projection_boundary(document: Mapping[str, Any]) -> None:
         )
 
 
+def _require_wardnet_evidence_boundary(document: Mapping[str, Any]) -> None:
+    """Admit Wardnet architecture evidence without importing verdict authority."""
+
+    wardnet_connectors = [
+        connector
+        for connector in document["connectors"]
+        if connector.get("connector_name") == "wardnet_security_evidence"
+    ]
+    if len(wardnet_connectors) != 1:
+        raise ContractValidationError(
+            "connector catalog must declare exactly one Wardnet security evidence boundary"
+        )
+    connector = wardnet_connectors[0]
+    if connector.get("owner_repository") != "ContextualWisdomLab/wardnet":
+        raise ContractValidationError(
+            "Wardnet security evidence owner_repository must remain ContextualWisdomLab/wardnet"
+        )
+    if connector.get("direction_code") != "inbound_evidence":
+        raise ContractValidationError(
+            "Wardnet security evidence direction_code must remain inbound_evidence"
+        )
+    if connector.get("exchange_kind") != _CONTEXT_ASSERTION_EXCHANGE_KIND:
+        raise ContractValidationError(
+            "Wardnet security evidence must use the Context Assertion CloudEvent exchange"
+        )
+    if connector.get("ea_core_owns") is not False:
+        raise ContractValidationError(
+            "Wardnet security evidence must remain outside EA Core ownership"
+        )
+    if connector.get("projection_truth_statuses") != ["observed"]:
+        raise ContractValidationError(
+            "Wardnet security evidence projection must admit observed truth only"
+        )
+    if connector.get("forbidden_authoritative_facts") != [
+        "malware_verdict",
+        "artifact_risk_score",
+    ]:
+        raise ContractValidationError(
+            "Wardnet malware verdict and artifact risk score must remain forbidden authoritative facts"
+        )
+    if connector.get("prohibited_integrations") != [
+        "direct_database_access",
+        "source_copy",
+    ]:
+        raise ContractValidationError(
+            "Wardnet evidence boundary must prohibit direct database access and source copy"
+        )
+    owner_boundaries = [
+        item
+        for item in document["connectors"]
+        if item.get("owner_repository") == "ContextualWisdomLab/wardnet"
+    ]
+    if owner_boundaries != [connector]:
+        raise ContractValidationError(
+            "connector catalog must declare exactly one Wardnet owner boundary"
+        )
+
+
 def validate_connector_catalog(document: Mapping[str, Any]) -> int:
     """Validate connector ownership plus shared Context Graph release bindings."""
 
@@ -337,6 +395,7 @@ def validate_connector_catalog(document: Mapping[str, Any]) -> int:
         _validate_context_contract_binding(connector)
     _require_quarantine_runtime_boundary(document)
     _require_noema_projection_boundary(document)
+    _require_wardnet_evidence_boundary(document)
     return connector_count
 
 
