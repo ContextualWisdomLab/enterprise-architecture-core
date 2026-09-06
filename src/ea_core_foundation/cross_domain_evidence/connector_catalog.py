@@ -339,12 +339,14 @@ def _require_wardnet_evidence_boundary(document: Mapping[str, Any]) -> None:
     ]
     if len(wardnet_connectors) != 1:
         raise ContractValidationError(
-            "connector catalog must declare exactly one Wardnet security evidence boundary"
+            "connector catalog must declare exactly one Wardnet security "
+            "evidence boundary"
         )
     connector = wardnet_connectors[0]
     if connector.get("owner_repository") != "ContextualWisdomLab/wardnet":
         raise ContractValidationError(
-            "Wardnet security evidence owner_repository must remain ContextualWisdomLab/wardnet"
+            "Wardnet security evidence owner_repository must remain "
+            "ContextualWisdomLab/wardnet"
         )
     if connector.get("direction_code") != "inbound_evidence":
         raise ContractValidationError(
@@ -352,7 +354,8 @@ def _require_wardnet_evidence_boundary(document: Mapping[str, Any]) -> None:
         )
     if connector.get("exchange_kind") != _CONTEXT_ASSERTION_EXCHANGE_KIND:
         raise ContractValidationError(
-            "Wardnet security evidence must use the Context Assertion CloudEvent exchange"
+            "Wardnet security evidence must use the Context Assertion "
+            "CloudEvent exchange"
         )
     if connector.get("ea_core_owns") is not False:
         raise ContractValidationError(
@@ -367,14 +370,16 @@ def _require_wardnet_evidence_boundary(document: Mapping[str, Any]) -> None:
         "artifact_risk_score",
     ]:
         raise ContractValidationError(
-            "Wardnet malware verdict and artifact risk score must remain forbidden authoritative facts"
+            "Wardnet malware verdict and artifact risk score must remain "
+            "forbidden authoritative facts"
         )
     if connector.get("prohibited_integrations") != [
         "direct_database_access",
         "source_copy",
     ]:
         raise ContractValidationError(
-            "Wardnet evidence boundary must prohibit direct database access and source copy"
+            "Wardnet evidence boundary must prohibit direct database access and "
+            "source copy"
         )
     owner_boundaries = [
         item
