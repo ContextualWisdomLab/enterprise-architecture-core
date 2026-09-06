@@ -50,6 +50,14 @@ _CLOUDEVENT_IDENTITY_FIELDS = (
     "subject",
     "dataschema",
 )
+_CONTEXTUAL_ORCHESTRATOR_CONNECTOR_NAME = "contextual_orchestrator_proposal"
+_CONTEXTUAL_ORCHESTRATOR_OWNER_REPOSITORY = (
+    "ContextualWisdomLab/contextual-orchestrator"
+)
+_CONTEXTUAL_ORCHESTRATOR_TRUTH_STATUSES = (
+    "proposed",
+    "inferred",
+)
 _QUARANTINE_CONNECTOR_NAME = "quarantine_sandbox_runtime"
 _QUARANTINE_OWNER_REPOSITORY = "ContextualWisdomLab/quarantine-sandbox-runtime"
 _QUARANTINE_DIRECTION_CODE = "inbound_projection"
@@ -178,6 +186,60 @@ def _validate_context_contract_binding(connector: Mapping[str, Any]) -> None:
                 "Context Assertion projection must preserve exact CloudEvent identity "
                 "fields"
             )
+
+
+def _require_contextual_orchestrator_proposal_boundary(
+    document: Mapping[str, Any],
+) -> None:
+    """Keep orchestration-generated architecture suggestions non-authoritative."""
+
+    connectors = [
+        connector
+        for connector in document["connectors"]
+        if connector.get("connector_name") == _CONTEXTUAL_ORCHESTRATOR_CONNECTOR_NAME
+    ]
+    if len(connectors) != 1:
+        raise ContractValidationError(
+            "connector catalog must declare exactly one "
+            "contextual_orchestrator_proposal"
+        )
+    connector = connectors[0]
+    if connector.get("owner_repository") != _CONTEXTUAL_ORCHESTRATOR_OWNER_REPOSITORY:
+        raise ContractValidationError(
+            "Contextual Orchestrator proposal owner_repository must remain "
+            "ContextualWisdomLab/contextual-orchestrator"
+        )
+    if connector.get("direction_code") != "inbound_proposal":
+        raise ContractValidationError(
+            "Contextual Orchestrator proposal direction_code must remain "
+            "inbound_proposal"
+        )
+    if connector.get("exchange_kind") != _CONTEXT_ASSERTION_EXCHANGE_KIND:
+        raise ContractValidationError(
+            "Contextual Orchestrator proposal must use the Context Assertion "
+            "CloudEvent exchange"
+        )
+    if connector.get("ea_core_owns") is not False:
+        raise ContractValidationError(
+            "Contextual Orchestrator proposal must remain outside EA Core ownership"
+        )
+    if connector.get("projection_truth_statuses") != list(
+        _CONTEXTUAL_ORCHESTRATOR_TRUTH_STATUSES
+    ):
+        raise ContractValidationError(
+            "Contextual Orchestrator proposal projection must admit proposed and "
+            "inferred truth only"
+        )
+    owner_boundaries = [
+        item
+        for item in document["connectors"]
+        if item.get("owner_repository") == _CONTEXTUAL_ORCHESTRATOR_OWNER_REPOSITORY
+    ]
+    if owner_boundaries != [connector]:
+        raise ContractValidationError(
+            "connector catalog must declare exactly one Contextual Orchestrator "
+            "owner boundary"
+        )
 
 
 def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
@@ -398,6 +460,7 @@ def validate_connector_catalog(document: Mapping[str, Any]) -> int:
     connector_count = base.validate_connector_catalog(document)
     for connector in document["connectors"]:
         _validate_context_contract_binding(connector)
+    _require_contextual_orchestrator_proposal_boundary(document)
     _require_quarantine_runtime_boundary(document)
     _require_noema_projection_boundary(document)
     _require_wardnet_evidence_boundary(document)
