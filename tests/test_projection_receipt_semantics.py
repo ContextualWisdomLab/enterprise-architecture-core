@@ -25,6 +25,10 @@ _REQUIRED_CLOUDEVENT_IDENTITY_FIELDS = [
     "subject",
     "dataschema",
 ]
+_CONTEXT_MAP_IDENTITY_SENTENCE = (
+    "CloudEvent `id`, `source`, `specversion`, `type`, `time`, `subject` "
+    "and `dataschema` identity"
+)
 
 
 def _catalog(repository_root: Path) -> dict:
@@ -58,6 +62,15 @@ def test_context_assertion_projections_retain_receipt_identity(repository_root) 
         assert connector["cloudevent_identity_fields"] == (
             _REQUIRED_CLOUDEVENT_IDENTITY_FIELDS
         )
+
+
+def test_context_map_names_complete_cloudevent_projection_identity(
+    repository_root,
+) -> None:
+    """Keep the written Context Map aligned with the executable receipt contract."""
+
+    context_map = (repository_root / "docs/CONTEXT_MAP.md").read_text(encoding="utf-8")
+    assert _CONTEXT_MAP_IDENTITY_SENTENCE in context_map
 
 
 def test_connector_catalog_rejects_projection_receipt_identity_loss(
