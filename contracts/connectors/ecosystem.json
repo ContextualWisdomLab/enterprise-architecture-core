@@ -276,6 +276,10 @@
         "subject",
         "dataschema"
       ],
+      "projection_truth_statuses": [
+        "proposed",
+        "inferred"
+      ],
       "next_action": "Accept orchestration-generated architecture suggestions only as proposed or inferred context with provenance; require an authorized EA command before authoritative promotion."
     },
     {
