@@ -1,6 +1,7 @@
 """Wardnet Context Map authority-boundary regressions."""
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -78,6 +79,18 @@ def test_wardnet_evidence_boundary_is_required(repository_root) -> None:
     ]
 
     with pytest.raises(ContractValidationError, match="exactly one Wardnet"):
+        validate_connector_catalog(document)
+
+
+def test_wardnet_owner_boundary_is_not_duplicated(repository_root) -> None:
+    """Reject a second connector that could split Wardnet projection authority."""
+
+    document = _catalog(repository_root)
+    duplicate = deepcopy(_wardnet_connector(document))
+    duplicate["connector_name"] = "wardnet_secondary_evidence"
+    document["connectors"].append(duplicate)
+
+    with pytest.raises(ContractValidationError, match="exactly one Wardnet owner"):
         validate_connector_catalog(document)
 
 
