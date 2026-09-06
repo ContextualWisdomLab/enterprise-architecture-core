@@ -65,6 +65,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   expected_tenant_code text;
+  parent_schema_version text;
 BEGIN
   SELECT tenant_code
     INTO expected_tenant_code
@@ -79,12 +80,24 @@ BEGIN
       MESSAGE = 'Context Assertion subject tenant does not match receipt tenant';
   END IF;
 
+  SELECT schema_version
+    INTO parent_schema_version
+    FROM architecture_core.projection_receipt
+   WHERE tenant_record_id = NEW.tenant_record_id
+     AND projection_receipt_id = NEW.projection_receipt_id;
+
+  IF parent_schema_version IS DISTINCT FROM 'context-assertion/v1' THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '23514',
+      MESSAGE = 'Context Assertion parent receipt schema identity does not match context-assertion/v1';
+  END IF;
+
   RETURN NEW;
 END;
 $$;
 
 CREATE TRIGGER context_assertion_projection_receipt_tenant_guard
-BEFORE INSERT OR UPDATE OF tenant_record_id, event_subject_uri
+BEFORE INSERT OR UPDATE OF tenant_record_id, projection_receipt_id, event_subject_uri
 ON architecture_core.context_assertion_projection_receipt
 FOR EACH ROW
 EXECUTE FUNCTION architecture_core.validate_context_assertion_receipt_tenant();
@@ -120,6 +133,6 @@ CREATE INDEX context_assertion_projection_receipt_provenance_index
         (tenant_record_id, provenance_evidence_record_id, recorded_at DESC);
 
 COMMENT ON TABLE architecture_core.context_assertion_projection_receipt IS
-'Retains immutable Context Assertion CloudEvent and admission identity beside the generic replay receipt. The row preserves source-event compatibility/provenance evidence without transferring upstream product authority or copying the foreign product model.';
+'Retains immutable Context Assertion CloudEvent and admission identity beside the generic replay receipt. The row preserves source-event compatibility/provenance evidence without transferring upstream product authority or copying the foreign product model. A detail row can attach only to a generic parent carrying the context-assertion/v1 schema identity.';
 
 COMMIT;
