@@ -461,7 +461,18 @@
         "subject",
         "dataschema"
       ],
-      "next_action": "Project Wardnet security-control and exposure evidence with its observed truth status, effective time, source reference, and provenance; keep detection authority in wardnet."
+      "projection_truth_statuses": [
+        "observed"
+      ],
+      "forbidden_authoritative_facts": [
+        "malware_verdict",
+        "artifact_risk_score"
+      ],
+      "prohibited_integrations": [
+        "direct_database_access",
+        "source_copy"
+      ],
+      "next_action": "Project only observed Wardnet security-control and exposure evidence with exact source authority, effective/system time, and provenance. Reject authoritative verdict/risk assertions at this EA connector boundary; maliciousness verdicts and incidents remain Wardnet product truth."
     },
     {
       "connector_name": "appguardrail_security_evidence",
