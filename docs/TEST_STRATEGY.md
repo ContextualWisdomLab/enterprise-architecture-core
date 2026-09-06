@@ -98,6 +98,18 @@ The separately authorized reassessment-status read is also executable rather tha
 - the supersession traversal has a fixed 32-projection bound. Real PostgreSQL acceptance constructs a 33-projection chain inside a nested subtransaction, requires the exact depth failure, and proves the synthetic chain rolls back without leaking fixture state;
 - tenant context is restored on success and failure, cross-tenant reads fail closed, readiness/missing-evidence consistency is checked on the selected current projection, and the read never mutates Semantic Data Portal or EA history.
 
+## Context Assertion projection receipt
+
+The Cross-Domain Evidence ACL is tested against the actual PostgreSQL receipt boundary, not only connector metadata:
+
+- the generic `projection_receipt` enforces canonical CWL source-authority URI shape, UUIDv7 CloudEvent identity, tenant isolation and immutable source/event/schema/payload evidence;
+- the Context-Assertion-specific detail retains CloudEvents 1.0 identity, exact type/subject/time/dataschema/media type, admitted Context Assertion schema/profile/admission versions and tenant-bound provenance;
+- a valid generic parent whose immutable schema identity is not `context-assertion/v1` must be rejected when a Context Assertion detail attempts to attach to it, preventing cross-contract receipt confusion while leaving the reusable parent provider-neutral;
+- foreign observed/inferred/proposed evidence retains producer authority and never becomes authoritative EA truth merely by acquiring a projection receipt;
+- hard deletion or identity mutation of the detail is rejected, and forced RLS prevents cross-tenant receipt visibility.
+
+Production compatibility remains fail closed until the matching CGC Context Assertion contract is published from protected immutable source with conformance, package, SBOM and provenance evidence. An unreleased sibling PR is test/development evidence only.
+
 ## Remaining future requirements
 
 Before corresponding future features merge, add executable evidence for additional command/outbox concurrency races beyond the reassessment boundary, bounded traversal and injection handling for future general-purpose graph surfaces, OpenLineage ingestion/replay storms, cross-domain receipt stress and recovery, and accessible exact-value/export behavior for buyer UI surfaces. Backup/restore and release rehearsal must prove the entire governed lifecycle, terminal verification evidence, monitoring source evidence, and reassessment request/status/outbox state survive restoration consistently.
