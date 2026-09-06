@@ -52,19 +52,29 @@ def test_checked_in_wardnet_connector_keeps_verdicts_out_of_ea_authority(
     assert connector["direction_code"] == "inbound_evidence"
     assert connector["exchange_kind"] == "context_assertion_cloudevent"
     assert connector["ea_core_owns"] is False
-    assert connector["projection_truth_statuses"] == _EXPECTED_PROJECTION_TRUTH_STATUSES
+    assert (
+        connector["projection_truth_statuses"]
+        == _EXPECTED_PROJECTION_TRUTH_STATUSES
+    )
     assert (
         connector["forbidden_authoritative_facts"]
         == _EXPECTED_FORBIDDEN_AUTHORITATIVE_FACTS
     )
-    assert connector["prohibited_integrations"] == _EXPECTED_PROHIBITED_INTEGRATIONS
+    assert (
+        connector["prohibited_integrations"]
+        == _EXPECTED_PROHIBITED_INTEGRATIONS
+    )
     assert validate_connector_catalog(document) == len(document["connectors"])
 
 
 @pytest.mark.parametrize(
     ("field", "replacement", "message"),
     [
-        ("owner_repository", "ContextualWisdomLab/enterprise-architecture-core", "Wardnet"),
+        (
+            "owner_repository",
+            "ContextualWisdomLab/enterprise-architecture-core",
+            "Wardnet",
+        ),
         ("direction_code", "inbound_projection", "inbound_evidence"),
         ("exchange_kind", "canonical_asset_uri", "Context Assertion"),
         ("ea_core_owns", True, "outside EA Core ownership"),
