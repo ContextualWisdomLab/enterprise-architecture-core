@@ -66,6 +66,7 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     event_time,
     event_dataschema_uri,
     transport_media_type,
+    context_schema_version,
     context_profile_id,
     context_profile_version,
     admission_version,
@@ -80,6 +81,7 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     '2026-09-03T08:59:59Z',
     'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
     'application/cloudevents+json',
+    1,
     'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
     1,
     1,
@@ -95,6 +97,7 @@ DECLARE
   actual_event_type text;
   actual_subject text;
   actual_dataschema text;
+  actual_schema_version integer;
   actual_profile_id text;
   actual_profile_version integer;
   actual_admission integer;
@@ -109,6 +112,7 @@ BEGIN
       detail.event_type,
       detail.event_subject_uri,
       detail.event_dataschema_uri,
+      detail.context_schema_version,
       detail.context_profile_id,
       detail.context_profile_version,
       detail.admission_version,
@@ -120,6 +124,7 @@ BEGIN
       actual_event_type,
       actual_subject,
       actual_dataschema,
+      actual_schema_version,
       actual_profile_id,
       actual_profile_version,
       actual_admission,
@@ -143,6 +148,7 @@ BEGIN
         'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001'
      OR actual_dataschema IS DISTINCT FROM
         'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json'
+     OR actual_schema_version IS DISTINCT FROM 1
      OR actual_profile_id IS DISTINCT FROM
         'urn:cwl:context-contracts:context-assertion-event-semantics:v1'
      OR actual_profile_version IS DISTINCT FROM 1
@@ -197,6 +203,7 @@ BEGIN
         event_time,
         event_dataschema_uri,
         transport_media_type,
+        context_schema_version,
         context_profile_id,
         context_profile_version,
         admission_version,
@@ -210,12 +217,52 @@ BEGIN
         '2026-09-03T09:00:59Z',
         'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
         'application/cloudevents+json',
+        1,
         'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
         1,
         1,
         '0196f300-2000-7200-8200-000000000001'
     );
     RAISE EXCEPTION 'non-1.0 CloudEvent specversion was accepted';
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+  END;
+END;
+$$;
+
+DO $$
+BEGIN
+  BEGIN
+    INSERT INTO architecture_core.context_assertion_projection_receipt (
+        tenant_record_id,
+        projection_receipt_id,
+        event_specversion,
+        event_type,
+        event_subject_uri,
+        event_time,
+        event_dataschema_uri,
+        transport_media_type,
+        context_schema_version,
+        context_profile_id,
+        context_profile_version,
+        admission_version,
+        provenance_evidence_record_id
+    ) VALUES (
+        '0196f300-0000-7000-8000-000000000001',
+        '0196f300-1000-7100-8100-000000000002',
+        '1.0',
+        'org.contextualwisdomlab.context_graph.assertion.v1',
+        'urn:cwl:receipt_tenant:quarantine_sandbox_runtime:technology_version:0196f300-3000-7300-8300-000000000001',
+        '2026-09-03T09:00:59Z',
+        'https://schemas.contextualwisdomlab.org/context/context-assertion.v1.schema.json',
+        'application/cloudevents+json',
+        2,
+        'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+        1,
+        1,
+        '0196f300-2000-7200-8200-000000000001'
+    );
+    RAISE EXCEPTION 'non-v1 Context Assertion schema version was accepted';
   EXCEPTION
     WHEN check_violation THEN NULL;
   END;
