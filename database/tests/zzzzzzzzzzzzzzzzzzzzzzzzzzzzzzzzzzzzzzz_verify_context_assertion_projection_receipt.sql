@@ -69,6 +69,8 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     context_schema_version,
     context_profile_id,
     context_profile_version,
+    message_profile_id,
+    message_profile_version,
     admission_version,
     provenance_evidence_record_id,
     recorded_at
@@ -83,6 +85,8 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     'application/cloudevents+json',
     1,
     'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+    1,
+    'urn:cwl:context-contracts:context-assertion-message-admission:v1',
     1,
     1,
     '0196f300-2000-7200-8200-000000000001',
@@ -100,6 +104,8 @@ DECLARE
   actual_schema_version integer;
   actual_profile_id text;
   actual_profile_version integer;
+  actual_message_profile_id text;
+  actual_message_profile_version integer;
   actual_admission integer;
   actual_provenance uuid;
   rls_enabled boolean;
@@ -115,6 +121,8 @@ BEGIN
       detail.context_schema_version,
       detail.context_profile_id,
       detail.context_profile_version,
+      detail.message_profile_id,
+      detail.message_profile_version,
       detail.admission_version,
       detail.provenance_evidence_record_id
     INTO
@@ -127,6 +135,8 @@ BEGIN
       actual_schema_version,
       actual_profile_id,
       actual_profile_version,
+      actual_message_profile_id,
+      actual_message_profile_version,
       actual_admission,
       actual_provenance
     FROM architecture_core.projection_receipt AS base
@@ -152,6 +162,9 @@ BEGIN
      OR actual_profile_id IS DISTINCT FROM
         'urn:cwl:context-contracts:context-assertion-event-semantics:v1'
      OR actual_profile_version IS DISTINCT FROM 1
+     OR actual_message_profile_id IS DISTINCT FROM
+        'urn:cwl:context-contracts:context-assertion-message-admission:v1'
+     OR actual_message_profile_version IS DISTINCT FROM 1
      OR actual_admission IS DISTINCT FROM 1
      OR actual_provenance IS DISTINCT FROM
         '0196f300-2000-7200-8200-000000000001'::uuid THEN
@@ -206,6 +219,8 @@ BEGIN
         context_schema_version,
         context_profile_id,
         context_profile_version,
+        message_profile_id,
+        message_profile_version,
         admission_version,
         provenance_evidence_record_id
     ) VALUES (
@@ -219,6 +234,8 @@ BEGIN
         'application/cloudevents+json',
         1,
         'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+        1,
+        'urn:cwl:context-contracts:context-assertion-message-admission:v1',
         1,
         1,
         '0196f300-2000-7200-8200-000000000001'
@@ -245,6 +262,8 @@ BEGIN
         context_schema_version,
         context_profile_id,
         context_profile_version,
+        message_profile_id,
+        message_profile_version,
         admission_version,
         provenance_evidence_record_id
     ) VALUES (
@@ -258,6 +277,8 @@ BEGIN
         'application/cloudevents+json',
         2,
         'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+        1,
+        'urn:cwl:context-contracts:context-assertion-message-admission:v1',
         1,
         1,
         '0196f300-2000-7200-8200-000000000001'
