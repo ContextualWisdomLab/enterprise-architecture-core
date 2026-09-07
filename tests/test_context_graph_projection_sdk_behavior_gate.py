@@ -115,6 +115,7 @@ def test_default_projection_sdk_probe_rejects_message_profile_receipt_drift(
         def __init__(self) -> None:
             self.envelope = SimpleNamespace(to_mapping=lambda: event)
             self.assertion = SimpleNamespace(to_mapping=lambda: event["data"])
+            self.schema_version = 1
             self.profile_id = (
                 "urn:cwl:context-contracts:context-assertion-event-semantics:v1"
             )
@@ -189,3 +190,49 @@ def test_default_projection_sdk_probe_rejects_schema_version_drift(
     monkeypatch.setattr(release_verifier, "files", lambda _package: resource_root)
 
     assert release_verifier._default_projection_sdk_verified() is False
+
+
+def test_default_projection_sdk_probe_accepts_exact_projection_receipt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The exact schema and profile receipt remains admissible after hardening."""
+
+    event = {"data": {"assertion": "fixture"}}
+
+    class Admission:
+        """Minimal exact installed-provider receipt for the positive gate path."""
+
+        def __init__(self) -> None:
+            self.envelope = SimpleNamespace(to_mapping=lambda: event)
+            self.assertion = SimpleNamespace(to_mapping=lambda: event["data"])
+            self.schema_version = 1
+            self.profile_id = (
+                "urn:cwl:context-contracts:context-assertion-event-semantics:v1"
+            )
+            self.profile_version = 1
+            self.message_profile_id = (
+                "urn:cwl:context-contracts:context-assertion-message-admission:v1"
+            )
+            self.message_profile_version = 1
+            self.admission_version = 1
+
+    package = SimpleNamespace(
+        CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE="application/cloudevents+json",
+        ContextAssertionAdmission=Admission,
+        admit_context_assertion_message=lambda _media_type, _event: Admission(),
+    )
+    profile_resource = SimpleNamespace(
+        read_text=lambda **_kwargs: json.dumps(
+            {"valid_vectors": [{"value": event}]}
+        )
+    )
+    resource_root = SimpleNamespace(joinpath=lambda _name: profile_resource)
+
+    monkeypatch.setattr(
+        release_verifier,
+        "import_module",
+        lambda name: package if name == "cwl_context_contracts" else None,
+    )
+    monkeypatch.setattr(release_verifier, "files", lambda _package: resource_root)
+
+    assert release_verifier._default_projection_sdk_verified() is True
