@@ -192,6 +192,9 @@ def _default_projection_sdk_verified() -> bool:
         and admitted.profile_id
         == "urn:cwl:context-contracts:context-assertion-event-semantics:v1"
         and admitted.profile_version == 1
+        and admitted.message_profile_id
+        == "urn:cwl:context-contracts:context-assertion-message-admission:v1"
+        and admitted.message_profile_version == 1
         and admitted.admission_version == 1
     )
 
