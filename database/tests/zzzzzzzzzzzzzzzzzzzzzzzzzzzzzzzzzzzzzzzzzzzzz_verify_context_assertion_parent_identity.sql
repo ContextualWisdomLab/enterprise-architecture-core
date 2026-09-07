@@ -78,6 +78,8 @@ BEGIN
         context_schema_version,
         context_profile_id,
         context_profile_version,
+        message_profile_id,
+        message_profile_version,
         admission_version,
         provenance_evidence_record_id
     ) VALUES (
@@ -91,6 +93,8 @@ BEGIN
         'application/cloudevents+json',
         1,
         'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+        1,
+        'urn:cwl:context-contracts:context-assertion-message-admission:v1',
         1,
         1,
         '0196f400-2000-7200-8200-000000000001'
