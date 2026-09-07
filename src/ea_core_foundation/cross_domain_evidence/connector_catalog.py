@@ -38,6 +38,8 @@ _PROJECTION_RECEIPT_SEMANTICS = (
     "schema_version",
     "profile_id",
     "profile_version",
+    "message_profile_id",
+    "message_profile_version",
     "admission_version",
     "provenance",
 )
