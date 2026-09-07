@@ -104,6 +104,8 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     context_schema_version,
     context_profile_id,
     context_profile_version,
+    message_profile_id,
+    message_profile_version,
     admission_version,
     provenance_evidence_record_id,
     recorded_at
@@ -118,6 +120,8 @@ INSERT INTO architecture_core.context_assertion_projection_receipt (
     E' \tAPPLICATION/CLOUDEVENTS+JSON ; CHARSET = "UTF-8"\t',
     1,
     'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+    1,
+    'urn:cwl:context-contracts:context-assertion-message-admission:v1',
     1,
     1,
     '0196f301-2000-7200-8200-000000000001',
@@ -170,6 +174,8 @@ BEGIN
           context_schema_version,
           context_profile_id,
           context_profile_version,
+          message_profile_id,
+          message_profile_version,
           admission_version,
           provenance_evidence_record_id
       ) VALUES (
@@ -183,6 +189,8 @@ BEGIN
           bad_media_types[index_value],
           1,
           'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
+          1,
+          'urn:cwl:context-contracts:context-assertion-message-admission:v1',
           1,
           1,
           '0196f301-2000-7200-8200-000000000001'
