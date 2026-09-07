@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+
 import pytest
 
+import scripts.verify_context_graph_release as release_verifier
 from scripts.verify_context_graph_release import (
     ContextGraphReleaseError,
     _EXPECTED_DISTRIBUTION,
@@ -87,3 +91,55 @@ def test_context_graph_release_gate_requires_projection_sdk_behavior() -> None:
             release_admission_verifier=lambda _conformance, _bundle: True,
             source_attestation_verifier=lambda _source_manifest: True,
         )
+
+
+@pytest.mark.parametrize(
+    ("message_profile_id", "message_profile_version"),
+    [
+        ("urn:cwl:context-contracts:context-assertion-message-admission:v2", 1),
+        ("urn:cwl:context-contracts:context-assertion-message-admission:v1", 2),
+    ],
+)
+def test_default_projection_sdk_probe_rejects_message_profile_receipt_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    message_profile_id: str,
+    message_profile_version: int,
+) -> None:
+    """A release cannot pass while its admitted message-profile receipt has drifted."""
+
+    event = {"data": {"assertion": "fixture"}}
+
+    class Admission:
+        """Minimal installed-provider receipt used to exercise the consumer probe."""
+
+        def __init__(self) -> None:
+            self.envelope = SimpleNamespace(to_mapping=lambda: event)
+            self.assertion = SimpleNamespace(to_mapping=lambda: event["data"])
+            self.profile_id = (
+                "urn:cwl:context-contracts:context-assertion-event-semantics:v1"
+            )
+            self.profile_version = 1
+            self.message_profile_id = message_profile_id
+            self.message_profile_version = message_profile_version
+            self.admission_version = 1
+
+    package = SimpleNamespace(
+        CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE="application/cloudevents+json",
+        ContextAssertionAdmission=Admission,
+        admit_context_assertion_message=lambda _media_type, _event: Admission(),
+    )
+    profile_resource = SimpleNamespace(
+        read_text=lambda **_kwargs: json.dumps(
+            {"valid_vectors": [{"value": event}]}
+        )
+    )
+    resource_root = SimpleNamespace(joinpath=lambda _name: profile_resource)
+
+    monkeypatch.setattr(
+        release_verifier,
+        "import_module",
+        lambda name: package if name == "cwl_context_contracts" else None,
+    )
+    monkeypatch.setattr(release_verifier, "files", lambda _package: resource_root)
+
+    assert release_verifier._default_projection_sdk_verified() is False
