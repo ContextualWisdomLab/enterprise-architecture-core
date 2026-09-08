@@ -97,7 +97,10 @@ def test_noema_projection_connector_preserves_owner_and_admission_boundary(
         "source_authority",
         "cloudevent_identity",
         "schema_version",
+        "profile_id",
         "profile_version",
+        "message_profile_id",
+        "message_profile_version",
         "admission_version",
         "provenance",
     ]
@@ -156,6 +159,7 @@ def test_noema_projection_is_required_exactly_once(repository_root) -> None:
         ),
         ("direction_code", "inbound_proposal", "direction_code"),
         ("exchange_kind", "cloudevents_json", "exchange_kind"),
+        ("ea_core_owns", True, "outside EA Core ownership"),
         (
             "architecture_projection_scope",
             ["agent_task"],
