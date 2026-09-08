@@ -5,6 +5,9 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from .cross_domain_evidence.appguardrail_security_evidence import (
+    validate_appguardrail_security_evidence,
+)
 from .cross_domain_evidence.connector_catalog import (
     ContractValidationError,
     RepositoryReport,
@@ -14,7 +17,7 @@ from .cross_domain_evidence.connector_catalog import (
 
 
 def validate_connector_catalog(document: Mapping[str, Any]) -> int:
-    """Validate the catalog and fail closed on Noema ownership drift."""
+    """Validate the catalog and fail closed on foreign-authority drift."""
 
     connector_count = _validate_connector_catalog(document)
     noema_connectors = [
@@ -26,6 +29,7 @@ def validate_connector_catalog(document: Mapping[str, Any]) -> int:
         raise ContractValidationError(
             "Noema projection must remain outside EA Core ownership"
         )
+    validate_appguardrail_security_evidence(document)
     return connector_count
 
 
