@@ -1,10 +1,21 @@
 BEGIN;
 
--- The original receipt shape stored local compatibility labels in fields named
--- as CGC profile/admission versions. Preserve only the exact previously emitted
--- candidate labels, then replace them with the identity actually exported by
--- ContextAssertionAdmission. Any unknown candidate value fails closed instead
--- of being reinterpreted as released contract evidence.
+-- The provisional receipt shape stored local compatibility labels rather than
+-- the exact CGC profile/admission identity returned by ContextAssertionAdmission.
+-- Those labels are insufficient evidence to promote an existing row to an exact
+-- released-contract receipt. Fail closed instead of manufacturing provenance.
+DO $$
+BEGIN
+  IF EXISTS (
+      SELECT 1
+        FROM architecture_core.context_assertion_projection_receipt
+  ) THEN
+    RAISE EXCEPTION
+      'provisional Context Assertion receipts require re-admission before exact profile/admission identity can be recorded';
+  END IF;
+END;
+$$;
+
 ALTER TABLE architecture_core.context_assertion_projection_receipt
     DROP CONSTRAINT context_assertion_projection_receipt_profile_version;
 ALTER TABLE architecture_core.context_assertion_projection_receipt
@@ -15,34 +26,13 @@ ALTER TABLE architecture_core.context_assertion_projection_receipt
 ALTER TABLE architecture_core.context_assertion_projection_receipt
     RENAME COLUMN admission_version TO legacy_admission_label;
 
-DO $$
-BEGIN
-  IF EXISTS (
-      SELECT 1
-        FROM architecture_core.context_assertion_projection_receipt
-       WHERE legacy_context_profile_label IS DISTINCT FROM 'context-assertion/v1'
-          OR legacy_admission_label IS DISTINCT FROM 'context-fabric-admission/v1'
-  ) THEN
-    RAISE EXCEPTION
-      'unknown provisional Context Assertion admission identity cannot be migrated';
-  END IF;
-END;
-$$;
-
--- Constant ADD COLUMN defaults backfill the exact v1 identity without issuing
--- row UPDATE statements, so the immutable receipt-history trigger stays enabled
--- for the entire migration. Defaults are removed immediately because future
--- inserts must supply the identity returned by the admitted CGC SDK receipt.
+-- The table is proven empty above. New rows must supply identity copied from the
+-- admitted CGC SDK receipt; no DDL default may turn an unknown historical value
+-- into exact contract evidence.
 ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ADD COLUMN context_profile_id text NOT NULL DEFAULT
-        'urn:cwl:context-contracts:context-assertion-event-semantics:v1',
-    ADD COLUMN context_profile_version integer NOT NULL DEFAULT 1,
-    ADD COLUMN admission_version integer NOT NULL DEFAULT 1;
-
-ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ALTER COLUMN context_profile_id DROP DEFAULT,
-    ALTER COLUMN context_profile_version DROP DEFAULT,
-    ALTER COLUMN admission_version DROP DEFAULT;
+    ADD COLUMN context_profile_id text NOT NULL,
+    ADD COLUMN context_profile_version integer NOT NULL,
+    ADD COLUMN admission_version integer NOT NULL;
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
     DROP COLUMN legacy_context_profile_label,
@@ -60,10 +50,10 @@ ALTER TABLE architecture_core.context_assertion_projection_receipt
         CHECK (admission_version = 1);
 
 COMMENT ON COLUMN architecture_core.context_assertion_projection_receipt.context_profile_id IS
-'Exact semantic profile id retained from the admitted CGC ContextAssertionAdmission receipt.';
+'Exact semantic profile id copied from the admitted CGC ContextAssertionAdmission receipt; provisional rows must be re-admitted rather than inferred.';
 COMMENT ON COLUMN architecture_core.context_assertion_projection_receipt.context_profile_version IS
-'Exact semantic profile version retained from the admitted CGC ContextAssertionAdmission receipt.';
+'Exact semantic profile version copied from the admitted CGC ContextAssertionAdmission receipt; provisional rows must be re-admitted rather than inferred.';
 COMMENT ON COLUMN architecture_core.context_assertion_projection_receipt.admission_version IS
-'Exact admission implementation version retained from the admitted CGC ContextAssertionAdmission receipt.';
+'Exact admission implementation version copied from the admitted CGC ContextAssertionAdmission receipt; provisional rows must be re-admitted rather than inferred.';
 
 COMMIT;
