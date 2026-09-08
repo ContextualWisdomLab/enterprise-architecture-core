@@ -72,6 +72,13 @@ _QUARANTINE_CAPABILITIES = (
     "application_service_lease",
     "artifact_analysis_evidence",
 )
+_QUARANTINE_APPLICATION_SERVICE_RUNTIME_CONTROLS = (
+    "isolation_policy_enforcement",
+    "resource_bounds",
+    "readiness",
+    "cleanup",
+    "attestation",
+)
 _QUARANTINE_INTERACTIONS = (
     {
         "source_repository": "ContextualWisdomLab/contextual-orchestrator",
@@ -277,6 +284,14 @@ def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
         raise ContractValidationError(
             "quarantine runtime capabilities must include application-service lease "
             "and artifact-analysis evidence"
+        )
+    if connector.get("application_service_runtime_controls") != list(
+        _QUARANTINE_APPLICATION_SERVICE_RUNTIME_CONTROLS
+    ):
+        raise ContractValidationError(
+            "quarantine runtime application-service runtime controls must preserve "
+            "isolation policy enforcement, resource bounds, readiness, cleanup, "
+            "and attestation"
         )
     if connector.get("required_interactions") != list(_QUARANTINE_INTERACTIONS):
         raise ContractValidationError(
