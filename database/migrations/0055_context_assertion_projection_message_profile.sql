@@ -1,25 +1,24 @@
 BEGIN;
 
--- A Context Assertion projection receipt already proves the outer structured
--- CloudEvent media type and the v1 event-semantics profile. The released CGC
--- admission surface now carries a second, separately versioned identity for the
--- structured-message admission profile. Retain that identity explicitly rather
--- than inferring transport admission from the event profile or media type.
---
--- All rows reachable at this migration point are constrained to the sole v1
--- structured CloudEvent shape introduced by migrations 0051-0054. Backfill that
--- known v1 message-profile identity with constant ADD COLUMN defaults, then
--- remove the defaults so every future receipt must copy the exact values
--- returned by ContextAssertionAdmission. This avoids UPDATEs while the immutable
--- history trigger remains enabled.
-ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ADD COLUMN message_profile_id text NOT NULL DEFAULT
-        'urn:cwl:context-contracts:context-assertion-message-admission:v1',
-    ADD COLUMN message_profile_version integer NOT NULL DEFAULT 1;
+-- The structured CloudEvent media type and event-semantics profile do not prove
+-- which separately versioned message-admission profile admitted an existing row.
+-- If a database was paused on the provisional candidate migration, fail closed
+-- and require re-admission instead of manufacturing message-profile provenance.
+DO $$
+BEGIN
+  IF EXISTS (
+      SELECT 1
+        FROM architecture_core.context_assertion_projection_receipt
+  ) THEN
+    RAISE EXCEPTION
+      'provisional Context Assertion receipts require re-admission before exact message-profile identity can be recorded';
+  END IF;
+END;
+$$;
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
-    ALTER COLUMN message_profile_id DROP DEFAULT,
-    ALTER COLUMN message_profile_version DROP DEFAULT;
+    ADD COLUMN message_profile_id text NOT NULL,
+    ADD COLUMN message_profile_version integer NOT NULL;
 
 ALTER TABLE architecture_core.context_assertion_projection_receipt
     ADD CONSTRAINT context_assertion_projection_receipt_message_profile_id
@@ -31,8 +30,8 @@ ALTER TABLE architecture_core.context_assertion_projection_receipt
         CHECK (message_profile_version = 1);
 
 COMMENT ON COLUMN architecture_core.context_assertion_projection_receipt.message_profile_id IS
-'Exact structured-message admission profile id retained from the admitted CGC ContextAssertionAdmission receipt; it must not be inferred from transport media type or event profile.';
+'Exact structured-message admission profile id copied from the admitted CGC ContextAssertionAdmission receipt; it must not be inferred from transport media type or event profile.';
 COMMENT ON COLUMN architecture_core.context_assertion_projection_receipt.message_profile_version IS
-'Exact structured-message admission profile version retained from the admitted CGC ContextAssertionAdmission receipt.';
+'Exact structured-message admission profile version copied from the admitted CGC ContextAssertionAdmission receipt; provisional rows must be re-admitted rather than inferred.';
 
 COMMIT;
