@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from .. import validation_data_management_recheck_status as base
+from . import data_management_recheck_status as base
 
 ContractValidationError = base.ContractValidationError
 RepositoryReport = base.RepositoryReport
