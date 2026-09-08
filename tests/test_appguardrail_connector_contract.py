@@ -30,6 +30,22 @@ def _connector(document: dict) -> dict:
     )
 
 
+def test_appguardrail_security_evidence_requires_explicit_truth_statuses(
+    repository_root,
+) -> None:
+    """Evidence projections must explicitly publish their admissible truth set."""
+
+    document = _catalog(repository_root)
+    connector = _connector(document)
+    connector.pop("projection_truth_statuses", None)
+
+    with pytest.raises(
+        ContractValidationError,
+        match="AppGuardrail security evidence.*observed and inferred",
+    ):
+        validate_connector_catalog(document)
+
+
 def test_appguardrail_security_evidence_cannot_become_authoritative(
     repository_root,
 ) -> None:
@@ -41,6 +57,6 @@ def test_appguardrail_security_evidence_cannot_become_authoritative(
 
     with pytest.raises(
         ContractValidationError,
-        match="AppGuardrail security evidence.*observed or inferred",
+        match="AppGuardrail security evidence.*observed and inferred",
     ):
         validate_connector_catalog(document)
