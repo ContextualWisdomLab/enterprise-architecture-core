@@ -194,3 +194,15 @@ def test_runtime_composes_the_bounded_transformation_http_adapter() -> None:
         and any(alias.name == "SchedulingServiceHandler" for alias in node.names)
         for node in runtime_tree.body
     )
+
+
+def test_terminal_planner_migration_defines_scenario_projector_once() -> None:
+    """Prevent stacked repairs from replaying the same projector definition twice."""
+
+    migration = Path(
+        "database/migrations/0030_target_state_terminal_planner_actions.sql"
+    ).read_text(encoding="utf-8")
+    signature = (
+        "CREATE OR REPLACE FUNCTION architecture_core.project_scenario_objects_at("
+    )
+    assert migration.count(signature) == 1
