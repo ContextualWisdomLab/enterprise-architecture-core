@@ -20,7 +20,8 @@ def validate_appguardrail_security_evidence(document: Mapping[str, Any]) -> None
     ]
     if len(connectors) != 1:
         raise ContractValidationError(
-            "connector catalog must declare exactly one AppGuardrail security evidence boundary"
+            "connector catalog must declare exactly one AppGuardrail "
+            "security evidence boundary"
         )
 
     connector = connectors[0]
@@ -35,7 +36,8 @@ def validate_appguardrail_security_evidence(document: Mapping[str, Any]) -> None
         )
     if connector.get("exchange_kind") != "context_assertion_cloudevent":
         raise ContractValidationError(
-            "AppGuardrail security evidence must use the Context Assertion CloudEvent exchange"
+            "AppGuardrail security evidence must use the Context Assertion "
+            "CloudEvent exchange"
         )
     if connector.get("ea_core_owns") is not False:
         raise ContractValidationError(
