@@ -4,10 +4,15 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from shutil import copy2, copytree
 
 import pytest
 
-from ea_core_foundation import ContractValidationError, validate_connector_catalog
+from ea_core_foundation import (
+    ContractValidationError,
+    validate_connector_catalog,
+    validate_repository,
+)
 
 _CONNECTOR_NAME = "noema_projection"
 _OWNER_REPOSITORY = "ContextualWisdomLab/noema"
@@ -66,6 +71,20 @@ def _connector(document: dict) -> dict:
         connector
         for connector in document["connectors"]
         if connector.get("connector_name") == _CONNECTOR_NAME
+    )
+
+
+def _minimal_repository_copy(repository_root, target) -> None:
+    """Copy only artifacts exercised by repository-level validation."""
+
+    copytree(repository_root / "database/migrations", target / "database/migrations")
+    copytree(repository_root / "docs/adr", target / "docs/adr")
+    (target / "contracts/connectors").mkdir(parents=True)
+    copy2(repository_root / "contracts/openapi.json", target / "contracts/openapi.json")
+    copy2(repository_root / "contracts/asyncapi.json", target / "contracts/asyncapi.json")
+    copy2(
+        repository_root / "contracts/connectors/ecosystem.json",
+        target / "contracts/connectors/ecosystem.json",
     )
 
 
@@ -186,3 +205,23 @@ def test_noema_projection_boundary_fields_fail_closed(
 
     with pytest.raises(ContractValidationError, match=message):
         validate_connector_catalog(document)
+
+
+def test_repository_validation_rejects_noema_owner_absorption(
+    repository_root,
+    tmp_path,
+) -> None:
+    """Repository validation must enforce the same Noema owner boundary."""
+
+    candidate = tmp_path / "repository"
+    _minimal_repository_copy(repository_root, candidate)
+    connector_path = candidate / "contracts/connectors/ecosystem.json"
+    document = json.loads(connector_path.read_text(encoding="utf-8"))
+    _connector(document)["ea_core_owns"] = True
+    connector_path.write_text(
+        json.dumps(document, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ContractValidationError, match="outside EA Core ownership"):
+        validate_repository(candidate)
