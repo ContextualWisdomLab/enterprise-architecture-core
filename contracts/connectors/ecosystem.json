@@ -409,6 +409,7 @@
         "application_service_lease",
         "artifact_analysis_evidence"
       ],
+      "application_service_session_lifecycle": "caller_scoped_lease",
       "application_service_runtime_controls": [
         "isolation_policy_enforcement",
         "resource_bounds",
