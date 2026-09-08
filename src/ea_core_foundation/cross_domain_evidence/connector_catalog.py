@@ -362,6 +362,10 @@ def _validate_noema_projection_boundary(connector: Mapping[str, Any]) -> None:
         raise ContractValidationError(
             "Noema projection exchange_kind must remain context_assertion_cloudevent"
         )
+    if connector.get("ea_core_owns") is not False:
+        raise ContractValidationError(
+            "Noema projection must remain outside EA Core ownership"
+        )
     if connector.get("architecture_projection_scope") != list(
         _NOEMA_PROJECTION_SCOPE
     ):
