@@ -14,6 +14,13 @@ _EXPECTED_DIRECTION_CODE = "inbound_projection"
 _EXPECTED_EXCHANGE_KIND = "context_assertion_cloudevent"
 _EXPECTED_AUTHORITY_SCOPE = ["isolation_runtime", "artifact_analysis_evidence"]
 _EXPECTED_CAPABILITIES = ["application_service_lease", "artifact_analysis_evidence"]
+_EXPECTED_APPLICATION_SERVICE_RUNTIME_CONTROLS = [
+    "isolation_policy_enforcement",
+    "resource_bounds",
+    "readiness",
+    "cleanup",
+    "attestation",
+]
 _EXPECTED_INTERACTIONS = [
     {
         "source_repository": "ContextualWisdomLab/contextual-orchestrator",
@@ -88,6 +95,10 @@ def test_checked_in_catalog_declares_quarantine_runtime_boundary(
     assert connector["authority_scope"] == _EXPECTED_AUTHORITY_SCOPE
     assert connector["deployment_boundary"] == "independent_reusable_service"
     assert connector["capabilities"] == _EXPECTED_CAPABILITIES
+    assert (
+        connector["application_service_runtime_controls"]
+        == _EXPECTED_APPLICATION_SERVICE_RUNTIME_CONTROLS
+    )
     assert connector["required_interactions"] == _EXPECTED_INTERACTIONS
     assert connector["architecture_projection_scope"] == _EXPECTED_PROJECTION_SCOPE
     assert (
@@ -141,6 +152,11 @@ def test_quarantine_connector_is_required_exactly_once(repository_root) -> None:
         ("authority_scope", ["maliciousness_verdict"], "authority_scope"),
         ("deployment_boundary", "embedded_library", "independently deployable"),
         ("capabilities", ["artifact_analysis_evidence"], "capabilities"),
+        (
+            "application_service_runtime_controls",
+            ["isolation_policy_enforcement", "cleanup"],
+            "application-service runtime controls",
+        ),
         ("required_interactions", [], "required directional interactions"),
         (
             "architecture_projection_scope",
