@@ -25,6 +25,7 @@ These terms are the domain language for the Enterprise Architecture Decision Pla
 | Scenario Projection | The deterministic candidate state produced from an immutable baseline plus ordered deltas. |
 | Transformation | An approved/executed architecture change whose history is retained rather than hard-deleted. |
 | Evidence Receipt | A durable record binding an EA projection/decision input to the exact upstream evidence identity and truth/provenance context. |
+| Projection Receipt | The admission identity retained with an admitted Context Assertion projection: source authority, CloudEvent identity (`id`, `source`, `specversion`, `type`, `time`, `subject`, `dataschema`), exact schema version, event semantic profile id/version, structured-message admission profile id/version, admission version and provenance. It proves what was admitted without transferring source authority to EA. |
 | Cross-Domain Projection | The minimum normalized EA-side representation of foreign evidence required for EA decisions. Projection is not a duplicate system of record. |
 | Impact Path | The explainable chain from a triggering technology/lifecycle change through affected applications/capabilities and accepted external evidence to a decision/action. |
 | Remediation Initiative | An initiative created or selected to mitigate an identified architecture/technology risk. |
@@ -36,10 +37,23 @@ These terms are the domain language for the Enterprise Architecture Decision Pla
 | Transactional Outbox | The same-transaction record of domain events emitted from an authoritative state change. |
 | Inbox / Replay Receipt | Idempotency evidence used to prevent duplicate external event effects while retaining replay/audit history. |
 | Anti-Corruption Layer | Translation at a context boundary that preserves EA semantics and prevents foreign product/domain models from becoming EA's internal model by convenience. |
+| Noema Projection | A receipt-bound architecture projection of Noema deployable/runtime/service/API/worker capability identity, infrastructure technology/provider/version, lifecycle, ownership, architecture-risk context, remediation or transformation. It never transfers Agent Runtime, Workflow/Task, Tool/Capability, State/Checkpoint, Policy/Approval, Observability or Recovery truth to EA. |
+| Quarantine Sandbox Runtime | The independent reusable hostile-workload isolation product that owns sandbox lifecycle, isolation-policy enforcement, resource bounds, readiness, cleanup, attestation and artifact-analysis evidence. It is not the owner of caller authorization, maliciousness verdicts, incidents or EA architecture decisions. |
+| Application-Service Lease | A caller-scoped request/lease boundary through which contextual-orchestrator may run an application service in the Quarantine Sandbox Runtime. The runtime enforces isolation policy, resource bounds, readiness, cleanup and attestation for the lease; the caller's policy, application selection and secrets remain outside the runtime. |
+| Artifact-Analysis Evidence | Evidence produced by Quarantine Sandbox Runtime analysis of a hostile or unknown artifact. Wardnet may consume it for SOC policy/verdict decisions; the evidence itself is not an authoritative EA malware verdict or risk score. |
+| Architecture Risk Context | Architecture-relevant risk context about a runtime/backend/technology that may inform an EA decision with explicit source, truth status, time and provenance. It is distinct from a product-specific security verdict or scanner risk score. |
 
 ## Data/AI evidence language
 
 Names such as data product, catalog asset, lineage, output port, glossary term and trust/certification belong primarily to the Data/AI Context. EA may store receipt-bound references/projections needed for an architecture assessment, improvement dependency or impact path, but must retain source ownership and truth origin. `data_management_*` projections in the current stack therefore describe EA decision evidence and remediation state, not a replacement catalog system of record.
+
+## Agent runtime projection language
+
+Noema remains authoritative for Agent tasks/results/reasoning, tool payloads, workflow execution state, approval decisions, checkpoint/prompt content, model output and user business data. EA may receive only the architecture-relevant projection named above, through released Context Graph admission with a Projection Receipt. A Noema event or model-backed result cannot become authoritative EA truth by ingestion; direct database access and source copying remain outside the integration model.
+
+## Isolation and security evidence language
+
+Quarantine application-service/API/backend identity and container-runtime/security technology/provider/version, lifecycle, ownership, remediation/transformation and attestation provenance may be projected as EA context only through a released compatible Context Graph contract. These names are EA projection categories, not a claim that a currently unreleased producer API, backend or technology fact exists. The reusable runtime remains authoritative for the application-service lease controls that make the boundary real: isolation-policy enforcement, resource bounds, readiness, cleanup and attestation. EA records that ownership boundary but does not execute or reinterpret those controls. Every admitted Context Assertion projection retains a Projection Receipt, so a later EA decision can identify the source authority, exact CloudEvent, schema version, event semantic profile id/version, structured-message admission profile id/version, admission version and provenance used at admission. Sandbox internals stay in `quarantine-sandbox-runtime`; caller authorization/application selection stays in `contextual-orchestrator`; maliciousness verdicts, incidents and quarantine/block policy stay in Wardnet. Direct database access or source copying across these contexts is not part of the model.
 
 ## Naming and path discipline
 

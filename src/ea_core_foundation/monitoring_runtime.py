@@ -8,27 +8,7 @@ from http.server import ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlparse
 
-from .authorization import (
-    AuthorizationError,
-    KeyverseAuthorizationConfig,
-    load_keyverse_jwks,
-    verify_keyverse_bearer,
-    verify_rs256_signature,
-)
-from .complete import (
-    build_complete_authorization_config,
-    build_target_state_complete_writer,
-)
-from .monitor import (
-    build_monitoring_authorization_config,
-    build_target_state_monitoring_reader,
-    parse_target_state_monitoring_request,
-)
-from .runtime import (
-    build_schedule_authorization_config,
-    build_target_state_schedule_writer,
-)
-from .service import (
+from .decision_plane_http import (
     BindAddress,
     PlannerExecutionError,
     PlannerRequestError,
@@ -41,7 +21,30 @@ from .service import (
     resolve_bind_address,
     serve_forever,
 )
-from .start import build_start_authorization_config, build_target_state_start_writer
+from .identity_authorization.authorization import (
+    AuthorizationError,
+    KeyverseAuthorizationConfig,
+    load_keyverse_jwks,
+    verify_keyverse_bearer,
+    verify_rs256_signature,
+)
+from .runtime import (
+    build_schedule_authorization_config,
+    build_target_state_schedule_writer,
+)
+from .strategy_transformation.complete import (
+    build_complete_authorization_config,
+    build_target_state_complete_writer,
+)
+from .strategy_transformation.monitor import (
+    build_monitoring_authorization_config,
+    build_target_state_monitoring_reader,
+    parse_target_state_monitoring_request,
+)
+from .strategy_transformation.start import (
+    build_start_authorization_config,
+    build_target_state_start_writer,
+)
 from .verification_runtime import VerificationServiceHandler
 from .verification_runtime import (
     create_runtime_server as create_verification_runtime_server,

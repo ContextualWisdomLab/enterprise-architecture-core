@@ -1,5 +1,6 @@
-"""Regression contract for GitHub-hosted runner image selection."""
+"""Regression contracts for repository-owned GitHub workflow execution."""
 
+import re
 from pathlib import Path
 
 WORKFLOW_PATHS = (
@@ -7,6 +8,9 @@ WORKFLOW_PATHS = (
     Path(".github/workflows/runtime-readiness.yml"),
     Path(".github/workflows/supply-chain.yml"),
 )
+CI_WORKFLOW_PATH = Path(".github/workflows/ci.yml")
+PYPROJECT_PATH = Path("pyproject.toml")
+EXACT_SOURCE_SHA = "${{ github.event.pull_request.head.sha || github.sha }}"
 
 
 def test_hosted_workflows_pin_supported_runner_image() -> None:
@@ -22,3 +26,68 @@ def test_hosted_workflows_pin_supported_runner_image() -> None:
         assert set(labels) == {"ubuntu-24.04"}, (
             f"{workflow_path} must pin ubuntu-24.04; observed runner labels: {labels}"
         )
+
+
+def test_ci_exercises_every_declared_python_minor() -> None:
+    """Keep CI aligned with every Python minor advertised by package metadata."""
+    pyproject = PYPROJECT_PATH.read_text(encoding="utf-8")
+    declared_versions = set(
+        re.findall(r'Programming Language :: Python :: (3\.\d+)"', pyproject)
+    )
+    assert declared_versions
+
+    workflow = CI_WORKFLOW_PATH.read_text(encoding="utf-8")
+    matrix_match = re.search(r"python-version:\s*\[([^\]]+)\]", workflow)
+    assert matrix_match is not None, "ci must use a Python-version matrix"
+    workflow_versions = set(re.findall(r'"(3\.\d+)"', matrix_match.group(1)))
+    assert workflow_versions == declared_versions
+
+
+def test_ci_postgres_service_is_digest_pinned() -> None:
+    """Keep the real-PostgreSQL CI service reproducible at an immutable image."""
+    workflow = CI_WORKFLOW_PATH.read_text(encoding="utf-8")
+    assert re.search(
+        r"image:\s+postgres:18\.4@sha256:[0-9a-f]{64}\b",
+        workflow,
+    ), "ci PostgreSQL 18.4 service must be pinned by sha256 digest"
+
+
+def test_workflow_hex_action_revisions_are_full_commit_shas() -> None:
+    """Reject truncated hexadecimal action revisions that cannot identify a commit."""
+    for workflow_path in WORKFLOW_PATHS:
+        workflow = workflow_path.read_text(encoding="utf-8")
+        for revision in re.findall(r"uses:\s+\S+@([0-9a-f]+)(?:\s|#|$)", workflow):
+            assert len(revision) == 40, (
+                f"{workflow_path} has a truncated hexadecimal action revision: "
+                f"{revision}"
+            )
+
+
+def test_pr_workflows_checkout_and_verify_the_exact_source_head() -> None:
+    """Prevent pull-request merge refs from masquerading as exact-source evidence."""
+    exact_ref = f"ref: {EXACT_SOURCE_SHA}"
+    exact_expected_sha = f"EXPECTED_SHA: {EXACT_SOURCE_SHA}"
+
+    for workflow_path in WORKFLOW_PATHS:
+        workflow = workflow_path.read_text(encoding="utf-8")
+        checkout_count = workflow.count("uses: actions/checkout@")
+        assert checkout_count > 0, workflow_path
+        assert workflow.count(exact_ref) == checkout_count, workflow_path
+        assert workflow.count(exact_expected_sha) == checkout_count, workflow_path
+        assert workflow.count('run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"') == (
+            checkout_count
+        ), workflow_path
+
+
+def test_ci_limits_push_runs_to_integration_branch() -> None:
+    """Avoid duplicate feature-branch push and pull-request runner consumption."""
+    workflow = CI_WORKFLOW_PATH.read_text(encoding="utf-8")
+    assert re.search(r"(?m)^  push:\n    branches: \[main\]$", workflow)
+    assert re.search(r"(?m)^  pull_request:$", workflow)
+
+
+def test_ci_cancels_superseded_runs() -> None:
+    """Release hosted capacity when a newer run supersedes the same CI lane."""
+    workflow = CI_WORKFLOW_PATH.read_text(encoding="utf-8")
+    assert "concurrency:" in workflow
+    assert "cancel-in-progress: true" in workflow

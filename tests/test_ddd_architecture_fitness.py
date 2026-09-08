@@ -130,6 +130,38 @@ def test_legacy_service_import_delegates_to_the_same_module_object() -> None:
     assert legacy_module is owner_module
 
 
+def test_connector_catalog_uses_bounded_validation_owner_directly() -> None:
+    """Keep Supporting connector validation off the historical root facade."""
+
+    source_path = Path(
+        "src/ea_core_foundation/cross_domain_evidence/connector_catalog.py"
+    )
+    tree = ast.parse(
+        source_path.read_text(encoding="utf-8"),
+        filename=str(source_path),
+    )
+    imports = [node for node in tree.body if isinstance(node, ast.ImportFrom)]
+    assert not any(
+        node.level == 2
+        and node.module is None
+        and any(
+            alias.name == "validation_data_management_recheck_status"
+            for alias in node.names
+        )
+        for node in imports
+    )
+    assert any(
+        node.level == 1
+        and node.module is None
+        and any(
+            alias.name == "data_management_recheck_status"
+            and alias.asname == "base"
+            for alias in node.names
+        )
+        for node in imports
+    )
+
+
 def test_baseline_keeps_historical_package_debt_visible() -> None:
     """Keep the foundation-era package and remaining path debt visible."""
 
@@ -142,24 +174,58 @@ def test_baseline_keeps_historical_package_debt_visible() -> None:
     assert "Anti-Corruption Layer" in baseline
 
 
-def test_gap_baseline_does_not_persist_volatile_runner_execution_identity() -> None:
-    """Keep exact runner execution identity in refetched PR/control-plane state."""
+def test_baseline_routes_default_branch_repair_to_central_governance() -> None:
+    """Keep mutable protection state out of DDD policy while naming its owner."""
 
     baseline = Path("docs/product-technical-gap-baseline.md").read_text(
         encoding="utf-8"
     )
-    runner_rows = [
-        line
-        for line in baseline.splitlines()
-        if line.startswith("| Runner acquisition |")
-    ]
-    assert len(runner_rows) == 1
-    runner_row = runner_rows[0]
-    assert (
-        "Exact SHA/run/job identities stay in live PR/control-plane state"
-        in runner_row
+    assert "central `.github#1137`" in baseline
+    assert "default_branch=develop" in baseline
+    assert "~DEFAULT_BRANCH" in baseline
+
+
+def test_transformation_http_adapter_has_a_bounded_owner() -> None:
+    """Keep Strategy & Transformation command HTTP behavior out of root runtime.py."""
+
+    owner_path = Path("src/ea_core_foundation/strategy_transformation/http.py")
+    runtime_path = Path("src/ea_core_foundation/runtime.py")
+    assert owner_path.is_file()
+
+    owner_tree = ast.parse(
+        owner_path.read_text(encoding="utf-8"),
+        filename=str(owner_path),
     )
-    assert "runner_id:" not in runner_row
+    assert any(
+        isinstance(node, ast.ClassDef) and node.name == "SchedulingServiceHandler"
+        for node in owner_tree.body
+    )
+
+    runtime_tree = ast.parse(
+        runtime_path.read_text(encoding="utf-8"),
+        filename=str(runtime_path),
+    )
+    assert not any(
+        isinstance(node, ast.ClassDef) and node.name == "SchedulingServiceHandler"
+        for node in runtime_tree.body
+    )
+
+
+def test_runtime_composes_the_bounded_transformation_http_adapter() -> None:
+    """Require the deployable root to import the bounded HTTP adapter explicitly."""
+
+    runtime_path = Path("src/ea_core_foundation/runtime.py")
+    runtime_tree = ast.parse(
+        runtime_path.read_text(encoding="utf-8"),
+        filename=str(runtime_path),
+    )
+    assert any(
+        isinstance(node, ast.ImportFrom)
+        and node.level == 1
+        and node.module == "strategy_transformation.http"
+        and any(alias.name == "SchedulingServiceHandler" for alias in node.names)
+        for node in runtime_tree.body
+    )
 
 
 def test_terminal_planner_migration_defines_scenario_projector_once() -> None:

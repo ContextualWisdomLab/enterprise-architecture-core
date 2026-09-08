@@ -23,6 +23,7 @@ SECURITY DEFINER
 SET search_path = pg_catalog
 AS $$
 DECLARE
+  previous_tenant_setting text;
   selected_state_code text;
   selected_effective_at timestamptz;
   selected_recorded_at timestamptz;
@@ -51,69 +52,88 @@ BEGIN
       MESSAGE = 'maximum evidence age must be between 1 and 3650 days';
   END IF;
 
+  previous_tenant_setting := pg_catalog.current_setting(
+      'app.tenant_record_id',
+      true
+  );
   PERFORM pg_catalog.set_config(
       'app.tenant_record_id',
       requested_tenant_record_id::text,
       true
   );
 
-  SELECT
-      history_record.transformation_state_code,
-      history_record.effective_at,
-      history_record.recorded_at,
-      history_record.evidence_record_id
-    INTO
-      selected_state_code,
-      selected_effective_at,
-      selected_recorded_at,
-      selected_evidence_id
-    FROM architecture_core.transformation_history_record AS history_record
-   WHERE history_record.tenant_record_id = requested_tenant_record_id
-     AND history_record.architecture_transformation_id = requested_transformation_id
-     AND history_record.transformation_state_code IN ('verified', 'gap_detected')
-     AND history_record.effective_at <= requested_valid_at
-     AND history_record.recorded_at <= requested_recorded_at
-   ORDER BY
-      history_record.sequence_number DESC,
-      history_record.recorded_at DESC
-   LIMIT 1;
+  BEGIN
+    SELECT
+        history_record.transformation_state_code,
+        history_record.effective_at,
+        history_record.recorded_at,
+        history_record.evidence_record_id
+      INTO
+        selected_state_code,
+        selected_effective_at,
+        selected_recorded_at,
+        selected_evidence_id
+      FROM architecture_core.transformation_history_record AS history_record
+     WHERE history_record.tenant_record_id = requested_tenant_record_id
+       AND history_record.architecture_transformation_id = requested_transformation_id
+       AND history_record.transformation_state_code IN ('verified', 'gap_detected')
+       AND history_record.effective_at <= requested_valid_at
+       AND history_record.recorded_at <= requested_recorded_at
+     ORDER BY
+        history_record.sequence_number DESC,
+        history_record.recorded_at DESC
+     LIMIT 1;
 
-  IF selected_state_code IS NULL OR selected_evidence_id IS NULL THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'target-state monitoring requires verification evidence at both requested cutoffs';
-  END IF;
+    IF selected_state_code IS NULL OR selected_evidence_id IS NULL THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '23514',
+        MESSAGE = 'target-state monitoring requires verification evidence at both requested cutoffs';
+    END IF;
 
-  selected_evidence_age_days := pg_catalog.floor(
-      EXTRACT(EPOCH FROM (requested_valid_at - selected_effective_at))
-      / 86400
-  )::integer;
+    selected_evidence_age_days := pg_catalog.floor(
+        EXTRACT(EPOCH FROM (requested_valid_at - selected_effective_at))
+        / 86400
+    )::integer;
 
-  IF selected_evidence_age_days < 0 THEN
-    RAISE EXCEPTION USING
-      ERRCODE = '23514',
-      MESSAGE = 'monitoring evidence cannot occur after the requested valid time';
-  END IF;
+    IF selected_evidence_age_days < 0 THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '23514',
+        MESSAGE = 'monitoring evidence cannot occur after the requested valid time';
+    END IF;
 
-  RETURN QUERY
-  SELECT
-      requested_transformation_id,
-      selected_state_code,
-      selected_effective_at,
-      selected_recorded_at,
-      selected_evidence_id,
-      selected_evidence_age_days,
-      CASE
-        WHEN selected_state_code = 'gap_detected' THEN 'gap_detected'
-        WHEN selected_evidence_age_days > requested_max_evidence_age_days THEN 'stale'
-        ELSE 'current'
-      END::text,
-      CASE
-        WHEN selected_state_code = 'gap_detected' THEN 'replan_target_state'
-        WHEN selected_evidence_age_days > requested_max_evidence_age_days
-          THEN 'collect_new_target_state_evidence'
-        ELSE 'continue_monitoring'
-      END::text;
+    RETURN QUERY
+    SELECT
+        requested_transformation_id,
+        selected_state_code,
+        selected_effective_at,
+        selected_recorded_at,
+        selected_evidence_id,
+        selected_evidence_age_days,
+        CASE
+          WHEN selected_state_code = 'gap_detected' THEN 'gap_detected'
+          WHEN selected_evidence_age_days > requested_max_evidence_age_days THEN 'stale'
+          ELSE 'current'
+        END::text,
+        CASE
+          WHEN selected_state_code = 'gap_detected' THEN 'replan_target_state'
+          WHEN selected_evidence_age_days > requested_max_evidence_age_days
+            THEN 'collect_new_target_state_evidence'
+          ELSE 'continue_monitoring'
+        END::text;
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM pg_catalog.set_config(
+        'app.tenant_record_id',
+        COALESCE(previous_tenant_setting, ''),
+        true
+    );
+    RAISE;
+  END;
+
+  PERFORM pg_catalog.set_config(
+      'app.tenant_record_id',
+      COALESCE(previous_tenant_setting, ''),
+      true
+  );
 END;
 $$;
 
@@ -149,6 +169,6 @@ COMMENT ON FUNCTION architecture_core.read_target_state_monitoring_status(
     timestamptz,
     integer
 ) IS
-'Purpose-bound bitemporal read projection over terminal target-state verification evidence. It never changes transformation history: verified evidence is current or stale according to the caller policy, while gap_detected evidence routes the buyer back to replanning.';
+'Purpose-bound bitemporal read projection over terminal target-state verification evidence. It installs the verified tenant only for the duration of the read and restores the caller setting on success or failure. It never changes transformation history: verified evidence is current or stale according to the caller policy, while gap_detected evidence routes the buyer back to replanning.';
 
 COMMIT;

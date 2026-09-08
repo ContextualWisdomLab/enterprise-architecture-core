@@ -1,0 +1,241 @@
+"""Quarantine runtime Context Map boundary regressions."""
+
+import json
+from copy import deepcopy
+from pathlib import Path
+
+import pytest
+
+import ea_core_foundation.cross_domain_evidence.connector_catalog as connector_catalog_module
+from ea_core_foundation import ContractValidationError, validate_connector_catalog
+
+_CONNECTOR_NAME = "quarantine_sandbox_runtime"
+_EXPECTED_OWNER = "ContextualWisdomLab/quarantine-sandbox-runtime"
+_EXPECTED_DIRECTION_CODE = "inbound_projection"
+_EXPECTED_EXCHANGE_KIND = "context_assertion_cloudevent"
+_EXPECTED_AUTHORITY_SCOPE = ["isolation_runtime", "artifact_analysis_evidence"]
+_EXPECTED_CAPABILITIES = ["application_service_lease", "artifact_analysis_evidence"]
+_EXPECTED_APPLICATION_SERVICE_SESSION_LIFECYCLE = "caller_scoped_lease"
+_EXPECTED_APPLICATION_SERVICE_RUNTIME_CONTROLS = [
+    "isolation_policy_enforcement",
+    "resource_bounds",
+    "readiness",
+    "cleanup",
+    "attestation",
+]
+_EXPECTED_INTERACTIONS = [
+    {
+        "source_repository": "ContextualWisdomLab/contextual-orchestrator",
+        "target_capability": "application_service_lease",
+    },
+    {
+        "source_repository": "ContextualWisdomLab/wardnet",
+        "target_capability": "artifact_analysis_evidence",
+    },
+]
+_EXPECTED_PROJECTION_SCOPE = [
+    "runtime_identity",
+    "application_service_identity",
+    "api_identity",
+    "backend_identity",
+    "backend_technology",
+    "container_runtime_technology",
+    "security_technology",
+    "technology_provider",
+    "technology_version",
+    "lifecycle",
+    "architecture_risk_context",
+    "ownership",
+    "remediation",
+    "transformation",
+    "attestation_provenance",
+]
+_EXPECTED_FORBIDDEN_AUTHORITATIVE_FACTS = [
+    "malware_verdict",
+    "artifact_risk_score",
+]
+_EXPECTED_PROHIBITED_INTEGRATIONS = [
+    "direct_database_access",
+    "source_copy",
+]
+
+
+def _catalog(repository_root: Path) -> dict:
+    """Load the checked-in connector catalog as mutable acceptance input."""
+
+    return json.loads(
+        (repository_root / "contracts/connectors/ecosystem.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def _quarantine_connector(document: dict) -> dict:
+    """Return the explicit quarantine runtime boundary from a catalog document."""
+
+    return next(
+        connector
+        for connector in document["connectors"]
+        if connector.get("connector_name") == _CONNECTOR_NAME
+    )
+
+
+def test_quarantine_session_lifecycle_validation_has_single_owner() -> None:
+    """Keep the lifecycle invariant in the connector-contract owner only."""
+
+    assert not hasattr(
+        connector_catalog_module,
+        "_QUARANTINE_APPLICATION_SERVICE_SESSION_LIFECYCLE",
+    )
+    assert not hasattr(
+        connector_catalog_module,
+        "_validate_quarantine_session_lifecycle",
+    )
+
+
+def test_checked_in_catalog_declares_quarantine_runtime_boundary(
+    repository_root,
+) -> None:
+    """Require the runtime boundary without absorbing policy authority."""
+
+    document = _catalog(repository_root)
+    names = {connector["connector_name"] for connector in document["connectors"]}
+    assert _CONNECTOR_NAME in names
+
+    connector = _quarantine_connector(document)
+    assert connector["owner_repository"] == _EXPECTED_OWNER
+    assert connector["direction_code"] == _EXPECTED_DIRECTION_CODE
+    assert connector["exchange_kind"] == _EXPECTED_EXCHANGE_KIND
+    assert connector["ea_core_owns"] is False
+    assert connector["authority_scope"] == _EXPECTED_AUTHORITY_SCOPE
+    assert connector["deployment_boundary"] == "independent_reusable_service"
+    assert connector["capabilities"] == _EXPECTED_CAPABILITIES
+    assert (
+        connector["application_service_session_lifecycle"]
+        == _EXPECTED_APPLICATION_SERVICE_SESSION_LIFECYCLE
+    )
+    assert (
+        connector["application_service_runtime_controls"]
+        == _EXPECTED_APPLICATION_SERVICE_RUNTIME_CONTROLS
+    )
+    assert connector["required_interactions"] == _EXPECTED_INTERACTIONS
+    assert connector["architecture_projection_scope"] == _EXPECTED_PROJECTION_SCOPE
+    assert (
+        connector["forbidden_authoritative_facts"]
+        == _EXPECTED_FORBIDDEN_AUTHORITATIVE_FACTS
+    )
+    assert connector["prohibited_integrations"] == _EXPECTED_PROHIBITED_INTEGRATIONS
+    assert validate_connector_catalog(document) == len(document["connectors"])
+
+
+def test_quarantine_application_service_lease_declares_session_lifecycle(
+    repository_root,
+) -> None:
+    """Keep the application-service lease explicitly lifecycle-bearing in EA."""
+
+    connector = _quarantine_connector(_catalog(repository_root))
+    assert (
+        connector["application_service_session_lifecycle"]
+        == _EXPECTED_APPLICATION_SERVICE_SESSION_LIFECYCLE
+    )
+
+
+def test_quarantine_connector_is_required_exactly_once(repository_root) -> None:
+    """Reject omitted, renamed, or duplicated quarantine authority boundaries."""
+
+    document = _catalog(repository_root)
+    connector = deepcopy(_quarantine_connector(document))
+    document["connectors"] = [
+        item
+        for item in document["connectors"]
+        if item["connector_name"] != _CONNECTOR_NAME
+    ]
+    with pytest.raises(
+        ContractValidationError,
+        match="exactly one quarantine_sandbox_runtime",
+    ):
+        validate_connector_catalog(document)
+
+    document = _catalog(repository_root)
+    duplicate = deepcopy(connector)
+    duplicate["connector_name"] = "quarantine_sandbox_runtime_copy"
+    document["connectors"].append(duplicate)
+    with pytest.raises(
+        ContractValidationError,
+        match="exactly one quarantine runtime owner boundary",
+    ):
+        validate_connector_catalog(document)
+
+    document = _catalog(repository_root)
+    duplicate = deepcopy(connector)
+    document["connectors"].append(duplicate)
+    with pytest.raises(ContractValidationError, match="duplicate connector_name"):
+        validate_connector_catalog(document)
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "message"),
+    [
+        ("owner_repository", "ContextualWisdomLab/wardnet", "owner_repository"),
+        ("direction_code", "inbound_identity", "direction_code"),
+        ("exchange_kind", "openid_connect", "exchange_kind"),
+        ("ea_core_owns", True, "outside EA Core ownership"),
+        ("authority_scope", ["maliciousness_verdict"], "authority_scope"),
+        ("deployment_boundary", "embedded_library", "independently deployable"),
+        ("capabilities", ["artifact_analysis_evidence"], "capabilities"),
+        (
+            "application_service_session_lifecycle",
+            "embedded_caller_session",
+            "session lifecycle",
+        ),
+        (
+            "application_service_runtime_controls",
+            ["isolation_policy_enforcement", "cleanup"],
+            "application-service runtime controls",
+        ),
+        ("required_interactions", [], "required directional interactions"),
+        (
+            "architecture_projection_scope",
+            ["malware_verdict"],
+            "architecture projection scope",
+        ),
+        (
+            "forbidden_authoritative_facts",
+            ["malware_verdict"],
+            "forbidden authoritative facts",
+        ),
+        ("prohibited_integrations", ["direct_database_access"], "source copy"),
+    ],
+)
+def test_quarantine_boundary_fields_fail_closed(
+    repository_root,
+    field,
+    replacement,
+    message,
+) -> None:
+    """Reject incomplete runtime ownership and ACL facts."""
+
+    document = _catalog(repository_root)
+    connector = _quarantine_connector(document)
+    connector[field] = replacement
+
+    with pytest.raises(ContractValidationError, match=message):
+        validate_connector_catalog(document)
+
+
+def test_quarantine_interactions_are_directional_and_caller_owned(
+    repository_root,
+) -> None:
+    """Keep callers bound to their distinct runtime capabilities."""
+
+    document = _catalog(repository_root)
+    connector = _quarantine_connector(document)
+    bad_interactions = deepcopy(connector["required_interactions"])
+    bad_interactions[0]["source_repository"] = "ContextualWisdomLab/wardnet"
+    connector["required_interactions"] = bad_interactions
+
+    with pytest.raises(
+        ContractValidationError,
+        match="required directional interactions",
+    ):
+        validate_connector_catalog(document)
