@@ -1,7 +1,7 @@
 """Guard Context Assertion migrations against invented admission evidence."""
 
-from pathlib import Path
 import re
+from pathlib import Path
 
 import pytest
 
