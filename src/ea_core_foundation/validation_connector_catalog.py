@@ -1,13 +1,15 @@
 """Compatibility facade for Cross-Domain Evidence connector validation."""
 
+import json
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from .cross_domain_evidence.connector_catalog import (
     ContractValidationError,
     RepositoryReport,
     validate_connector_catalog as _validate_connector_catalog,
-    validate_repository,
+    validate_repository as _validate_repository,
 )
 
 
@@ -25,6 +27,16 @@ def validate_connector_catalog(document: Mapping[str, Any]) -> int:
             "Noema projection must remain outside EA Core ownership"
         )
     return connector_count
+
+
+def validate_repository(repository_root: Path) -> RepositoryReport:
+    """Apply connector ownership guards to full repository validation."""
+
+    report = _validate_repository(repository_root)
+    connector_path = repository_root / "contracts/connectors/ecosystem.json"
+    connector_document = json.loads(connector_path.read_text(encoding="utf-8"))
+    validate_connector_catalog(connector_document)
+    return report
 
 
 __all__ = [
