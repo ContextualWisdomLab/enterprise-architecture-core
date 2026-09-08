@@ -72,6 +72,7 @@ _QUARANTINE_CAPABILITIES = (
     "application_service_lease",
     "artifact_analysis_evidence",
 )
+_QUARANTINE_APPLICATION_SERVICE_SESSION_LIFECYCLE = "caller_scoped_lease"
 _QUARANTINE_APPLICATION_SERVICE_RUNTIME_CONTROLS = (
     "isolation_policy_enforcement",
     "resource_bounds",
@@ -284,6 +285,13 @@ def _validate_quarantine_runtime_boundary(connector: Mapping[str, Any]) -> None:
         raise ContractValidationError(
             "quarantine runtime capabilities must include application-service lease "
             "and artifact-analysis evidence"
+        )
+    if connector.get("application_service_session_lifecycle") != (
+        _QUARANTINE_APPLICATION_SERVICE_SESSION_LIFECYCLE
+    ):
+        raise ContractValidationError(
+            "quarantine runtime application-service session lifecycle must remain "
+            "caller-scoped lease"
         )
     if connector.get("application_service_runtime_controls") != list(
         _QUARANTINE_APPLICATION_SERVICE_RUNTIME_CONTROLS
