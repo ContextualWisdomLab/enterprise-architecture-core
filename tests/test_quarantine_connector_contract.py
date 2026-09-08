@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import ea_core_foundation.cross_domain_evidence.connector_catalog as connector_catalog_module
 from ea_core_foundation import ContractValidationError, validate_connector_catalog
 
 _CONNECTOR_NAME = "quarantine_sandbox_runtime"
@@ -76,6 +77,19 @@ def _quarantine_connector(document: dict) -> dict:
         connector
         for connector in document["connectors"]
         if connector.get("connector_name") == _CONNECTOR_NAME
+    )
+
+
+def test_quarantine_session_lifecycle_validation_has_single_owner() -> None:
+    """Keep the lifecycle invariant in the connector-contract owner only."""
+
+    assert not hasattr(
+        connector_catalog_module,
+        "_QUARANTINE_APPLICATION_SERVICE_SESSION_LIFECYCLE",
+    )
+    assert not hasattr(
+        connector_catalog_module,
+        "_validate_quarantine_session_lifecycle",
     )
 
 
