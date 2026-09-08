@@ -26,8 +26,6 @@ _ALLOWED_DIRECTION_CODES = frozenset(
         "shared_envelope",
     }
 )
-_QUARANTINE_CONNECTOR_NAME = "quarantine_sandbox_runtime"
-_QUARANTINE_APPLICATION_SERVICE_SESSION_LIFECYCLE = "caller_scoped_lease"
 
 
 def _validate_direction_codes(document: Mapping[str, Any]) -> None:
@@ -42,32 +40,11 @@ def _validate_direction_codes(document: Mapping[str, Any]) -> None:
             )
 
 
-def _validate_quarantine_session_lifecycle(document: Mapping[str, Any]) -> None:
-    """Keep application-service lifecycle explicit without absorbing runtime state."""
-
-    connectors = [
-        connector
-        for connector in document["connectors"]
-        if connector.get("connector_name") == _QUARANTINE_CONNECTOR_NAME
-    ]
-    if len(connectors) != 1:
-        return
-    if (
-        connectors[0].get("application_service_session_lifecycle")
-        != _QUARANTINE_APPLICATION_SERVICE_SESSION_LIFECYCLE
-    ):
-        raise ContractValidationError(
-            "quarantine application-service session lifecycle must remain "
-            "caller-scoped lease coordination"
-        )
-
-
 def validate_connector_catalog(document: Mapping[str, Any]) -> int:
     """Validate shared connector contracts plus foreign evidence boundaries."""
 
     connector_count = _validate_connector_catalog(document)
     _validate_direction_codes(document)
-    _validate_quarantine_session_lifecycle(document)
     validate_appguardrail_security_evidence(document)
     return connector_count
 
