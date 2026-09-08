@@ -7,7 +7,7 @@ from .data_management_recheck_status import ContractValidationError
 
 _CONNECTOR_NAME = "appguardrail_security_evidence"
 _OWNER_REPOSITORY = "ContextualWisdomLab/appguardrail"
-_ALLOWED_TRUTH_STATUSES = frozenset({"observed", "inferred"})
+_REQUIRED_TRUTH_STATUSES = ("observed", "inferred")
 
 
 def validate_appguardrail_security_evidence(document: Mapping[str, Any]) -> None:
@@ -45,11 +45,8 @@ def validate_appguardrail_security_evidence(document: Mapping[str, Any]) -> None
         )
 
     declared_statuses = connector.get("projection_truth_statuses")
-    if declared_statuses is not None and (
-        not isinstance(declared_statuses, list)
-        or not declared_statuses
-        or any(status not in _ALLOWED_TRUTH_STATUSES for status in declared_statuses)
-    ):
+    if declared_statuses != list(_REQUIRED_TRUTH_STATUSES):
         raise ContractValidationError(
-            "AppGuardrail security evidence may project observed or inferred truth only"
+            "AppGuardrail security evidence must explicitly declare observed and "
+            "inferred truth only"
         )
