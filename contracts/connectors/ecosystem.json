@@ -17,7 +17,14 @@
       "exchange_kind": "cloudevents_json",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Consume the pinned CloudEvent envelope, canonical asset URI, and provenance schemas instead of publishing a local envelope copy."
     },
     {
@@ -27,7 +34,14 @@
       "exchange_kind": "canonical_asset_uri",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Project Data/AI context references into EA by canonical URI with source truth and provenance only; do not copy glossary, lineage, certification, or catalog authority into this store."
     },
     {
@@ -37,7 +51,14 @@
       "exchange_kind": "observed_schema_reference",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Accept observed physical-schema evidence as reviewable provenance references. Keep snapshots in pg-erd-cloud."
     },
     {
@@ -47,7 +68,14 @@
       "exchange_kind": "inferred_relation_proposal",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Store inferred relations as proposed or inferred truth only. Require an explicit reviewed command before they become authoritative."
     },
     {
@@ -57,9 +85,34 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
       "next_action": "Project naruon deployable, API, provider, version, lifecycle, ownership, and risk changes by canonical reference while keeping workspace and product runtime facts authoritative in naruon."
     },
     {
@@ -69,7 +122,14 @@
       "exchange_kind": "cloudevents_json",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
       "next_action": "Publish architecture and lifecycle change events for workspace context. Do not open a SQL path from naruon into this database."
     },
     {
@@ -87,9 +147,34 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
       "next_action": "Project BandScope deployable, API, provider, version, lifecycle, and risk changes by canonical reference with source provenance; keep BandScope runtime facts authoritative in bandscope."
     },
     {
@@ -99,9 +184,34 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
       "next_action": "Project only organization and deployable references needed for architecture decisions with exact truth and provenance; do not copy employee or HR records from Orgmetra."
     },
     {
@@ -111,9 +221,34 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
       "next_action": "Project TEPP service, package, API, database, provider, version, lifecycle, and risk changes as architecture context while keeping learning and research facts authoritative in TEPP."
     },
     {
@@ -123,10 +258,38 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
-      "projection_truth_statuses": ["proposed", "inferred"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
+      "projection_truth_statuses": [
+        "proposed",
+        "inferred"
+      ],
       "next_action": "Accept orchestration-generated architecture suggestions only as proposed or inferred context with provenance; require an authorized EA command before authoritative promotion."
     },
     {
@@ -136,12 +299,70 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
-      "architecture_projection_scope": ["runtime_identity", "service_identity", "api_identity", "worker_identity", "workflow_runtime_capability_identity", "database_technology", "queue_technology", "object_storage_technology", "runtime_technology", "technology_provider", "technology_version", "lifecycle", "ownership", "architecture_risk_context", "remediation", "transformation"],
-      "forbidden_authoritative_facts": ["agent_task", "agent_result", "agent_reasoning", "tool_payload", "workflow_execution_state", "approval_decision", "checkpoint_content", "prompt_content", "model_output", "user_business_data", "malware_verdict", "security_risk_score"],
-      "prohibited_integrations": ["direct_database_access", "source_copy"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
+      "architecture_projection_scope": [
+        "runtime_identity",
+        "service_identity",
+        "api_identity",
+        "worker_identity",
+        "workflow_runtime_capability_identity",
+        "database_technology",
+        "queue_technology",
+        "object_storage_technology",
+        "runtime_technology",
+        "technology_provider",
+        "technology_version",
+        "lifecycle",
+        "ownership",
+        "architecture_risk_context",
+        "remediation",
+        "transformation"
+      ],
+      "forbidden_authoritative_facts": [
+        "agent_task",
+        "agent_result",
+        "agent_reasoning",
+        "tool_payload",
+        "workflow_execution_state",
+        "approval_decision",
+        "checkpoint_content",
+        "prompt_content",
+        "model_output",
+        "user_business_data",
+        "malware_verdict",
+        "security_risk_score"
+      ],
+      "prohibited_integrations": [
+        "direct_database_access",
+        "source_copy"
+      ],
       "next_action": "Project only Noema deployable, runtime, service/API/worker capability, technology/provider/version, lifecycle, ownership, architecture-risk, remediation, and transformation context after released Context Graph admission. Keep Agent tasks/results/reasoning, tool payloads, workflow/checkpoint state, approvals, prompts, model output, and user business data authoritative in Noema."
     },
     {
@@ -151,20 +372,85 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
-      "authority_scope": ["isolation_runtime", "artifact_analysis_evidence"],
-      "deployment_boundary": "independent_reusable_service",
-      "capabilities": ["application_service_lease", "artifact_analysis_evidence"],
-      "application_service_runtime_controls": ["isolation_policy_enforcement", "resource_bounds", "readiness", "cleanup", "attestation"],
-      "required_interactions": [
-        {"source_repository": "ContextualWisdomLab/contextual-orchestrator", "target_capability": "application_service_lease"},
-        {"source_repository": "ContextualWisdomLab/wardnet", "target_capability": "artifact_analysis_evidence"}
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
       ],
-      "architecture_projection_scope": ["runtime_identity", "application_service_identity", "api_identity", "backend_identity", "backend_technology", "container_runtime_technology", "security_technology", "technology_provider", "technology_version", "lifecycle", "architecture_risk_context", "ownership", "remediation", "transformation", "attestation_provenance"],
-      "forbidden_authoritative_facts": ["malware_verdict", "artifact_risk_score"],
-      "prohibited_integrations": ["direct_database_access", "source_copy"],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
+      "authority_scope": [
+        "isolation_runtime",
+        "artifact_analysis_evidence"
+      ],
+      "deployment_boundary": "independent_reusable_service",
+      "capabilities": [
+        "application_service_lease",
+        "artifact_analysis_evidence"
+      ],
+      "application_service_runtime_controls": [
+        "isolation_policy_enforcement",
+        "resource_bounds",
+        "readiness",
+        "cleanup",
+        "attestation"
+      ],
+      "required_interactions": [
+        {
+          "source_repository": "ContextualWisdomLab/contextual-orchestrator",
+          "target_capability": "application_service_lease"
+        },
+        {
+          "source_repository": "ContextualWisdomLab/wardnet",
+          "target_capability": "artifact_analysis_evidence"
+        }
+      ],
+      "architecture_projection_scope": [
+        "runtime_identity",
+        "application_service_identity",
+        "api_identity",
+        "backend_identity",
+        "backend_technology",
+        "container_runtime_technology",
+        "security_technology",
+        "technology_provider",
+        "technology_version",
+        "lifecycle",
+        "architecture_risk_context",
+        "ownership",
+        "remediation",
+        "transformation",
+        "attestation_provenance"
+      ],
+      "forbidden_authoritative_facts": [
+        "malware_verdict",
+        "artifact_risk_score"
+      ],
+      "prohibited_integrations": [
+        "direct_database_access",
+        "source_copy"
+      ],
       "next_action": "Project only application-service/API/backend identity, container-runtime and security technology/provider/version, lifecycle, architecture risk context, ownership, remediation, transformation, and attestation provenance after released Context Graph admission. Keep sandbox lifecycle, application-service isolation/resource/readiness/cleanup/attestation, and analysis evidence authoritative in quarantine-sandbox-runtime; keep caller authorization/application selection in contextual-orchestrator and maliciousness verdicts/incidents in Wardnet."
     },
     {
@@ -174,12 +460,45 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
-      "projection_truth_statuses": ["observed"],
-      "forbidden_authoritative_facts": ["malware_verdict", "artifact_risk_score"],
-      "prohibited_integrations": ["direct_database_access", "source_copy"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
+      "projection_truth_statuses": [
+        "observed"
+      ],
+      "forbidden_authoritative_facts": [
+        "malware_verdict",
+        "artifact_risk_score"
+      ],
+      "prohibited_integrations": [
+        "direct_database_access",
+        "source_copy"
+      ],
       "next_action": "Project only observed Wardnet security-control and exposure evidence with exact source authority, effective/system time, and provenance. Reject authoritative verdict/risk assertions at this EA connector boundary; maliciousness verdicts and incidents remain Wardnet product truth."
     },
     {
@@ -189,10 +508,38 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
-      "projection_truth_statuses": ["observed", "inferred"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
+      "projection_truth_statuses": [
+        "observed",
+        "inferred"
+      ],
       "next_action": "Project AppGuardrail application-security findings as evidence for affected architecture objects without promoting scanner output to authoritative architecture truth."
     },
     {
@@ -202,9 +549,34 @@
       "exchange_kind": "context_assertion_cloudevent",
       "ea_core_owns": false,
       "context_contract_dependency": "contracts/context-graph-dependency.json",
-      "preserved_semantics": ["canonical_reference", "source_reference", "truth_status", "effective_time", "system_time", "provenance"],
-      "projection_receipt_semantics": ["source_authority", "cloudevent_identity", "schema_version", "profile_id", "profile_version", "message_profile_id", "message_profile_version", "admission_version", "provenance"],
-      "cloudevent_identity_fields": ["id", "source", "specversion", "type", "time", "subject", "dataschema"],
+      "preserved_semantics": [
+        "canonical_reference",
+        "source_reference",
+        "truth_status",
+        "effective_time",
+        "system_time",
+        "provenance"
+      ],
+      "projection_receipt_semantics": [
+        "source_authority",
+        "cloudevent_identity",
+        "schema_version",
+        "profile_id",
+        "profile_version",
+        "message_profile_id",
+        "message_profile_version",
+        "admission_version",
+        "provenance"
+      ],
+      "cloudevent_identity_fields": [
+        "id",
+        "source",
+        "specversion",
+        "type",
+        "time",
+        "subject",
+        "dataschema"
+      ],
       "next_action": "Project control, risk, and evidence references needed for architecture decisions while keeping compliance records and attestations authoritative in governance-risk-compliance."
     }
   ]
