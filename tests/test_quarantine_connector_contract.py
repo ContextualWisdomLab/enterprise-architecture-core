@@ -15,6 +15,7 @@ _EXPECTED_EXCHANGE_KIND = "context_assertion_cloudevent"
 _EXPECTED_AUTHORITY_SCOPE = ["isolation_runtime", "artifact_analysis_evidence"]
 _EXPECTED_CAPABILITIES = ["application_service_lease", "artifact_analysis_evidence"]
 _EXPECTED_APPLICATION_SERVICE_RUNTIME_CONTROLS = [
+    "session_lifecycle",
     "isolation_policy_enforcement",
     "resource_bounds",
     "readiness",
@@ -107,6 +108,15 @@ def test_checked_in_catalog_declares_quarantine_runtime_boundary(
     )
     assert connector["prohibited_integrations"] == _EXPECTED_PROHIBITED_INTEGRATIONS
     assert validate_connector_catalog(document) == len(document["connectors"])
+
+
+def test_quarantine_application_service_lease_declares_session_lifecycle(
+    repository_root,
+) -> None:
+    """Keep the application-service lease explicitly lifecycle-bearing in EA."""
+
+    connector = _quarantine_connector(_catalog(repository_root))
+    assert "session_lifecycle" in connector["application_service_runtime_controls"]
 
 
 def test_quarantine_connector_is_required_exactly_once(repository_root) -> None:
