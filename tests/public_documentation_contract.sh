@@ -37,7 +37,7 @@ require_text README.md "No executable package or release is currently published.
 require_text README.md "## Integration"
 require_text README.md "## Support"
 require_text README.md "## License"
-require_text README.md "No repository-level `LICENSE` is present."
+require_text README.md "No repository-level \`LICENSE\` is present."
 require_text README.md "[Product and technical gap baseline](docs/product-technical-gap-baseline.md)"
 
 require_text docs/index.md "[README](../README.md)"
