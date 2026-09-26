@@ -35,7 +35,6 @@ There is no repository-level license grant. Public visibility does not authorize
 - [Repository](https://github.com/ContextualWisdomLab/enterprise-architecture-core)
 - [README](../README.md)
 - [Product and technical gap baseline](product-technical-gap-baseline.md)
-- [Architecture decisions](.)
 - [Ask DeepWiki](https://deepwiki.com/ContextualWisdomLab/enterprise-architecture-core)
 
 Protected default-branch source is authoritative. A proposal or pull request is not an accepted enterprise decision until its review and integration are complete.
