@@ -24,11 +24,18 @@ It helps product teams, operators, and reviewers answer four practical questions
 
 Product repositories retain domain truth, Ubiquitous Language, aggregates, persistence, APIs, operations, and releases. Shared control planes and libraries remain optional integrations behind versioned contracts.
 
+## Current status
+
+This is a source proposal for a documentation and decision-authority repository. It does not publish an executable package, versioned release, hosted application, or accepted enterprise decision. No verified GitHub Pages publication exists.
+
+There is no repository-level license grant. Public visibility does not authorize reuse; provenance, third-party obligations, and NOTICE requirements remain release acceptance work.
+
 ## Explore
 
 - [Repository](https://github.com/ContextualWisdomLab/enterprise-architecture-core)
-- [README](https://github.com/ContextualWisdomLab/enterprise-architecture-core/blob/develop/README.md)
-- [Architecture decisions](https://github.com/ContextualWisdomLab/enterprise-architecture-core/tree/develop/docs)
+- [README](../README.md)
+- [Product and technical gap baseline](product-technical-gap-baseline.md)
+- [Architecture decisions](.)
 - [Ask DeepWiki](https://deepwiki.com/ContextualWisdomLab/enterprise-architecture-core)
 
 Protected default-branch source is authoritative. A proposal or pull request is not an accepted enterprise decision until its review and integration are complete.
