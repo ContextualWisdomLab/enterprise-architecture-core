@@ -19,6 +19,28 @@ Product repositories retain their Ubiquitous Language, domain rules, aggregates,
 
 Open proposals remain proposals until their evidence, review, and protected-branch integration are complete.
 
-## Public overview
+## Current status
+
+This repository is a documentation and decision-authority source under active development. No executable package or release is currently published. There is no install command or hosted application to operate.
+
+To evaluate the current proposal:
+
+1. Read the [public overview](docs/index.md).
+2. Review the [Product and technical gap baseline](docs/product-technical-gap-baseline.md).
+3. Treat pull-request content as Proposed until it is reviewed and integrated into the protected branch.
+
+## Integration
+
+Product contexts consume accepted enterprise decisions and released contracts through explicit anti-corruption layers. They do not depend on this repository at runtime, copy its source, or surrender ownership of their Ubiquitous Language, aggregates, APIs, data, operations, or releases.
+
+## Documentation
 
 The concise buyer- and operator-facing overview is maintained in [docs/index.md](docs/index.md). Protected default-branch content remains authoritative.
+
+## Support
+
+Use [GitHub Issues](https://github.com/ContextualWisdomLab/enterprise-architecture-core/issues) for reproducible documentation, ownership, or decision-evidence gaps. Do not include secrets, credentials, customer data, or private operational details.
+
+## License
+
+No repository-level `LICENSE` is present. Public visibility is not a grant of reuse rights. A license, provenance review, third-party attribution, and any required NOTICE must be established before a distributable release is represented as reusable.
