@@ -38,7 +38,7 @@ def test_repository_workflows_run_on_git_flow_integration_branches() -> None:
 
 
 def test_pull_request_workflows_checkout_and_verify_exact_source_head() -> None:
-    """Prevent synthetic pull-request merge refs from masquerading as source evidence."""
+    """Prevent synthetic merge refs from masquerading as source evidence."""
     exact_ref = f"ref: {_EXACT_SOURCE_SHA}"
     exact_expected_sha = f"EXPECTED_SHA: {_EXACT_SOURCE_SHA}"
     exact_verification = 'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"'
