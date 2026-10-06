@@ -1,0 +1,4 @@
+self-hosted-runner:
+  labels:
+    - ea-core-ci
+    - ea-core-release-ci

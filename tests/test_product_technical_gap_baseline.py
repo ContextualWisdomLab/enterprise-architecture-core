@@ -5,7 +5,9 @@ from pathlib import Path
 
 def test_gap_baseline_preserves_ea_context_fabric_boundaries() -> None:
     """Keep current release, authority, and quarantine dependencies explicit."""
-    baseline = Path("docs/product-technical-gap-baseline.md").read_text(encoding="utf-8")
+    baseline = Path("docs/product-technical-gap-baseline.md").read_text(
+        encoding="utf-8"
+    )
     lower_baseline = baseline.lower()
 
     for token in (

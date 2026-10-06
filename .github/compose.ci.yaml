@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${EA_OWNER_PASSWORD:?EA_OWNER_PASSWORD is required}
       EA_RUNTIME_PASSWORD: ${EA_RUNTIME_PASSWORD:?EA_RUNTIME_PASSWORD is required}
     ports:
-      - "127.0.0.1:54328:5432"
+      - "127.0.0.1::5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ea_owner -d ea_core"]
       interval: 5s
@@ -15,11 +15,11 @@ services:
       retries: 20
     volumes:
       - architecture_database_data:/var/lib/postgresql
-      - ./database/init/001_create_runtime_role.sh:/docker-entrypoint-initdb.d/001_create_runtime_role.sh:ro
-      - ./database/init/002_apply_foundation_migrations.sh:/docker-entrypoint-initdb.d/002_apply_foundation_migrations.sh:ro
-      - ./database/init/003_grant_runtime_access.sql:/docker-entrypoint-initdb.d/003_grant_runtime_access.sql:ro
-      - ./database/migrations:/opt/ea-core/migrations:ro
-      - ./database/scripts:/opt/ea-core/scripts:ro
+      - ../database/init/001_create_runtime_role.sh:/docker-entrypoint-initdb.d/001_create_runtime_role.sh:ro
+      - ../database/init/002_apply_foundation_migrations.sh:/docker-entrypoint-initdb.d/002_apply_foundation_migrations.sh:ro
+      - ../database/init/003_grant_runtime_access.sql:/docker-entrypoint-initdb.d/003_grant_runtime_access.sql:ro
+      - ../database/migrations:/opt/ea-core/migrations:ro
+      - ../database/scripts:/opt/ea-core/scripts:ro
 
 volumes:
   architecture_database_data:

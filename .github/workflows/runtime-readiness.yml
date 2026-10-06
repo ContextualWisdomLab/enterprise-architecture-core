@@ -14,9 +14,14 @@ concurrency:
 
 jobs:
   installed-process-readiness:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, ea-core-ci]
     timeout-minutes: 10
     steps:
+      - name: Admit trusted source
+        env:
+          SOURCE_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          EXPECTED_REPOSITORY: ${{ github.repository }}
+        run: test "$SOURCE_REPOSITORY" = "$EXPECTED_REPOSITORY"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -32,99 +37,9 @@ jobs:
         with:
           version: "0.11.32"
           enable-cache: false
-      - name: Start documented PostgreSQL profile
+      - name: Exercise isolated installed-process readiness
         env:
+          PYTHON_VERSION: "3.14"
           EA_OWNER_PASSWORD: ea_owner_test_password
           EA_RUNTIME_PASSWORD: ea_runtime_test_password
-        run: docker compose up --detach --wait
-      - name: Prepare runtime fixture
-        env:
-          PGPASSWORD: ea_owner_test_password
-        run: >-
-          psql --host 127.0.0.1 --port 54328 --username ea_owner --dbname ea_core
-          --set ON_ERROR_STOP=1
-          --file database/acceptance/runtime/prepare_runtime_fixture.sql
-      - name: Build and install the reviewed wheel
-        run: |
-          uv lock --check
-          uv sync --locked --extra dev --python 3.14
-          uv build --wheel --out-dir dist
-          uv venv .runtime-smoke --python 3.14
-          uv pip install --python .runtime-smoke/bin/python \
-            --no-index --find-links dist enterprise-architecture-core
-      - name: Prove healthy database and absent immutable contract fail closed independently
-        env:
-          EA_BIND_HOST: 127.0.0.1
-          PORT: "18080"
-          EA_DATABASE_DSN: postgresql://ea_runtime:ea_runtime_test_password@127.0.0.1:54328/ea_core
-        run: |
-          set -euo pipefail
-          .runtime-smoke/bin/ea-core >runtime.log 2>&1 &
-          service_pid="$!"
-          cleanup() {
-            kill "$service_pid" 2>/dev/null || true
-            wait "$service_pid" 2>/dev/null || true
-          }
-          trap cleanup EXIT
-          for attempt in $(seq 1 30); do
-            if curl --silent --fail http://127.0.0.1:18080/health >/dev/null; then
-              break
-            fi
-            sleep 1
-          done
-          .runtime-smoke/bin/python - <<'PY'
-          import json
-          from urllib.error import HTTPError
-          from urllib.request import urlopen
-
-          try:
-              urlopen("http://127.0.0.1:18080/ready", timeout=2)
-          except HTTPError as error:
-              assert error.code == 503
-              payload = json.loads(error.read())
-          else:
-              raise AssertionError("unreleased Context Graph dependency passed readiness")
-          assert payload["database_ready"] is True, payload
-          assert payload["contract_ready"] is False, payload
-          PY
-      - name: Prove broken database configuration reports the database dimension
-        env:
-          EA_BIND_HOST: 127.0.0.1
-          PORT: "18081"
-          EA_DATABASE_DSN: postgresql://ea_runtime:wrong-test-password@127.0.0.1:54328/ea_core
-        run: |
-          set -euo pipefail
-          .runtime-smoke/bin/ea-core >runtime-bad-db.log 2>&1 &
-          service_pid="$!"
-          cleanup() {
-            kill "$service_pid" 2>/dev/null || true
-            wait "$service_pid" 2>/dev/null || true
-          }
-          trap cleanup EXIT
-          for attempt in $(seq 1 30); do
-            if curl --silent --fail http://127.0.0.1:18081/health >/dev/null; then
-              break
-            fi
-            sleep 1
-          done
-          .runtime-smoke/bin/python - <<'PY'
-          import json
-          from urllib.error import HTTPError
-          from urllib.request import urlopen
-
-          try:
-              urlopen("http://127.0.0.1:18081/ready", timeout=2)
-          except HTTPError as error:
-              assert error.code == 503
-              payload = json.loads(error.read())
-          else:
-              raise AssertionError("broken database unexpectedly passed readiness")
-          assert payload["database_ready"] is False, payload
-          assert payload["contract_ready"] is False, payload
-          PY
-      - name: Stop documented PostgreSQL profile
-        if: always()
-        env:
-          EA_OWNER_PASSWORD: ea_owner_test_password
-          EA_RUNTIME_PASSWORD: ea_runtime_test_password
-        run: docker compose down --volumes --remove-orphans
+        run: bash .github/scripts/ci.sh runtime-readiness
