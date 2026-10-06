@@ -98,6 +98,27 @@ def test_real_admission_shell_accepts_same_repository_and_rejects_fork(
     assert not list(tmp_path.iterdir())
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        ".github/compose.ci.yaml",
+        "compose.yaml",
+        ".github/workflows/ci.yml",
+    ],
+)
+def test_database_health_waits_for_final_tcp_server(path: str) -> None:
+    """Healthy must mean the post-init TCP server, not the init socket server.
+
+    The PostgreSQL image runs init scripts on a socket-only temporary server.
+    A socket ``pg_isready`` reports healthy then, and the following restart
+    closes the first host TCP connection.
+    """
+    text = Path(path).read_text()
+    probes = re.findall(r"pg_isready[^\"\]\n]*", text)
+    assert probes, path
+    assert all("-h 127.0.0.1" in probe for probe in probes), probes
+
+
 def test_supply_chain_pr_cannot_reach_release_pool() -> None:
     """Isolate write/OIDC authority from candidate pull-request jobs."""
     workflow = Path(".github/workflows/supply-chain.yml").read_text()
