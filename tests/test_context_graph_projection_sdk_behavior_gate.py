@@ -9,7 +9,6 @@ import pytest
 
 import scripts.verify_context_graph_release as release_verifier
 from scripts.verify_context_graph_release import (
-    ContextGraphReleaseError,
     _EXPECTED_DISTRIBUTION,
     _EXPECTED_PROFILE_IDS,
     _EXPECTED_REPOSITORY,
@@ -21,6 +20,7 @@ from scripts.verify_context_graph_release import (
     _EXPECTED_SOURCE_NEXT_ACTION,
     _REQUIRED_BEFORE_MERGE,
     _SBOM_NAME,
+    ContextGraphReleaseError,
     verify_context_graph_release,
 )
 

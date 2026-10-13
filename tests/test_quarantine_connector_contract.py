@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-import ea_core_foundation.cross_domain_evidence.connector_catalog as connector_catalog_module
+import ea_core_foundation.cross_domain_evidence.connector_catalog as connector_catalog_module  # noqa: E501
 from ea_core_foundation import ContractValidationError, validate_connector_catalog
 
 _CONNECTOR_NAME = "quarantine_sandbox_runtime"

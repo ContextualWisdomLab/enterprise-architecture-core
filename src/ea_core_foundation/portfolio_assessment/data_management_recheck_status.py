@@ -7,7 +7,6 @@ import subprocess
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import cast
-from urllib.parse import urlparse
 from uuid import UUID
 
 from ..decision_plane_http import (
@@ -17,6 +16,7 @@ from ..decision_plane_http import (
     _parse_uuid7,
     _postgres_environment,
     build_keyverse_authorization_config,
+    parse_origin_form_target,
 )
 from ..identity_authorization.authorization import (
     AuthorizationContext,
@@ -78,12 +78,9 @@ def parse_data_management_recheck_status_request(
 ) -> DataManagementRecheckStatusRequest:
     """Bind one strict local-origin reassessment-status resource path."""
 
-    parsed = urlparse(path)
-    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment:
-        raise PlannerRequestError(
-            "data-management recheck status path must use local origin form without "
-            "authority, query, or fragment data"
-        )
+    parsed = parse_origin_form_target(
+        path, "data-management recheck status", query_allowed=False
+    )
     route = parsed.path
     if not route.startswith(_RECHECK_STATUS_PATH_PREFIX):
         raise PlannerRequestError("data-management recheck status path is invalid")
@@ -274,12 +271,13 @@ def build_data_management_recheck_status_reader(
                 "assessment_recheck_request_id="
                 f"{request.assessment_recheck_request_id}"
             ),
-            "--command",
-            _RECHECK_STATUS_SQL,
+            "--file",
+            "-",
         ]
         try:
             result = runner(
                 command,
+                input=_RECHECK_STATUS_SQL,
                 capture_output=True,
                 text=True,
                 timeout=10,

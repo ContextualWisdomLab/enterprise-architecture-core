@@ -1,6 +1,7 @@
 # ADR 0026: Retain Context Assertion projection receipt identity explicitly
 
-- Status: Accepted for candidate integration; production activation remains release-gated.
+- **Status:** Accepted for candidate integration; production activation remains release-gated.
+- **Date:** 2026-09-06
 - Bounded context: Cross-Domain Evidence / Enterprise Architecture Decision Plane ACL.
 
 ## Context

@@ -74,9 +74,8 @@ def test_pr_workflows_checkout_and_verify_the_exact_source_head() -> None:
         assert checkout_count > 0, workflow_path
         assert workflow.count(exact_ref) == checkout_count, workflow_path
         assert workflow.count(exact_expected_sha) == checkout_count, workflow_path
-        assert workflow.count('run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"') == (
-            checkout_count
-        ), workflow_path
+        exact_head_check = 'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"'
+        assert workflow.count(exact_head_check) == checkout_count, workflow_path
 
 
 def test_ci_limits_push_runs_to_integration_branch() -> None:

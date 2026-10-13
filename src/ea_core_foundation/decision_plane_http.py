@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as distribution_version
 from typing import Literal
-from urllib.parse import parse_qsl, unquote, urlparse
+from urllib.parse import ParseResult, parse_qsl, unquote, urlparse
 from uuid import UUID
 
 from .authorization import (
@@ -149,6 +149,47 @@ RouteName = Literal["health", "ready", "target_state_plan", "not_found"]
 
 class PlannerRequestError(ValueError):
     """Raised when a planner/decision request cannot be bound exactly."""
+
+
+def parse_origin_form_target(
+    path: str,
+    label: str,
+    *,
+    query_allowed: bool,
+) -> ParseResult:
+    """Parse a governed request target that must use exact local origin form.
+
+    Matrix/path parameters (``;x=1``), absolute and authority forms, fragments
+    and, for commands, any query delimiter are rejected before route binding.
+    """
+
+    raw_route, query_delimiter, _ = path.partition("?")
+    query_present = bool(query_delimiter)
+    allowed = "fragment" if query_allowed else "query, or fragment"
+    form_error = (
+        f"{label} path must use local origin form without authority, "
+        f"parameters, {allowed} data"
+    )
+    # Validate the unmodified target: urllib.parse discards TAB/CR/LF and
+    # leading C0/space, and treats a triple slash as an empty authority.
+    if (
+        not path.startswith("/")
+        or path.startswith("//")
+        or any(ord(char) < 33 or ord(char) == 127 or char.isspace() for char in path)
+        or ";" in raw_route
+        or "#" in path
+        or (query_present and not query_allowed)
+    ):
+        raise PlannerRequestError(form_error)
+    parsed = urlparse(path)
+    if (
+        parsed.scheme
+        or parsed.netloc
+        or parsed.params
+        or parsed.path != raw_route
+    ):
+        raise PlannerRequestError(form_error)
+    return parsed
 
 
 class PlannerExecutionError(RuntimeError):
@@ -328,7 +369,9 @@ def _parse_timestamp(value: str, field_name: str) -> datetime:
 def parse_target_state_request(path: str) -> TargetStatePlanRequest:
     """Parse one exact planner path without accepting duplicate/unknown parameters."""
 
-    parsed = urlparse(path)
+    parsed = parse_origin_form_target(
+        path, "target-state planner", query_allowed=True
+    )
     if not parsed.path.startswith(_TARGET_STATE_PATH_PREFIX):
         raise PlannerRequestError("target-state planner path is invalid")
     technology_version_id = parsed.path.removeprefix(_TARGET_STATE_PATH_PREFIX)
@@ -370,9 +413,7 @@ def parse_target_state_approval_request(
 ) -> TargetStateApprovalRequest:
     """Bind one strict JSON command to the transformation named by the request path."""
 
-    parsed = urlparse(path)
-    if parsed.query or parsed.fragment:
-        raise PlannerRequestError("approval path cannot contain query or fragment data")
+    parsed = parse_origin_form_target(path, "approval", query_allowed=False)
     route = parsed.path
     if (
         not route.startswith(_TARGET_STATE_APPROVAL_PATH_PREFIX)
@@ -632,12 +673,13 @@ def build_target_state_plan_reader(
             f"recorded_at={request.recorded_at.isoformat()}",
             "--set",
             f"planning_horizon_days={request.planning_horizon_days}",
-            "--command",
-            _TARGET_STATE_PLAN_SQL,
+            "--file",
+            "-",
         ]
         try:
             result = runner(
                 command,
+                input=_TARGET_STATE_PLAN_SQL,
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -724,12 +766,13 @@ def build_target_state_approval_writer(
             r"\getenv decision_actor_ref EA_APPROVAL_ACTOR_REF",
             "--command",
             r"\getenv decision_reason_text EA_APPROVAL_REASON_TEXT",
-            "--command",
-            _TARGET_STATE_APPROVAL_SQL,
+            "--file",
+            "-",
         ]
         try:
             result = runner(
                 command,
+                input=_TARGET_STATE_APPROVAL_SQL,
                 capture_output=True,
                 text=True,
                 timeout=10,

@@ -180,7 +180,9 @@ def test_runtime_reexports_schedule_owner_objects() -> None:
     """Preserve the runtime schedule API while moving command behavior to its owner."""
 
     runtime = importlib.import_module("ea_core_foundation.runtime")
-    owner = importlib.import_module("ea_core_foundation.strategy_transformation.schedule")
+    owner = importlib.import_module(
+        "ea_core_foundation.strategy_transformation.schedule"
+    )
     public_names = (
         "TargetStateScheduleRequest",
         "TargetStateScheduleWriter",

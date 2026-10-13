@@ -114,6 +114,7 @@ _SDIST_PATTERN = re.compile(
     r"^cwl_context_contracts-([0-9]+\.[0-9]+\.[0-9]+)\.tar\.gz$"
 )
 _SBOM_NAME = "cwl-context-contracts.spdx.json"
+_ARTIFACT_SET_INVALID = "release-source manifest artifact set is invalid"
 
 VersionReader = Callable[[str], str]
 ResourceProbe = Callable[[str], bool]
@@ -145,7 +146,7 @@ def _default_sdk_export_exists(export_name: str) -> bool:
 
     try:
         package = import_module("cwl_context_contracts")
-        public_exports = getattr(package, "__all__")
+        public_exports = package.__all__
     except Exception:
         return False
     return (
@@ -160,9 +161,9 @@ def _default_projection_sdk_verified() -> bool:
 
     try:
         package = import_module("cwl_context_contracts")
-        media_type = getattr(package, "CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE")
-        admission_type = getattr(package, "ContextAssertionAdmission")
-        admit = getattr(package, "admit_context_assertion_message")
+        media_type = package.CONTEXT_ASSERTION_STRUCTURED_MEDIA_TYPE
+        admission_type = package.ContextAssertionAdmission
+        admit = package.admit_context_assertion_message
         profile = json.loads(
             files("cwl_context_contracts.conformance")
             .joinpath("context-assertion-event-semantics.v1.json")
@@ -310,16 +311,21 @@ def _validate_release_source_manifest(
         "algorithm": "sha256",
         "next_action": _EXPECTED_SOURCE_NEXT_ACTION,
     }
-    if any(source_manifest.get(field) != value for field, value in exact_values.items()):
+    if any(
+        source_manifest.get(field) != value
+        for field, value in exact_values.items()
+    ):
         raise ContextGraphReleaseError(
             "release-source manifest does not bind the exact release identity"
         )
     if not _require_sha256(source_manifest.get("package_snapshot_sha256")):
-        raise ContextGraphReleaseError("release-source manifest package digest is invalid")
+        raise ContextGraphReleaseError(
+            "release-source manifest package digest is invalid"
+        )
 
     raw_artifacts = source_manifest.get("artifacts")
     if not isinstance(raw_artifacts, list) or len(raw_artifacts) != 3:
-        raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
+        raise ContextGraphReleaseError(_ARTIFACT_SET_INVALID)
     artifact_names: list[str] = []
     for artifact in raw_artifacts:
         if not isinstance(artifact, Mapping) or set(artifact) != {"name", "sha256"}:
@@ -334,7 +340,7 @@ def _validate_release_source_manifest(
             )
         artifact_names.append(name)
     if len(set(artifact_names)) != len(artifact_names):
-        raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
+        raise ContextGraphReleaseError(_ARTIFACT_SET_INVALID)
 
     wheel_names = [name for name in artifact_names if name.endswith(".whl")]
     sdist_names = [name for name in artifact_names if name.endswith(".tar.gz")]
@@ -343,7 +349,7 @@ def _validate_release_source_manifest(
         or len(sdist_names) != 1
         or artifact_names.count(_SBOM_NAME) != 1
     ):
-        raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
+        raise ContextGraphReleaseError(_ARTIFACT_SET_INVALID)
     wheel_match = _WHEEL_PATTERN.fullmatch(wheel_names[0])
     sdist_match = _SDIST_PATTERN.fullmatch(sdist_names[0])
     if (
@@ -352,7 +358,7 @@ def _validate_release_source_manifest(
         or wheel_match.group(1) != release_version
         or sdist_match.group(1) != release_version
     ):
-        raise ContextGraphReleaseError("release-source manifest artifact set is invalid")
+        raise ContextGraphReleaseError(_ARTIFACT_SET_INVALID)
 
 
 def verify_context_graph_release(

@@ -156,7 +156,9 @@ def test_reassessment_command_has_portfolio_assessment_owner_path() -> None:
 def test_legacy_reassessment_command_is_a_compatibility_alias() -> None:
     """Preserve the command import while moving behavior to Portfolio Assessment."""
 
-    compatibility = importlib.import_module("ea_core_foundation.data_management_recheck")
+    compatibility = importlib.import_module(
+        "ea_core_foundation.data_management_recheck"
+    )
     owner = importlib.import_module(
         "ea_core_foundation.portfolio_assessment.data_management_recheck"
     )

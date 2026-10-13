@@ -35,6 +35,7 @@ _PROFILE_IDS = (
     "urn:cwl:conformance:cloudevent-semantics:v1",
     "urn:cwl:context-contracts:context-assertion-semantics:v1",
     "urn:cwl:context-contracts:context-assertion-event-semantics:v1",
+    "urn:cwl:context-contracts:context-assertion-message-admission:v1",
     "urn:cwl:context-contracts:cwl-json-interoperability:v1",
     "urn:cwl:context-contracts:cwl-timestamp-profile:v1",
     "urn:cwl:context-contracts:data-management-assessment-semantics:v1",
@@ -51,6 +52,7 @@ _REQUIRED_RESOURCES = (
     "cwl_context_contracts.conformance:cloudevent-semantics.v1.json",
     "cwl_context_contracts.conformance:context-assertion-semantics.v1.json",
     "cwl_context_contracts.conformance:context-assertion-event-semantics.v1.json",
+    "cwl_context_contracts.conformance:context-assertion-message-admission.v1.json",
     "cwl_context_contracts.conformance:cwl-json-interoperability.v1.json",
     "cwl_context_contracts.conformance:cwl-timestamp-profile.v1.json",
     "cwl_context_contracts.contracts:context-fabric.asyncapi.json",
@@ -198,7 +200,7 @@ def test_context_graph_release_gate_requires_every_consumed_packaged_artifact() 
 
 
 def test_context_graph_release_gate_requires_exact_installed_sdk_surface() -> None:
-    """Reject manifest drift or an installed package missing an advertised SDK export."""
+    """Reject manifest drift or an installed package missing an SDK export."""
 
     manifest = _released_manifest()
     manifest["required_sdk_exports"] = ["admit_context_assertion_message"]

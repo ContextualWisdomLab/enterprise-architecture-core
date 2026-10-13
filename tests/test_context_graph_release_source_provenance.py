@@ -74,8 +74,8 @@ def _released_manifest() -> dict[str, object]:
                 ],
                 "next_action": (
                     "independently verify this manifest's artifact attestation against "
-                    "the same repository, protected ref, source SHA, and signer workflow "
-                    "before treating its source fields as release provenance"
+                    "the same repository, protected ref, source SHA, and signer "
+                    "workflow before treating its source fields as release provenance"
                 ),
             },
         }
@@ -89,6 +89,8 @@ def _verify_release(manifest: dict[str, object], **overrides) -> str:
     arguments = {
         "version_reader": lambda _name: "0.2.0",
         "resource_exists": lambda _resource: True,
+        "sdk_export_exists": lambda _export: True,
+        "projection_sdk_verifier": lambda: True,
         "bundle_verifier": lambda _bundle: True,
         "release_admission_verifier": lambda _conformance, _bundle: True,
         "source_attestation_verifier": lambda _source_manifest: True,

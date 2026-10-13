@@ -54,7 +54,7 @@ def _context_assertion_connectors(document: dict) -> list[dict]:
 
 
 def test_context_assertion_projections_retain_receipt_identity(repository_root) -> None:
-    """Require event and message profile, admission, authority, and provenance identity."""
+    """Require event/message profile, admission, authority and provenance identity."""
 
     document = _catalog(repository_root)
     connectors = _context_assertion_connectors(document)

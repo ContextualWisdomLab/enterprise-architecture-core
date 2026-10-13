@@ -130,25 +130,37 @@ def test_legacy_service_import_delegates_to_the_same_module_object() -> None:
     assert legacy_module is owner_module
 
 
-def test_connector_catalog_uses_bounded_validation_owner_directly() -> None:
-    """Keep Supporting connector validation off the historical root facade."""
+def _top_level_from_imports(source_path: Path) -> list[ast.ImportFrom]:
+    """Return module-level ``from`` imports for one production source file."""
 
-    source_path = Path(
-        "src/ea_core_foundation/cross_domain_evidence/connector_catalog.py"
-    )
     tree = ast.parse(
         source_path.read_text(encoding="utf-8"),
         filename=str(source_path),
     )
-    imports = [node for node in tree.body if isinstance(node, ast.ImportFrom)]
-    assert not any(
-        node.level == 2
-        and node.module is None
-        and any(
-            alias.name == "validation_data_management_recheck_status"
-            for alias in node.names
+    return [node for node in tree.body if isinstance(node, ast.ImportFrom)]
+
+
+def test_connector_catalog_uses_bounded_validation_owner_directly() -> None:
+    """Keep Supporting connector validation off the historical root facade."""
+
+    package = Path("src/ea_core_foundation/cross_domain_evidence")
+    facade_imports = _top_level_from_imports(package / "connector_catalog.py")
+    owner_imports = _top_level_from_imports(
+        package / "_connector_catalog_contracts.py"
+    )
+    for imports in (facade_imports, owner_imports):
+        assert not any(
+            node.level == 2
+            and node.module is None
+            and any(
+                alias.name == "validation_data_management_recheck_status"
+                for alias in node.names
+            )
+            for node in imports
         )
-        for node in imports
+    assert any(
+        node.level == 1 and node.module == "_connector_catalog_contracts"
+        for node in facade_imports
     )
     assert any(
         node.level == 1
@@ -158,7 +170,7 @@ def test_connector_catalog_uses_bounded_validation_owner_directly() -> None:
             and alias.asname == "base"
             for alias in node.names
         )
-        for node in imports
+        for node in owner_imports
     )
 
 

@@ -10,6 +10,7 @@ import pytest
 
 import ea_core_foundation.monitor as monitor
 import ea_core_foundation.service as service
+import ea_core_foundation.strategy_transformation.monitor as monitor_owner
 from tests.test_target_state_monitoring_api import (
     _EVIDENCE_ID,
     _PATH,
@@ -85,7 +86,9 @@ def test_monitoring_reader_fails_closed_when_connection_profile_is_invalid(
 ) -> None:
     """A DSN that cannot become a safe isolated libpq environment is unavailable."""
 
-    monkeypatch.setattr(monitor, "_postgres_environment", lambda dsn, env: None)
+    monkeypatch.setattr(
+        monitor_owner, "_postgres_environment", lambda dsn, env: None
+    )
     reader = monitor.build_target_state_monitoring_reader("postgresql://invalid")
     with pytest.raises(service.PlannerExecutionError, match="unavailable"):
         reader(_context(), monitor.parse_target_state_monitoring_request(_PATH))

@@ -14,7 +14,7 @@ from ..identity_authorization.authorization import (
     verify_keyverse_bearer,
     verify_rs256_signature,
 )
-from .schedule import TargetStateScheduleRequest, parse_target_state_schedule_request
+from .schedule import parse_target_state_schedule_request
 from .start import TargetStateStartRequest, parse_target_state_start_request
 
 _TARGET_STATE_COMMAND_PATH_PREFIX = "/v1/architecture-transformations/"

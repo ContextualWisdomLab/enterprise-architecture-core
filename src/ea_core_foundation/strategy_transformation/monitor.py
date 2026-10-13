@@ -7,7 +7,7 @@ import subprocess
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from urllib.parse import parse_qsl, urlparse
+from urllib.parse import parse_qsl
 from uuid import UUID
 
 from ..decision_plane_http import (
@@ -18,6 +18,7 @@ from ..decision_plane_http import (
     _parse_uuid7,
     _postgres_environment,
     build_keyverse_authorization_config,
+    parse_origin_form_target,
 )
 from ..identity_authorization.authorization import (
     AuthorizationContext,
@@ -92,7 +93,9 @@ TargetStateMonitoringReader = Callable[
 def parse_target_state_monitoring_request(path: str) -> TargetStateMonitoringRequest:
     """Parse one monitoring route without duplicate or unknown query parameters."""
 
-    parsed = urlparse(path)
+    parsed = parse_origin_form_target(
+        path, "target-state monitoring", query_allowed=True
+    )
     route = parsed.path
     if (
         not route.startswith(_TARGET_STATE_MONITORING_PATH_PREFIX)
@@ -194,12 +197,13 @@ def build_target_state_monitoring_reader(
             f"recorded_at={request.recorded_at.isoformat()}",
             "--set",
             f"max_evidence_age_days={request.max_evidence_age_days}",
-            "--command",
-            _TARGET_STATE_MONITORING_SQL,
+            "--file",
+            "-",
         ]
         try:
             result = runner(
                 command,
+                input=_TARGET_STATE_MONITORING_SQL,
                 capture_output=True,
                 text=True,
                 timeout=10,
