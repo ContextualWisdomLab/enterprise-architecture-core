@@ -1,0 +1,242 @@
+\set ON_ERROR_STOP on
+
+-- Executable buyer acceptance for following an accepted reassessment request.
+-- A projected successor must preserve its explicit truth origin: proposed or
+-- inferred results can be visible, but they cannot silently close the governed
+-- improvement loop even when their evidence-readiness shape is complete.
+
+RESET ROLE;
+SELECT set_config(
+    'app.tenant_record_id',
+    '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+    false
+);
+
+DO $$
+DECLARE
+  recheck_id uuid;
+  source_projection architecture_core.data_management_assessment_projection%ROWTYPE;
+  successor_projection_id uuid;
+  reviewed_projection_id uuid;
+  status_record record;
+BEGIN
+  SELECT request_record.assessment_recheck_request_id
+    INTO recheck_id
+    FROM architecture_core.assessment_recheck_request AS request_record
+    JOIN architecture_core.data_management_assessment_projection AS projection_record
+      ON projection_record.tenant_record_id = request_record.tenant_record_id
+     AND projection_record.data_management_assessment_projection_id =
+         request_record.data_management_assessment_projection_id
+   WHERE request_record.tenant_record_id =
+         '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND request_record.decision_request_id =
+         '0196f300-1111-7111-8111-111111111169';
+
+  SELECT projection_record.*
+    INTO source_projection
+    FROM architecture_core.assessment_recheck_request AS request_record
+    JOIN architecture_core.data_management_assessment_projection AS projection_record
+      ON projection_record.tenant_record_id = request_record.tenant_record_id
+     AND projection_record.data_management_assessment_projection_id =
+         request_record.data_management_assessment_projection_id
+   WHERE request_record.tenant_record_id =
+         '0195d145-64e8-7f4f-8a23-a0cc784cb711'
+     AND request_record.decision_request_id =
+         '0196f300-1111-7111-8111-111111111169';
+
+  IF recheck_id IS NULL
+     OR source_projection.data_management_assessment_projection_id IS NULL THEN
+    RAISE EXCEPTION 'reassessment status source fixture is unavailable';
+  END IF;
+
+  SELECT *
+    INTO status_record
+    FROM architecture_core.read_data_management_assessment_recheck_status(
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      recheck_id
+    );
+
+  IF status_record.assessment_recheck_request_id IS DISTINCT FROM recheck_id
+     OR status_record.successor_assessment_projection_id IS NOT NULL
+     OR status_record.successor_truth_status_code IS NOT NULL
+     OR status_record.recheck_state_code IS DISTINCT FROM 'awaiting_result'
+     OR status_record.successor_readiness_code IS NOT NULL
+     OR status_record.successor_overall_score_basis_points IS NOT NULL
+     OR status_record.successor_missing_evidence_count IS NOT NULL
+     OR status_record.next_action IS DISTINCT FROM 'await_assessment_recheck' THEN
+    RAISE EXCEPTION 'waiting reassessment status is not buyer-actionable';
+  END IF;
+
+  -- The purpose-bound SECURITY DEFINER read may install a verified tenant only
+  -- for its own query. It must never leak that tenant into a caller transaction,
+  -- because a pooled runtime connection can execute another tenant-scoped action
+  -- immediately after this read.
+  PERFORM pg_catalog.set_config(
+      'app.tenant_record_id',
+      '0195d145-64e8-7f4f-8a23-a0cc784cb712',
+      true
+  );
+  PERFORM *
+    FROM architecture_core.read_data_management_assessment_recheck_status(
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      recheck_id
+    );
+  IF pg_catalog.current_setting('app.tenant_record_id', true) IS DISTINCT FROM
+       '0195d145-64e8-7f4f-8a23-a0cc784cb712' THEN
+    RAISE EXCEPTION 'reassessment status leaked tenant context into caller';
+  END IF;
+  PERFORM pg_catalog.set_config(
+      'app.tenant_record_id',
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      true
+  );
+
+  INSERT INTO architecture_core.projection_receipt (
+      tenant_record_id,
+      projection_receipt_id,
+      event_source_uri,
+      event_identifier,
+      payload_sha256,
+      schema_version,
+      received_at,
+      processed_at,
+      processing_status_code
+  ) VALUES (
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      '0196f400-1111-7111-8111-111111111190',
+      'urn:cwl:tenant_001:semantic_data_portal',
+      '0196f400-1111-7111-8111-111111111191',
+      repeat('a', 64),
+      '1.0.0',
+      '2026-08-19T00:40:00Z',
+      '2026-08-19T00:40:01Z',
+      'processed'
+  );
+
+  SELECT result.data_management_assessment_projection_id
+    INTO successor_projection_id
+    FROM architecture_core.record_data_management_assessment_result(
+      '0196f400-1111-7111-8111-111111111190',
+      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f400-1111-7111-8111-111111111192',
+      'urn:cwl:tenant_001:ea_core:business_capability:' ||
+          source_projection.subject_capability_object_id::text,
+      source_projection.framework_code,
+      source_projection.framework_version_label,
+      source_projection.profile_code,
+      source_projection.profile_version,
+      '2026-08-19T00:39:58Z',
+      '2026-08-19T00:39:59Z',
+      10000,
+      'evidence_complete',
+      'proposed',
+      'urn:cwl:tenant_001:data_context:assessment_evidence:0196f400-1111-7111-8111-111111111193',
+      repeat('b', 64),
+      'https://example.com/evidence/recheck-successor',
+      source_projection.assessment_result_uri,
+      ARRAY[]::text[]
+    ) AS result;
+
+  SELECT *
+    INTO status_record
+    FROM architecture_core.read_data_management_assessment_recheck_status(
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      recheck_id
+    );
+
+  IF status_record.assessment_recheck_request_id IS DISTINCT FROM recheck_id
+     OR status_record.data_management_assessment_projection_id IS DISTINCT FROM
+        source_projection.data_management_assessment_projection_id
+     OR status_record.successor_assessment_projection_id IS DISTINCT FROM
+        successor_projection_id
+     OR status_record.successor_truth_status_code IS DISTINCT FROM 'proposed'
+     OR status_record.recheck_state_code IS DISTINCT FROM 'review_required'
+     OR status_record.successor_readiness_code IS DISTINCT FROM 'evidence_complete'
+     OR status_record.successor_overall_score_basis_points IS DISTINCT FROM 10000
+     OR status_record.successor_missing_evidence_count IS DISTINCT FROM 0
+     OR status_record.next_action IS DISTINCT FROM
+        'review_assessment_recheck_evidence' THEN
+    RAISE EXCEPTION
+      'proposed successor escaped truth review or lost buyer evidence';
+  END IF;
+
+  -- Foreign truth review is append-only. A proposed result is not mutated into
+  -- authority; semantic-data-portal may supersede it with reviewed observed
+  -- evidence. The status port must follow that immutable succession instead of
+  -- pinning the buyer forever to the now-superseded proposed result.
+  INSERT INTO architecture_core.projection_receipt (
+      tenant_record_id,
+      projection_receipt_id,
+      event_source_uri,
+      event_identifier,
+      payload_sha256,
+      schema_version,
+      received_at,
+      processed_at,
+      processing_status_code
+  ) VALUES (
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      '0196f400-1111-7111-8111-111111111194',
+      'urn:cwl:tenant_001:semantic_data_portal',
+      '0196f400-1111-7111-8111-111111111195',
+      repeat('c', 64),
+      '1.0.0',
+      '2026-08-19T00:50:00Z',
+      '2026-08-19T00:50:01Z',
+      'processed'
+  );
+
+  SELECT result.data_management_assessment_projection_id
+    INTO reviewed_projection_id
+    FROM architecture_core.record_data_management_assessment_result(
+      '0196f400-1111-7111-8111-111111111194',
+      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f400-1111-7111-8111-111111111196',
+      'urn:cwl:tenant_001:ea_core:business_capability:' ||
+          source_projection.subject_capability_object_id::text,
+      source_projection.framework_code,
+      source_projection.framework_version_label,
+      source_projection.profile_code,
+      source_projection.profile_version,
+      '2026-08-19T00:49:58Z',
+      '2026-08-19T00:49:59Z',
+      10000,
+      'evidence_complete',
+      'observed',
+      'urn:cwl:tenant_001:data_context:assessment_evidence:0196f400-1111-7111-8111-111111111197',
+      repeat('d', 64),
+      'https://example.com/evidence/recheck-reviewed-successor',
+      'urn:cwl:tenant_001:data_context:data_management_assessment:0196f400-1111-7111-8111-111111111192',
+      ARRAY[]::text[]
+    ) AS result;
+
+  SELECT *
+    INTO status_record
+    FROM architecture_core.read_data_management_assessment_recheck_status(
+      '0195d145-64e8-7f4f-8a23-a0cc784cb711',
+      recheck_id
+    );
+
+  IF status_record.successor_assessment_projection_id IS DISTINCT FROM
+        reviewed_projection_id
+     OR status_record.successor_truth_status_code IS DISTINCT FROM 'observed'
+     OR status_record.recheck_state_code IS DISTINCT FROM 'evidence_complete'
+     OR status_record.successor_readiness_code IS DISTINCT FROM 'evidence_complete'
+     OR status_record.successor_overall_score_basis_points IS DISTINCT FROM 10000
+     OR status_record.successor_missing_evidence_count IS DISTINCT FROM 0
+     OR status_record.next_action IS DISTINCT FROM
+        'close_assessment_improvement_loop' THEN
+    RAISE EXCEPTION
+      'reviewed successor did not advance immutable reassessment status';
+  END IF;
+
+  BEGIN
+    PERFORM *
+      FROM architecture_core.read_data_management_assessment_recheck_status(
+        '0195d145-64e8-7f4f-8a23-a0cc784cb712',
+        recheck_id
+      );
+    RAISE EXCEPTION 'cross-tenant reassessment status was disclosed';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END;
+$$;
