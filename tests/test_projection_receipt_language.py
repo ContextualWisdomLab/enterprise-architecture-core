@@ -2,14 +2,15 @@
 
 from pathlib import Path
 
-
 _REQUIRED_RECEIPT_LANGUAGE = (
     "event semantic profile id/version",
     "structured-message admission profile id/version",
 )
 
 
-def test_projection_receipt_language_distinguishes_both_profiles(repository_root: Path) -> None:
+def test_projection_receipt_language_distinguishes_both_profiles(
+    repository_root: Path,
+) -> None:
     """Written domain language must preserve both independent profile identities."""
 
     ubiquitous_language = (

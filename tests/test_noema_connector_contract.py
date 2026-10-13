@@ -81,7 +81,10 @@ def _minimal_repository_copy(repository_root, target) -> None:
     copytree(repository_root / "docs/adr", target / "docs/adr")
     (target / "contracts/connectors").mkdir(parents=True)
     copy2(repository_root / "contracts/openapi.json", target / "contracts/openapi.json")
-    copy2(repository_root / "contracts/asyncapi.json", target / "contracts/asyncapi.json")
+    copy2(
+        repository_root / "contracts/asyncapi.json",
+        target / "contracts/asyncapi.json",
+    )
     copy2(
         repository_root / "contracts/connectors/ecosystem.json",
         target / "contracts/connectors/ecosystem.json",
@@ -174,7 +177,12 @@ def test_noema_projection_is_required_exactly_once(repository_root) -> None:
         (
             "owner_repository",
             "ContextualWisdomLab/contextual-orchestrator",
+            "owner_repository|exactly one Contextual Orchestrator owner boundary",
+        ),
+        (
             "owner_repository",
+            "ContextualWisdomLab/agent-runtime-fork",
+            "Noema projection owner_repository",
         ),
         ("direction_code", "inbound_proposal", "direction_code"),
         ("exchange_kind", "cloudevents_json", "exchange_kind"),

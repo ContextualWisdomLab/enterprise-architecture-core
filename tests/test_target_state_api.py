@@ -243,7 +243,8 @@ def test_plan_reader_uses_runtime_role_without_exposing_dsn() -> None:
     command, kwargs = calls[0]
     assert all("secret" not in argument for argument in command)
     assert kwargs["env"]["PGPASSWORD"] == "secret"
-    assert "read_technology_target_state_plan" in " ".join(command)
+    assert "read_technology_target_state_plan" in kwargs["input"]
+    assert command[-2:] == ["--file", "-"]
 
 
 def _http_request(

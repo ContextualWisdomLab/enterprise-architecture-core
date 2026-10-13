@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from math import isfinite
-from urllib.parse import parse_qsl, urlparse
+from urllib.parse import parse_qsl
 from uuid import UUID
 
 from ..authorization import AuthorizationContext, KeyverseAuthorizationConfig
@@ -21,6 +21,7 @@ from ..service import (
     _parse_uuid7,
     _postgres_environment,
     build_keyverse_authorization_config,
+    parse_origin_form_target,
 )
 
 _PORTFOLIO_ASSESSMENT_PATH_PREFIX = "/v1/architecture-objects/"
@@ -94,12 +95,9 @@ def _parse_optional_code(value: str | None, field_name: str) -> str | None:
 def parse_portfolio_assessment_request(path: str) -> PortfolioAssessmentRequest:
     """Bind one strict local-origin portfolio assessment query."""
 
-    parsed = urlparse(path)
-    if parsed.scheme or parsed.netloc or parsed.fragment:
-        raise PlannerRequestError(
-            "portfolio assessment path must use local origin form without authority "
-            "or fragment data"
-        )
+    parsed = parse_origin_form_target(
+        path, "portfolio assessment", query_allowed=True
+    )
     route = parsed.path
     if not route.startswith(_PORTFOLIO_ASSESSMENT_PATH_PREFIX) or not route.endswith(
         _PORTFOLIO_ASSESSMENT_PATH_SUFFIX
@@ -144,7 +142,9 @@ def parse_portfolio_assessment_summary_request(
 ) -> PortfolioAssessmentRequest:
     """Bind the summary route to the same strict assessment query contract."""
 
-    parsed = urlparse(path)
+    parsed = parse_origin_form_target(
+        path, "portfolio assessment summary", query_allowed=True
+    )
     if not parsed.path.endswith(_PORTFOLIO_ASSESSMENT_SUMMARY_PATH_SUFFIX):
         raise PlannerRequestError("portfolio assessment summary path is invalid")
     assessment_path = parsed._replace(

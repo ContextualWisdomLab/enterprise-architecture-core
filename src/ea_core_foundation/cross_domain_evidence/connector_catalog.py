@@ -10,9 +10,11 @@ from typing import Any
 from ._connector_catalog_contracts import (
     ContractValidationError,
     RepositoryReport,
-    validate_connector_catalog as _validate_connector_catalog,
-    validate_repository as _validate_repository,
 )
+from ._connector_catalog_contracts import (
+    validate_connector_catalog as _validate_connector_catalog,
+)
+from ._connector_catalog_contracts import validate_repository as _validate_repository
 from .appguardrail_security_evidence import validate_appguardrail_security_evidence
 
 _ALLOWED_DIRECTION_CODES = frozenset(

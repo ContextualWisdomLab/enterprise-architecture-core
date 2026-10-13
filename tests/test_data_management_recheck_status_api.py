@@ -115,6 +115,7 @@ def test_recheck_status_reader_uses_purpose_bound_port_and_validates_meaning() -
         captured["command"] = command
         captured["environment"] = kwargs["env"]
         captured["timeout"] = kwargs["timeout"]
+        captured["input"] = kwargs["input"]
         return SimpleNamespace(
             returncode=0,
             stdout=json.dumps(_payload()),
@@ -129,7 +130,9 @@ def test_recheck_status_reader_uses_purpose_bound_port_and_validates_meaning() -
     result = reader(_context(), parse_data_management_recheck_status_request(_PATH))
 
     command_text = " ".join(captured["command"])
-    assert "read_data_management_assessment_recheck_status" in command_text
+    # psql only interpolates :'variables' in script input, not --command.
+    assert "--command" not in captured["command"][-2:]
+    assert "read_data_management_assessment_recheck_status" in captured["input"]
     assert "assessment_recheck_request " not in command_text
     assert "data-governance-lead-123" not in command_text
     assert "secret" not in command_text

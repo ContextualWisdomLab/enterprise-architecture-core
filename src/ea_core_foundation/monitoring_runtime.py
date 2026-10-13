@@ -45,13 +45,13 @@ from .strategy_transformation.start import (
     build_start_authorization_config,
     build_target_state_start_writer,
 )
+from .strategy_transformation.verify import (
+    build_target_state_verification_writer,
+    build_verification_authorization_config,
+)
 from .verification_runtime import VerificationServiceHandler
 from .verification_runtime import (
     create_runtime_server as create_verification_runtime_server,
-)
-from .verify import (
-    build_target_state_verification_writer,
-    build_verification_authorization_config,
 )
 
 _TARGET_STATE_MONITORING_PATH_PREFIX = "/v1/architecture-transformations/"

@@ -8,7 +8,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import cast
-from urllib.parse import urlparse
 from uuid import UUID
 
 from ..decision_plane_http import (
@@ -19,6 +18,7 @@ from ..decision_plane_http import (
     _parse_uuid7,
     _postgres_environment,
     build_keyverse_authorization_config,
+    parse_origin_form_target,
 )
 from ..identity_authorization.authorization import (
     AuthorizationContext,
@@ -94,12 +94,9 @@ def parse_data_management_recheck_request(
 ) -> DataManagementRecheckRequest:
     """Bind strict reassessment JSON to the projection named by the route."""
 
-    parsed = urlparse(path)
-    if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment:
-        raise PlannerRequestError(
-            "data-management recheck path must use local origin form without "
-            "authority, query, or fragment data"
-        )
+    parsed = parse_origin_form_target(
+        path, "data-management recheck", query_allowed=False
+    )
     route = parsed.path
     if not route.startswith(_RECHECK_PATH_PREFIX) or not route.endswith(
         _RECHECK_PATH_SUFFIX
@@ -197,12 +194,13 @@ def build_data_management_recheck_writer(
             f"decision_request_id={request.decision_request_id}",
             "--set",
             f"requested_at={request.requested_at.isoformat()}",
-            "--command",
-            _RECHECK_SQL,
+            "--file",
+            "-",
         ]
         try:
             result = runner(
                 command,
+                input=_RECHECK_SQL,
                 capture_output=True,
                 text=True,
                 timeout=10,

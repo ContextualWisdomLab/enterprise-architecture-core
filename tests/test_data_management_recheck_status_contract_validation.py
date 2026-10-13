@@ -6,12 +6,20 @@ from pathlib import Path
 
 import pytest
 
-import ea_core_foundation.validation_data_management_recheck_status as status_validation
+import ea_core_foundation.cross_domain_evidence.data_management_recheck_status as status_validation  # noqa: E501
+import ea_core_foundation.validation_data_management_recheck_status as status_facade  # noqa: E501
 
 _STATUS_PATH = (
     "/v1/data-management-assessment-rechecks/"
     "{assessment_recheck_request_id}"
 )
+
+
+def test_status_facade_reexports_the_canonical_owner() -> None:
+    """The compatibility facade delegates to the Cross-Domain Evidence owner."""
+
+    for name in status_facade.__all__:
+        assert getattr(status_facade, name) is getattr(status_validation, name)
 
 
 def test_status_layer_accepts_current_openapi_contract(openapi_document) -> None:

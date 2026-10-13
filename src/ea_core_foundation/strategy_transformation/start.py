@@ -8,7 +8,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import cast
-from urllib.parse import urlparse
 from uuid import UUID
 
 from ..decision_plane_http import (
@@ -19,6 +18,7 @@ from ..decision_plane_http import (
     _parse_uuid7,
     _postgres_environment,
     build_keyverse_authorization_config,
+    parse_origin_form_target,
 )
 from ..identity_authorization.authorization import (
     AuthorizationContext,
@@ -102,9 +102,9 @@ def parse_target_state_start_request(
 ) -> TargetStateStartRequest:
     """Bind strict JSON to the single transformation identified by the start path."""
 
-    parsed = urlparse(path)
-    if parsed.query or parsed.fragment:
-        raise PlannerRequestError("start path cannot contain query or fragment data")
+    parsed = parse_origin_form_target(
+        path, "start", query_allowed=False
+    )
     route = parsed.path
     if (
         not route.startswith(_TARGET_STATE_COMMAND_PATH_PREFIX)
@@ -202,12 +202,13 @@ def build_target_state_start_writer(
             r"\getenv decision_actor_ref EA_START_ACTOR_REF",
             "--command",
             r"\getenv decision_reason_text EA_START_REASON_TEXT",
-            "--command",
-            _TARGET_STATE_START_SQL,
+            "--file",
+            "-",
         ]
         try:
             result = runner(
                 command,
+                input=_TARGET_STATE_START_SQL,
                 capture_output=True,
                 text=True,
                 timeout=10,
