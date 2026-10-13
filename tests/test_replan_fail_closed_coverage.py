@@ -10,9 +10,9 @@ from types import SimpleNamespace
 
 import pytest
 
+import ea_core_foundation.cross_domain_evidence.data_management_recheck_status as status_validation  # noqa: E501
 import ea_core_foundation.validation as base_validation
 import ea_core_foundation.validation_data_management_recheck as recheck_validation
-import ea_core_foundation.validation_data_management_recheck_status as status_validation
 import ea_core_foundation.validation_replan as replan_validation
 from ea_core_foundation.authorization import AuthorizationContext
 from ea_core_foundation.replan import (

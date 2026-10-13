@@ -281,7 +281,8 @@ def test_approval_writer_binds_verified_actor_without_exposing_private_values(
     assert all("secret" not in argument for argument in command)
     assert kwargs["env"]["PGPASSWORD"] == "secret"
     command_text = " ".join(command)
-    assert "approve_target_state" in command_text
+    assert "approve_target_state" in kwargs["input"]
+    assert command[-2:] == ["--file", "-"]
     assert "architecture-board-user-123" not in command_text
     assert "reviewed target state" not in command_text
     assert kwargs["env"]["EA_APPROVAL_ACTOR_REF"].endswith(

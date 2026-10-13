@@ -182,7 +182,8 @@ def test_start_writer_uses_verified_actor_and_returns_actionable_receipt() -> No
     assert receipt["transformation_state_code"] == "started"
     assert receipt["next_action"] == "monitor_transformation"
     command, kwargs = calls[0]
-    assert "start_scheduled_transformation" in " ".join(command)
+    assert "start_scheduled_transformation" in kwargs["input"]
+    assert command[-2:] == ["--file", "-"]
     assert all("secret" not in value for value in command)
     assert "transformation-operator-123" not in " ".join(command)
     assert "approved target-state" not in " ".join(command)

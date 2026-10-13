@@ -190,7 +190,8 @@ def test_schedule_writer_uses_verified_actor_and_returns_actionable_receipt() ->
     assert receipt["next_action"] == "start_transformation"
     assert receipt["initiative_milestone_id"] == _MILESTONE_ID
     command, kwargs = calls[0]
-    assert "schedule_transformation" in " ".join(command)
+    assert "schedule_transformation" in kwargs["input"]
+    assert command[-2:] == ["--file", "-"]
     assert all("secret" not in value for value in command)
     assert "transformation-planner-123" not in " ".join(command)
     assert "migration milestone" not in " ".join(command)

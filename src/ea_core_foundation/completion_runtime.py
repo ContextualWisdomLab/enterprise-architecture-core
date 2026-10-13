@@ -8,25 +8,7 @@ from http.server import ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlparse
 
-from .authorization import (
-    AuthorizationError,
-    KeyverseAuthorizationConfig,
-    load_keyverse_jwks,
-    verify_keyverse_bearer,
-    verify_rs256_signature,
-)
-from .complete import (
-    build_complete_authorization_config,
-    build_target_state_complete_writer,
-    parse_target_state_complete_request,
-)
-from .runtime import (
-    SchedulingServiceHandler,
-    build_schedule_authorization_config,
-    build_target_state_schedule_writer,
-)
-from .runtime import create_runtime_server as create_scheduling_runtime_server
-from .service import (
+from .decision_plane_http import (
     BindAddress,
     PlannerRequestError,
     build_approval_authorization_config,
@@ -38,7 +20,28 @@ from .service import (
     resolve_bind_address,
     serve_forever,
 )
-from .start import build_start_authorization_config, build_target_state_start_writer
+from .identity_authorization.authorization import (
+    AuthorizationError,
+    KeyverseAuthorizationConfig,
+    load_keyverse_jwks,
+    verify_keyverse_bearer,
+    verify_rs256_signature,
+)
+from .runtime import (
+    SchedulingServiceHandler,
+    build_schedule_authorization_config,
+    build_target_state_schedule_writer,
+)
+from .runtime import create_runtime_server as create_scheduling_runtime_server
+from .strategy_transformation.complete import (
+    build_complete_authorization_config,
+    build_target_state_complete_writer,
+    parse_target_state_complete_request,
+)
+from .strategy_transformation.start import (
+    build_start_authorization_config,
+    build_target_state_start_writer,
+)
 
 _TARGET_STATE_COMMAND_PATH_PREFIX = "/v1/architecture-transformations/"
 _TARGET_STATE_COMPLETE_PATH_SUFFIX = "/complete"

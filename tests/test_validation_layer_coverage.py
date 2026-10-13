@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
+import ea_core_foundation.cross_domain_evidence.data_management_recheck_status as status_validation  # noqa: E501
 import ea_core_foundation.validation_data_management_closure as closure_validation
 import ea_core_foundation.validation_data_management_recheck as recheck_validation
-import ea_core_foundation.validation_data_management_recheck_status as status_validation
 import ea_core_foundation.validation_replan as replan_validation
 
 _RECHECK_PATH = (

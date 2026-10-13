@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  python:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
@@ -23,7 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Verify exact source checkout
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
@@ -49,7 +54,7 @@ jobs:
           uv run --frozen --extra dev --python "${{ matrix.python-version }}"
           python scripts/validate_repository.py
 
-  postgres-migration:
+  database:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     services:
@@ -69,7 +74,12 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Verify exact source checkout
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - name: Apply foundation migrations
         env:
           PGHOST: 127.0.0.1
@@ -208,6 +218,14 @@ jobs:
             --set ON_ERROR_STOP=1 \
             --command "SELECT tgname FROM pg_trigger WHERE tgname = 'projection_receipt_history_guard' AND NOT tgisinternal;" \
             | grep --fixed-strings 'projection_receipt_history_guard'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT to_regclass('architecture_core.context_assertion_projection_receipt') IS NOT NULL;" \
+            | grep --fixed-strings 't'
+          PGDATABASE="$probe_database" psql --tuples-only --no-align \
+            --set ON_ERROR_STOP=1 \
+            --command "SELECT tgname FROM pg_trigger WHERE tgname = 'context_assertion_projection_receipt_history_guard' AND NOT tgisinternal;" \
+            | grep --fixed-strings 'context_assertion_projection_receipt_history_guard'
       - name: Prove failed migration rolls back schema and ledger atomically
         env:
           PGHOST: 127.0.0.1
@@ -245,7 +263,7 @@ jobs:
               --tuples-only --no-align \
               --command "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'architecture_core' AND table_type = 'BASE TABLE';"
           )"
-          test "$table_count" -eq 48
+          test "$table_count" -eq 49
           reference_view_count="$(
             psql --host 127.0.0.1 --username ea_app --dbname ea_core \
               --tuples-only --no-align \
@@ -276,7 +294,12 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Verify exact source checkout
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - name: Start documented database profile
         run: |
           set -euo pipefail
@@ -319,7 +342,12 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Verify exact source checkout
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.14"
@@ -352,4 +380,56 @@ jobs:
           assert version("enterprise-architecture-core") == "0.1.0"
           assert ea_core_foundation.__version__ == "0.1.0"
           assert find_spec("jsonschema") is None
+          PY
+
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source checkout
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.32"
+          enable-cache: false
+      - name: Dependency vulnerability audit
+        run: uv export --locked --extra dev --format requirements-txt --no-emit-project --no-hashes | uvx --from pip-audit==2.10.0 pip-audit --strict -r /dev/stdin
+
+  required-checks:
+    needs:
+      - python
+      - database
+      - compose-runtime
+      - package
+      - security
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require all CI lanes to pass
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          results = {
+              name: lane["result"]
+              for name, lane in json.loads(os.environ["NEEDS_JSON"]).items()
+          }
+          print(json.dumps(results, sort_keys=True))
+          failures = {
+              name: result
+              for name, result in results.items()
+              if result != "success"
+          }
+          if failures:
+              raise SystemExit(f"required CI lanes failed: {failures}")
           PY

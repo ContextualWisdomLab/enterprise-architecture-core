@@ -2,20 +2,20 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-16
+- **Updated:** 2026-09-08
 
 ## Decision
 
-The highest-leverage owned neighbors are Keyverse, context-graph-contracts,
-semantic-data-portal, pg-erd-cloud, LineageWeave, naruon, and the organization
-`.github` governance repository. Each exchange is recorded in
-`contracts/connectors/ecosystem.json` as an OpenAPI, AsyncAPI/CloudEvents, or
-canonical-reference connector. Direct cross-service SQL is prohibited.
+CWL products remain independently authoritative and integrate with the Enterprise Architecture Decision Plane only through explicit versioned package, API, event, evidence, or Anti-Corruption Layer boundaries. `contracts/connectors/ecosystem.json` is the executable Context Map inventory for those boundaries. Direct cross-service application-table SQL and source copying are prohibited.
 
-Inferred LineageWeave relations and observed pg-erd-cloud evidence enter as
-non-authoritative truth until a reviewed command accepts them.
+`context-graph-contracts` is the provider-neutral Shared Kernel used for Context Assertion, CloudEvent, canonical reference, truth, bitemporal, and provenance semantics. A Context Graph receipt or admission result proves contract compatibility/evidence identity; it is not foreign-product authority and does not authorize EA state changes by itself.
+
+Noema remains the canonical owner of Agent Runtime, Workflow/Task Execution, Tool/Capability boundaries, State/Checkpoint, Isolation Integration, Policy/Approval, Observability and Recovery. EA may admit only the architecture projection required for enterprise decisions: deployable/runtime/service/API/worker capability identity; database/queue/object-storage/runtime technology; provider/version; lifecycle; ownership; architecture-risk context; remediation and transformation. Agent tasks/results/reasoning, tool payloads, workflow execution state, approval decisions, checkpoint/prompt content, model output and user business data remain Noema truth and are forbidden as authoritative EA facts. The Noema projection uses released Context Graph admission, preserves the projection receipt, and forbids direct database access or source copying.
+
+The Quarantine Sandbox Runtime is an independently deployable reusable hostile-workload isolation runtime. It owns sandbox lifecycle, isolation-policy enforcement, resource bounds, readiness, cleanup, attestation and artifact-analysis evidence. An application-service lease is therefore not merely an API label: the runtime owns and enforces those execution controls for the leased session. `contextual-orchestrator` remains the caller-policy owner for Chat/Agent/task/tool authorization, application selection, secrets, and user-visible actions; it may call the runtime application-service lease capability. Wardnet remains the SOC/gateway owner for maliciousness verdicts, incidents, quarantine/block/notification/retention; it may call the runtime artifact-analysis/evidence capability. EA may receive only architecture-relevant runtime/application-service/API/backend identity, technology/provider/version, lifecycle, architecture-risk context, ownership, remediation/transformation, and attestation provenance through a released compatible Context Graph contract. EA records the runtime-control ownership boundary but neither executes those controls nor promotes runtime evidence into EA authority. Malware verdicts and artifact risk scores are forbidden as authoritative EA architecture facts.
+
+Inferred LineageWeave relations, scanner/security findings, model-generated proposals, and other foreign observations retain their source truth status until an explicit EA-owned command accepts an architecture decision. No connector is allowed to turn transport receipt, scanner output, runtime evidence, workflow state or model output into an authoritative EA fact by ingestion alone.
 
 ## Consequence
 
-The service can be deployed alone. When imported as a module in the CWL
-ecosystem, it still owns only architecture and transformation facts and points
-operators at the next configuration action for each neighbor.
+EA Core can be deployed independently and projects only the minimum architecture context required for a decision. Foreign products retain their own source of truth, storage, runtime and policy responsibilities. Connector admission fails closed when a required owner, reuse/deployment boundary, application-service runtime-control boundary, Context Graph release binding, preserved semantics, projection scope, forbidden-authority set or directional interaction is absent.
